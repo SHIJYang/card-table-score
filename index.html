@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牌桌积分</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>牌桌积分</h1>
+        <div class="scoreboard">
+            <div class="player">
+                <label for="player1">玩家1:</label>
+                <input type="number" id="player1" value="0">
+                <button onclick="updateScore('player1', 1)">+1</button>
+                <button onclick="updateScore('player1', -1)">-1</button>
+            </div>
+            <div class="player">
+                <label for="player2">玩家2:</label>
+                <input type="number" id="player2" value="0">
+                <button onclick="updateScore('player2', 1)">+1</button>
+                <button onclick="updateScore('player2', -1)">-1</button>
+            </div>
+            <div class="player">
+                <label for="player3">玩家3:</label>
+                <input type="number" id="player3" value="0">
+                <button onclick="updateScore('player3', 1)">+1</button>
+                <button onclick="updateScore('player3', -1)">-1</button>
+            </div>
+            <div class="player">
+                <label for="player4">玩家4:</label>
+                <input type="number" id="player4" value="0">
+                <button onclick="updateScore('player4', 1)">+1</button>
+                <button onclick="updateScore('player4', -1)">-1</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
