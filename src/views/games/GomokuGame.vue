@@ -1,110 +1,122 @@
 <template>
-  <Layout>
-    <div class="gomoku-game">
-      <el-card class="game-card">
-        <template #header>
-          <div class="card-header">
-            <h2>⚫⚪ 五子棋游戏</h2>
-            <div class="game-controls">
-              <el-button type="primary" @click="startNewGame">新游戏</el-button>
-              <el-button type="warning" @click="resetGame">重新开始</el-button>
-              <span class="current-player" :class="currentPlayer">
-                当前回合: {{ currentPlayer === "black" ? "黑子" : "白子" }}
-              </span>
-              <span class="game-status">{{ gameStatus }}</span>
-            </div>
-          </div>
-        </template>
-
-        <div class="game-container">
-          <div class="game-board-container">
-            <div class="game-board" ref="gameBoard">
-              <!-- 棋盘网格 -->
-              <div class="board-grid">
-                <div v-for="row in 15" :key="row" class="board-row">
-                  <div
-                    v-for="col in 15"
-                    :key="col"
-                    class="board-cell"
-                    :class="{
-                      'has-stone': board[row - 1][col - 1] !== '',
-                      'last-move':
-                        lastMove &&
-                        lastMove.row === row - 1 &&
-                        lastMove.col === col - 1,
-                    }"
-                    @click="placeStone(row - 1, col - 1)"
+  <div class="common-layout">
+    <el-container>
+      <el-header>Header</el-header>
+      <el-container>
+        <el-aside width="200px">
+          <topnav />
+        </el-aside>
+        <el-main>
+          <el-card class="game-card">
+            <template #header>
+              <div class="card-header">
+                <h2>⚫⚪ 五子棋游戏</h2>
+                <div class="game-controls">
+                  <el-button type="primary" @click="startNewGame"
+                    >新游戏</el-button
                   >
+                  <el-button type="warning" @click="resetGame"
+                    >重新开始</el-button
+                  >
+                  <span class="current-player" :class="currentPlayer">
+                    当前回合: {{ currentPlayer === "black" ? "黑子" : "白子" }}
+                  </span>
+                  <span class="game-status">{{ gameStatus }}</span>
+                </div>
+              </div>
+            </template>
+
+            <div class="game-container">
+              <div class="game-board-container">
+                <div class="game-board" ref="gameBoard">
+                  <!-- 棋盘网格 -->
+                  <div class="board-grid">
+                    <div v-for="row in 15" :key="row" class="board-row">
+                      <div
+                        v-for="col in 15"
+                        :key="col"
+                        class="board-cell"
+                        :class="{
+                          'has-stone': board[row - 1][col - 1] !== '',
+                          'last-move':
+                            lastMove &&
+                            lastMove.row === row - 1 &&
+                            lastMove.col === col - 1,
+                        }"
+                        @click="placeStone(row - 1, col - 1)"
+                      >
+                        <div
+                          v-if="board[row - 1][col - 1] === 'black'"
+                          class="stone black-stone"
+                        ></div>
+                        <div
+                          v-else-if="board[row - 1][col - 1] === 'white'"
+                          class="stone white-stone"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="game-info">
+                <el-alert title="游戏规则" type="info" :closable="false">
+                  <p>黑白双方轮流在棋盘上放置棋子</p>
+                  <p>先在横、竖、斜方向连成五子者获胜</p>
+                  <p>黑子先行，点击棋盘交叉点放置棋子</p>
+                </el-alert>
+
+                <div class="move-history">
+                  <h4>落子记录</h4>
+                  <div class="history-list">
                     <div
-                      v-if="board[row - 1][col - 1] === 'black'"
-                      class="stone black-stone"
-                    ></div>
-                    <div
-                      v-else-if="board[row - 1][col - 1] === 'white'"
-                      class="stone white-stone"
-                    ></div>
+                      v-for="(move, index) in moveHistory"
+                      :key="index"
+                      class="history-item"
+                      :class="move.player"
+                    >
+                      <span
+                        >第{{ index + 1 }}手:
+                        {{ move.player === "black" ? "黑子" : "白子" }}</span
+                      >
+                      <span
+                        >({{ String.fromCharCode(65 + move.col)
+                        }}{{ move.row + 1 }})</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="game-stats">
+                  <h4>游戏统计</h4>
+                  <div class="stats-grid">
+                    <div class="stat-item">
+                      <span class="label">总步数:</span>
+                      <span class="value">{{ moveHistory.length }}</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="label">黑子:</span>
+                      <span class="value">{{ blackStones }}</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="label">白子:</span>
+                      <span class="value">{{ whiteStones }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="game-info">
-            <el-alert title="游戏规则" type="info" :closable="false">
-              <p>黑白双方轮流在棋盘上放置棋子</p>
-              <p>先在横、竖、斜方向连成五子者获胜</p>
-              <p>黑子先行，点击棋盘交叉点放置棋子</p>
-            </el-alert>
-
-            <div class="move-history">
-              <h4>落子记录</h4>
-              <div class="history-list">
-                <div
-                  v-for="(move, index) in moveHistory"
-                  :key="index"
-                  class="history-item"
-                  :class="move.player"
-                >
-                  <span
-                    >第{{ index + 1 }}手:
-                    {{ move.player === "black" ? "黑子" : "白子" }}</span
-                  >
-                  <span
-                    >({{ String.fromCharCode(65 + move.col)
-                    }}{{ move.row + 1 }})</span
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="game-stats">
-              <h4>游戏统计</h4>
-              <div class="stats-grid">
-                <div class="stat-item">
-                  <span class="label">总步数:</span>
-                  <span class="value">{{ moveHistory.length }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="label">黑子:</span>
-                  <span class="value">{{ blackStones }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="label">白子:</span>
-                  <span class="value">{{ whiteStones }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </el-card>
-    </div>
-  </Layout>
+          </el-card>
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import Layout from "../../components/Layout.vue";
+import Topnav from "../topnav/TopNav.vue";
 
 // 游戏状态
 const gameBoard = ref(null);

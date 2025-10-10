@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import Topnav from "../views/topnav/TopNav.vue";
+import Topnav from "../topnav/TopNav.vue";
 </script>
 
 <style scoped></style>

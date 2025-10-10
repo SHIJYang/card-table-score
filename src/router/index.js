@@ -10,22 +10,19 @@ const routes = [
     {
         path: '/snake',
         name: 'Snake',
-        component: () => import('../views/games/snake/SnakeGame.vue')
+        component: () => import('../views/games/SnakeGame.vue')
     },
     {
         path: '/gomoku',
         name: 'Gomoku',
-        component: () => import('../views/games/gomoku/GomokuGame.vue')
+        component: () => import('../views/games/GomokuGame.vue')
     },
     {
         path: '/score',
         name: 'Score',
-        component: () => import('../views/games/score/ScoreSystem.vue')
+        component: () => import('../views/games/ScoreSystem.vue')
     },
-    {
-        path: '/:pathMatch(.*)*',
-        redirect: '/'
-    }
+
 ]
 
 const router = createRouter({

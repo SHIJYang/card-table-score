@@ -1,58 +1,67 @@
 <template>
-  <Layout>
-    <div class="snake-game">
-      <el-card class="game-card">
-        <template #header>
-          <div class="card-header">
-            <h2>🐍 贪吃蛇游戏</h2>
-            <div class="game-controls">
-              <el-button
-                type="primary"
-                @click="startGame"
-                :disabled="isPlaying"
-              >
-                {{ isPlaying ? "游戏中" : "开始游戏" }}
-              </el-button>
-              <el-button type="warning" @click="resetGame">重新开始</el-button>
-              <span class="score">得分: {{ score }}</span>
-              <span class="level">等级: {{ level }}</span>
-            </div>
-          </div>
-        </template>
+  <div class="common-layout">
+    <el-container>
+      <el-header>Header</el-header>
+      <el-container>
+        <el-aside width="200px">
+          <topnav />
+        </el-aside>
+        <el-main>
+          <el-card class="game-card">
+            <template #header>
+              <div class="card-header">
+                <h2>🐍 贪吃蛇游戏</h2>
+                <div class="game-controls">
+                  <el-button
+                    type="primary"
+                    @click="startGame"
+                    :disabled="isPlaying"
+                  >
+                    {{ isPlaying ? "游戏中" : "开始游戏" }}
+                  </el-button>
+                  <el-button type="warning" @click="resetGame"
+                    >重新开始</el-button
+                  >
+                  <span class="score">得分: {{ score }}</span>
+                  <span class="level">等级: {{ level }}</span>
+                </div>
+              </div>
+            </template>
 
-        <div class="game-container">
-          <div class="game-board" ref="gameBoard">
-            <!-- 蛇和食物通过CSS绘制 -->
-          </div>
+            <div class="game-container">
+              <div class="game-board" ref="gameBoard">
+                <!-- 蛇和食物通过CSS绘制 -->
+              </div>
 
-          <div class="game-info">
-            <el-alert title="游戏说明" type="info" :closable="false">
-              <p>使用键盘方向键控制蛇的移动</p>
-              <p>吃到食物得分，碰到墙壁或自己游戏结束</p>
-              <p>每得10分升一级，速度加快</p>
-            </el-alert>
+              <div class="game-info">
+                <el-alert title="游戏说明" type="info" :closable="false">
+                  <p>使用键盘方向键控制蛇的移动</p>
+                  <p>吃到食物得分，碰到墙壁或自己游戏结束</p>
+                  <p>每得10分升一级，速度加快</p>
+                </el-alert>
 
-            <div class="controls-info">
-              <h4>控制键:</h4>
-              <div class="key-grid">
-                <div class="key-item">↑</div>
-                <div class="key-item">↓</div>
-                <div class="key-item">←</div>
-                <div class="key-item">→</div>
+                <div class="controls-info">
+                  <h4>控制键:</h4>
+                  <div class="key-grid">
+                    <div class="key-item">↑</div>
+                    <div class="key-item">↓</div>
+                    <div class="key-item">←</div>
+                    <div class="key-item">→</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </el-card>
-    </div>
-  </Layout>
+          </el-card>
+        </el-main>
+      </el-container>
+    </el-container>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
-import Layout from "../../components/Layout.vue";
-
+import Topnav from "../topnav/TopNav.vue";
 // 游戏状态
 const isPlaying = ref(false);
 const score = ref(0);

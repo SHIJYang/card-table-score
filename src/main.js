@@ -15,9 +15,9 @@ app.use(ElementPlus)
 app.use(router)
 
 // 初始化store
-import { useGameStore } from './stores/gameStore'
-const gameStore = useGameStore()
-gameStore.initialize()
+
+
+
 
 // 挂载应用
 app.mount('#app')
