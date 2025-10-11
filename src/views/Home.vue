@@ -3,7 +3,7 @@
     <el-container>
       <el-header>Header</el-header>
       <el-container>
-        <el-aside width="200px">
+        <el-aside width="auto">
           <topnav />
         </el-aside>
         <el-main> 点击游戏开始 </el-main>

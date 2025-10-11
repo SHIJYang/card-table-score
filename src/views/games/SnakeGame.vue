@@ -3,7 +3,7 @@
     <el-container>
       <el-header>Header</el-header>
       <el-container>
-        <el-aside width="200px">
+        <el-aside width="auto">
           <topnav />
         </el-aside>
         <el-main>
@@ -499,28 +499,5 @@ onUnmounted(() => {
   font-weight: bold;
   color: #2196f3;
   border: 1px solid #bbdefb;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .game-container {
-    flex-direction: column;
-  }
-
-  .game-board-wrapper {
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .game-board {
-    transform: scale(0.8);
-    transform-origin: top left;
-  }
 }
 </style>

@@ -22,6 +22,11 @@ const routes = [
         name: 'Score',
         component: () => import('../views/games/ScoreSystem.vue')
     },
+    {
+        path: '/try',
+        name: 'Try',
+        component: () => import('../views/games/try.vue')
+    },
 
 ]
 
