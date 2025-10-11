@@ -6,7 +6,7 @@
         <el-aside width="auto">
           <topnav />
         </el-aside>
-        <el-main>
+        <el-main style="padding: 0">
           <el-card class="game-card">
             <template #header>
               <div class="card-header">

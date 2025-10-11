@@ -6,7 +6,7 @@
         <el-aside width="auto">
           <topnav />
         </el-aside>
-        <el-main>
+        <el-main style="padding: 0">
           <div class="score-system">
             <el-row :gutter="24">
               <el-col :span="24">

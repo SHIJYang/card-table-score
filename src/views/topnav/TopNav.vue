@@ -1,15 +1,4 @@
 <template>
-  <el-switch
-    v-model="isCollapse"
-    style="
-      margin-left: 0px;
-      --el-switch-off-color: #13ce66;
-      --el-switch-on-color: #ff4949;
-    "
-    inline-prompt
-    active-text="收起来，挡我游戏了"
-    inactive-text="展开？"
-  />
   <el-menu
     default-active="1"
     class="el-menu-vertical-demo"
@@ -22,7 +11,6 @@
       <el-icon><icon-menu /></el-icon>
       <span>开始游戏</span>
     </el-menu-item>
-
     <el-menu-item index="/score">
       <el-icon><setting /></el-icon>
       <span>计分板</span>
@@ -37,9 +25,11 @@
     </el-menu-item>
     <el-menu-item index="/try">
       <el-icon><setting /></el-icon>
-      <span>Navigator 4</span>
+      <span>Try</span>
     </el-menu-item>
-    <el-menu-item index=""> </el-menu-item>
+    <el-menu-item @click="isCollapse = !isCollapse"
+      >展开<span>？不，收起来</span>
+    </el-menu-item>
   </el-menu>
 </template>
 

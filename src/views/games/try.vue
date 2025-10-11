@@ -6,7 +6,7 @@
         <el-aside width="auto">
           <topnav />
         </el-aside>
-        <el-main> 点击游戏开始 </el-main>
+        <el-main style="padding: 0"> 点击游戏开始 </el-main>
       </el-container>
     </el-container>
   </div>
