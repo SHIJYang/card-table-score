@@ -22,6 +22,9 @@
                   <el-button type="warning" @click="resetGame"
                     >重新开始</el-button
                   >
+                  <el-button type="info" @click="pauseGame" v-if="isPlaying">
+                    {{ isPaused ? "继续游戏" : "暂停游戏" }}
+                  </el-button>
                   <span class="score">得分: {{ score }}</span>
                   <span class="level">等级: {{ level }}</span>
                 </div>
@@ -29,8 +32,22 @@
             </template>
 
             <div class="game-container">
-              <div class="game-board" ref="gameBoard">
-                <!-- 蛇和食物通过CSS绘制 -->
+              <div class="game-board-wrapper">
+                <div class="game-board" ref="gameBoardRef" id="game-board">
+                  <!-- 游戏网格 -->
+                  <div v-for="y in gridRows" :key="`row-${y}`" class="grid-row">
+                    <div
+                      v-for="x in gridCols"
+                      :key="`cell-${x}-${y}`"
+                      class="grid-cell"
+                      :class="{
+                        'snake-segment': isSnakeSegment(x, y),
+                        'snake-head': isSnakeHead(x, y),
+                        food: isFood(x, y),
+                      }"
+                    ></div>
+                  </div>
+                </div>
               </div>
 
               <div class="game-info">
@@ -47,7 +64,18 @@
                     <div class="key-item">↓</div>
                     <div class="key-item">←</div>
                     <div class="key-item">→</div>
+                    <div class="key-item">空格</div>
+                    <div class="key-desc">上</div>
+                    <div class="key-desc">下</div>
+                    <div class="key-desc">左</div>
+                    <div class="key-desc">右</div>
+                    <div class="key-desc">暂停/继续</div>
                   </div>
+                </div>
+
+                <!-- 添加游戏记录显示 -->
+                <div class="game-record" v-if="highScore > 0">
+                  <h4>最高记录: {{ highScore }}</h4>
                 </div>
               </div>
             </div>
@@ -62,60 +90,121 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 import Topnav from "../topnav/TopNav.vue";
-// 游戏状态
-const isPlaying = ref(false);
-const score = ref(0);
-const level = ref(1);
-const gameBoard = ref(null);
 
 // 游戏参数
-const gridSize = 20;
+const GRID_SIZE = 40; // 网格大小（像素）
+const BOARD_WIDTH = 600; // 游戏板宽度
+const BOARD_HEIGHT = 600; // 游戏板高度
+
+// 计算网格行列数
+const gridCols = Math.floor(BOARD_WIDTH / GRID_SIZE);
+const gridRows = Math.floor(BOARD_HEIGHT / GRID_SIZE);
+
+// 游戏状态
+const isPlaying = ref(false); // 游戏是否正在进行
+const isPaused = ref(false); // 游戏是否暂停
+const score = ref(0); // 当前得分
+const level = ref(1); // 当前等级
+const highScore = ref(0); // 最高分记录
+const gameBoardRef = ref(null); // 游戏画板引用
+
+// 游戏参数
 const gameSpeed = ref(150); // 初始速度
-let gameInterval = null;
-let direction = "right";
-let nextDirection = "right";
+let gameInterval = null; // 游戏循环定时器
+let direction = "right"; // 当前移动方向
+let nextDirection = "right"; // 下一个移动方向
 
 // 蛇和食物的位置
-const snake = ref([{ x: 10, y: 10 }]);
-const food = ref({ x: 15, y: 15 });
+const snake = ref([{ x: 8, y: 5 }]); // 蛇身体数组，初始位置
+const food = ref({ x: 15, y: 8 }); // 食物位置
+
+// 初始化游戏 - 从本地存储加载最高分
+onMounted(() => {
+  const savedHighScore = localStorage.getItem("snakeHighScore");
+  if (savedHighScore) {
+    highScore.value = parseInt(savedHighScore);
+  }
+});
+
+// 检查某个坐标是否是蛇身
+const isSnakeSegment = (x, y) => {
+  return snake.value.some((segment) => segment.x === x && segment.y === y);
+};
+
+// 检查某个坐标是否是蛇头
+const isSnakeHead = (x, y) => {
+  const head = snake.value[0];
+  return head.x === x && head.y === y;
+};
+
+// 检查某个坐标是否是食物
+const isFood = (x, y) => {
+  return food.value.x === x && food.value.y === y;
+};
 
 // 开始游戏
 const startGame = () => {
   if (isPlaying.value) return;
 
   isPlaying.value = true;
+  isPaused.value = false;
   score.value = 0;
   level.value = 1;
   gameSpeed.value = 150;
   direction = "right";
   nextDirection = "right";
-  snake.value = [{ x: 10, y: 10 }];
-  generateFood();
+  snake.value = [{ x: 8, y: 5 }]; // 重置蛇的位置
+  generateFood(); // 生成新食物
 
+  // 设置游戏循环
   gameInterval = setInterval(gameLoop, gameSpeed.value);
   ElMessage.success("游戏开始！使用方向键控制");
+};
+
+// 暂停/继续游戏
+const pauseGame = () => {
+  if (!isPlaying.value) return;
+
+  isPaused.value = !isPaused.value;
+
+  if (isPaused.value) {
+    clearInterval(gameInterval);
+    ElMessage.info("游戏已暂停");
+  } else {
+    gameInterval = setInterval(gameLoop, gameSpeed.value);
+    ElMessage.success("游戏继续");
+  }
 };
 
 // 重置游戏
 const resetGame = () => {
   clearInterval(gameInterval);
   isPlaying.value = false;
+  isPaused.value = false;
   startGame();
 };
 
 // 生成食物
 const generateFood = () => {
   let newFood;
+  let attempts = 0;
+  const maxAttempts = 100; // 防止无限循环
+
   do {
+    // 随机生成食物位置，确保在游戏区域内
     newFood = {
-      x: Math.floor(
-        Math.random() * (gameBoard.value?.clientWidth / gridSize || 30)
-      ),
-      y: Math.floor(
-        Math.random() * (gameBoard.value?.clientHeight / gridSize || 30)
-      ),
+      x: Math.floor(Math.random() * gridCols),
+      y: Math.floor(Math.random() * gridRows),
     };
+    attempts++;
+
+    // 如果尝试次数过多，说明可能没有空位了
+    if (attempts > maxAttempts) {
+      console.warn("无法生成食物，游戏区域已满");
+      return;
+    }
   } while (
+    // 确保食物不会生成在蛇身上
     snake.value.some(
       (segment) => segment.x === newFood.x && segment.y === newFood.y
     )
@@ -126,9 +215,9 @@ const generateFood = () => {
 
 // 游戏主循环
 const gameLoop = () => {
-  if (!isPlaying.value) return;
+  if (!isPlaying.value || isPaused.value) return;
 
-  direction = nextDirection;
+  direction = nextDirection; // 更新方向
 
   // 移动蛇头
   const head = { ...snake.value[0] };
@@ -158,83 +247,65 @@ const gameLoop = () => {
 
   // 检查是否吃到食物
   if (head.x === food.value.x && head.y === food.value.y) {
-    score.value += 10;
+    score.value += 10; // 吃到食物得分
+
+    // 每得100分升一级，速度加快
     if (score.value % 100 === 0) {
       level.value++;
-      gameSpeed.value = Math.max(50, gameSpeed.value - 10);
+      gameSpeed.value = Math.max(50, gameSpeed.value - 10); // 速度加快，但最低50ms
       clearInterval(gameInterval);
       gameInterval = setInterval(gameLoop, gameSpeed.value);
       ElMessage.info(`升级到 ${level.value} 级！速度加快`);
     }
-    generateFood();
+    generateFood(); // 生成新食物
   } else {
+    // 如果没有吃到食物，移除蛇尾
     snake.value.pop();
   }
-
-  // 更新游戏画面
-  updateGameBoard();
 };
 
 // 检查碰撞
 const checkCollision = (head) => {
   // 检查墙壁碰撞
-  const boardWidth = Math.floor(
-    (gameBoard.value?.clientWidth || 600) / gridSize
-  );
-  const boardHeight = Math.floor(
-    (gameBoard.value?.clientHeight || 400) / gridSize
-  );
-
-  if (
-    head.x < 0 ||
-    head.x >= boardWidth ||
-    head.y < 0 ||
-    head.y >= boardHeight
-  ) {
-    return true;
+  if (head.x < 0 || head.x >= gridCols || head.y < 0 || head.y >= gridRows) {
+    return true; // 碰到墙壁
   }
 
-  // 检查自身碰撞
-  return snake.value.some(
-    (segment) => segment.x === head.x && segment.y === head.y
-  );
+  // 检查自身碰撞 - 跳过蛇头检查
+  return snake.value
+    .slice(1)
+    .some((segment) => segment.x === head.x && segment.y === head.y);
 };
 
 // 游戏结束
 const gameOver = () => {
   isPlaying.value = false;
   clearInterval(gameInterval);
-  ElMessage.error(`游戏结束！最终得分: ${score.value}`);
-};
 
-// 更新游戏画面
-const updateGameBoard = () => {
-  if (!gameBoard.value) return;
-
-  const board = gameBoard.value;
-  board.innerHTML = "";
-
-  // 绘制蛇
-  snake.value.forEach((segment, index) => {
-    const snakeSegment = document.createElement("div");
-    snakeSegment.className = `snake-segment ${index === 0 ? "snake-head" : ""}`;
-    snakeSegment.style.left = `${segment.x * gridSize}px`;
-    snakeSegment.style.top = `${segment.y * gridSize}px`;
-    board.appendChild(snakeSegment);
-  });
-
-  // 绘制食物
-  const foodElement = document.createElement("div");
-  foodElement.className = "food";
-  foodElement.style.left = `${food.value.x * gridSize}px`;
-  foodElement.style.top = `${food.value.y * gridSize}px`;
-  board.appendChild(foodElement);
+  // 更新最高分记录
+  if (score.value > highScore.value) {
+    highScore.value = score.value;
+    localStorage.setItem("snakeHighScore", score.value.toString());
+    ElMessage.success(`新纪录！最终得分: ${score.value}`);
+  } else {
+    ElMessage.error(`游戏结束！最终得分: ${score.value}`);
+  }
 };
 
 // 键盘控制
 const handleKeyPress = (event) => {
-  if (!isPlaying.value) return;
+  // 空格键控制暂停/继续
+  if (event.key === " " || event.key === "Spacebar") {
+    event.preventDefault(); // 防止页面滚动
+    if (isPlaying.value) {
+      pauseGame();
+    }
+    return;
+  }
 
+  if (!isPlaying.value || isPaused.value) return;
+
+  // 方向键控制蛇的移动
   switch (event.key) {
     case "ArrowUp":
       if (direction !== "down") nextDirection = "up";
@@ -254,9 +325,14 @@ const handleKeyPress = (event) => {
 // 组件挂载和卸载
 onMounted(() => {
   window.addEventListener("keydown", handleKeyPress);
-  // 初始化游戏画面
+
+  // 确保DOM渲染完成后再调整尺寸
   setTimeout(() => {
-    updateGameBoard();
+    const board = document.getElementById("game-board");
+    if (board) {
+      board.style.width = `${BOARD_WIDTH}px`;
+      board.style.height = `${BOARD_HEIGHT}px`;
+    }
   }, 100);
 });
 
@@ -267,163 +343,184 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.snake-game {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
 .game-card {
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-}
-
-.card-header h2 {
-  margin: 0;
-  color: var(--text-color);
-  font-size: 24px;
+  flex-wrap: wrap;
 }
 
 .game-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 .score,
 .level {
   font-weight: bold;
   font-size: 16px;
-  color: var(--primary-color);
 }
 
 .game-container {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-  padding: 20px;
+  display: flex;
+  gap: 20px;
+  flex-direction: row;
+}
+
+.game-board-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  border: 2px solid #333;
+  padding: 10px;
+  border-radius: 8px;
 }
 
 .game-board {
-  width: 100%;
-  height: 400px;
-  background: #f0f0f0;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(v-bind(gridCols), 1fr);
+  grid-template-rows: repeat(v-bind(gridRows), 1fr);
+  gap: 2px;
+  background-color: #ccc;
   position: relative;
-  overflow: hidden;
+  border: 1px solid #999;
+  border-radius: 4px;
+}
+
+.grid-cell {
+  aspect-ratio: 1;
+  background-color: #fff;
+  border-radius: 5px;
+  transition: background-color 0.1s ease;
 }
 
 .snake-segment {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  background: var(--success-color);
-  border-radius: 3px;
-  transition: all 0.1s ease;
+  background-color: #4caf50;
+  border-radius: 6px;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
 }
 
 .snake-head {
-  background: var(--primary-color);
-  border-radius: 5px;
+  background-color: #2e7d32;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
+}
+
+.snake-head::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+  border-radius: 50%;
+  top: 6px;
+  left: 6px;
+  box-shadow: 2px 2px 0 #fff;
+}
+
+.snake-head::before {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+  border-radius: 50%;
+  top: 6px;
+  right: 6px;
+  box-shadow: -2px 2px 0 #fff;
 }
 
 .food {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background: var(--danger-color);
+  background: radial-gradient(circle, #ff5722, #d84315);
   border-radius: 50%;
-  animation: pulse 1s infinite;
+  animation: pulse 1s infinite alternate;
+  box-shadow: 0 0 8px rgba(255, 87, 34, 0.8);
 }
 
 @keyframes pulse {
-  0% {
-    transform: scale(1);
+  from {
+    transform: scale(0.8);
+    box-shadow: 0 0 8px rgba(255, 87, 34, 0.8);
   }
-  50% {
+  to {
     transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
+    box-shadow: 0 0 15px rgba(255, 87, 34, 1);
   }
 }
 
 .game-info {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  flex: 1;
+  min-width: 250px;
 }
 
-.controls-info h4 {
-  margin: 0 0 12px 0;
-  color: var(--text-color);
+.controls-info {
+  margin-top: 20px;
 }
 
 .key-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  max-width: 120px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .key-item {
-  width: 40px;
-  height: 40px;
-  background: var(--primary-color);
-  color: white;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: #e0e0e0;
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 10px;
+  text-align: center;
   font-weight: bold;
-  font-size: 16px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.key-desc {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+.game-record {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  color: #2196f3;
+  border: 1px solid #bbdefb;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .game-container {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    flex-direction: column;
   }
 
-  .game-board {
-    height: 300px;
+  .game-board-wrapper {
+    width: 100%;
+    overflow-x: auto;
   }
 
   .card-header {
     flex-direction: column;
-    gap: 12px;
-    text-align: center;
+    align-items: flex-start;
+    gap: 10px;
   }
 
-  .game-controls {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 480px) {
   .game-board {
-    height: 250px;
-  }
-
-  .snake-segment {
-    width: 14px;
-    height: 14px;
-  }
-
-  .food {
-    width: 12px;
-    height: 12px;
+    transform: scale(0.8);
+    transform-origin: top left;
   }
 }
 </style>
