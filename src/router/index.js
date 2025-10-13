@@ -26,6 +26,10 @@ const routes = [
         path: '/try',
         name: 'Try',
         component: () => import('../views/games/try.vue')
+    }, {
+        path: '/plantandjs',
+        name: 'Plantandjs',
+        component: () => import('../views/games/pvz/Plantandjs.vue')
     },
 
 ]

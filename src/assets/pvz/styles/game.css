@@ -1,0 +1,39 @@
+.lawn {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px;
+    background: #7cb342;
+}
+
+.lawn-row {
+    display: flex;
+    gap: 2px;
+}
+
+.cell {
+    width: 80px;
+    height: 80px;
+    background: #8bc34a;
+    border: 1px solid #689f38;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.plant {
+    font-size: 32px;
+    z-index: 2;
+}
+
+.bullet,
+.zombie {
+    position: absolute;
+    top: 20px;
+    font-size: 24px;
+}
+
+.zombie.damaged {
+    opacity: 0.6;
+}

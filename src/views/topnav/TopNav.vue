@@ -27,6 +27,10 @@
       <el-icon><setting /></el-icon>
       <span>Try</span>
     </el-menu-item>
+    <el-menu-item index="/plantandjs">
+      <el-icon><setting /></el-icon>
+      <span>植物大战僵尸</span>
+    </el-menu-item>
     <el-menu-item @click="isCollapse = !isCollapse"
       >展开<span>？不，收起来</span>
     </el-menu-item>
