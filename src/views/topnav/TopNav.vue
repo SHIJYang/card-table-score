@@ -20,7 +20,7 @@
       <span>五子棋</span>
     </el-menu-item>
     <el-menu-item index="/snake">
-      <el-icon><setting /></el-icon>
+      <el-icon>🐍</el-icon>
       <span>贪吃蛇</span>
     </el-menu-item>
     <el-menu-item index="/try">

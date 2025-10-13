@@ -22,6 +22,7 @@
             </template>
 
             <div class="game-container">
+              
               <!-- 游戏面板 -->
               <div class="game-board-wrapper">
                 <div class="game-board" ref="gameBoardRef" id="game-board">
@@ -39,6 +40,7 @@
                         'snake-segment': isSnakeSegment(x, y),
                         'snake-head': isSnakeHead(x, y),
                         food: isFood(x, y),
+                        'border-cell': isBorderCell(x, y)
                       }"
                     ></div>
                   </div>
@@ -90,20 +92,7 @@
 
               <!-- 游戏说明 -->
               <div class="game-info">
-                <el-alert
-                  title="玩法说明"
-                  type="info"
-                  :closable="false"
-                  class="info-alert"
-                >
-                  <p>吃到食物得分，撞墙或自己则游戏结束</p>
-                  <p>每得 100 分升一级，速度加快</p>
-                  <p>PC：方向键控制；手机：点击方向按钮</p>
-                </el-alert>
-              </div>
-
-              <!-- 操作按钮（通用） -->
-              <div class="action-buttons">
+                 <div class="action-buttons">
                 <el-button
                   type="primary"
                   @click="startGame"
@@ -115,7 +104,25 @@
                 <el-button type="warning" @click="resetGame" size="large"
                   >重新开始</el-button
                 >
+                
               </div>
+                <el-alert
+                  title="玩法说明"
+                  type="info"
+                  :closable="false"
+                  class="info-alert"
+                >
+                  <p>吃到食物得分，撞墙或自己则游戏结束</p>
+                  <p>每得 100 分升一级，速度加快</p>
+                  <p>PC：方向键控制；手机：点击方向按钮</p>
+                  
+                </el-alert>
+
+ 
+              </div>
+
+              <!-- 操作按钮（通用） -->
+              
             </div>
           </el-card>
         </el-main>
@@ -139,7 +146,7 @@ import {
 
 // 游戏配置
 const GRID_SIZE = 40; // 逻辑网格数（非像素）
-const BOARD_CELLS = 40; // 20x20 网格
+const BOARD_CELLS = 40; // 40x40 网格
 
 const gridCols = BOARD_CELLS;
 const gridRows = BOARD_CELLS;
@@ -155,6 +162,8 @@ const level = ref(1);
 const highScore = ref(0);
 const gameBoardRef = ref(null);
 
+const lastCollision = ref(null);
+
 const gameSpeed = ref(150);
 let gameInterval = null;
 let direction = "right";
@@ -162,6 +171,11 @@ let nextDirection = "right";
 
 const snake = ref([{ x: 8, y: 5 }]);
 const food = ref({ x: 15, y: 8 });
+
+// 判断是否为边界单元格
+const isBorderCell = (x, y) => {
+  return x === 0 || x === gridCols +1  || y === 0 || y === gridRows +1;
+};
 
 // 初始化最高分
 onMounted(() => {
@@ -200,6 +214,7 @@ const startGame = () => {
   direction = "right";
   nextDirection = "right";
   snake.value = [{ x: 8, y: 5 }];
+  lastCollision.value = null;
   generateFood();
   clearInterval(gameInterval);
   gameInterval = setInterval(gameLoop, gameSpeed.value);
@@ -235,7 +250,7 @@ const generateFood = () => {
       y: Math.floor(Math.random() * gridRows),
     };
     attempts++;
-    if (attempts > 100) return;
+    if (attempts > 400) return;
   } while (isSnakeSegment(newFood.x, newFood.y));
   food.value = newFood;
 };
@@ -262,7 +277,9 @@ const gameLoop = () => {
       break;
   }
 
-  if (checkCollision(head)) {
+  const collisionResult = checkCollision(head);
+  if (collisionResult) {
+    lastCollision.value = collisionResult;
     gameOver();
     return;
   }
@@ -284,10 +301,20 @@ const gameLoop = () => {
   }
 };
 
+// 修复边界判定 - 这是关键修复！
 const checkCollision = (head) => {
-  if (head.x < 0 || head.x >= gridCols || head.y < 0 || head.y >= gridRows)
-    return true;
-  return snake.value.slice(1).some((s) => s.x === head.x && s.y === head.y);
+  // 检查墙壁碰撞 - 网格坐标从 0 到 gridCols-1 和 0 到 gridRows-1
+  if (head.x < 1 || head.x >= gridCols+1 || head.y < 1 || head.y >= gridRows+1) {
+    return `撞墙！位置: (${head.x}, ${head.y})，边界: X:0-${gridCols-1}, Y:0-${gridRows-1}`;
+  }
+  
+  // 检查自身碰撞 (跳过头部)
+  const bodyCollision = snake.value.slice(1).some((s) => s.x === head.x && s.y === head.y);
+  if (bodyCollision) {
+    return `撞到自己身体！位置: (${head.x}, ${head.y})`;
+  }
+  
+  return null;
 };
 
 const gameOver = () => {
@@ -339,7 +366,7 @@ onUnmounted(() => {
 .game-card {
   margin: 0 auto;
   width: 95%;
-  max-width: 600px;
+  max-width: 1000px;
 }
 
 .card-header {
@@ -360,14 +387,18 @@ onUnmounted(() => {
 
 .game-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
+
+
 
 .game-board-wrapper {
   width: 95%;
   max-width: 600px;
+  min-width: 300px;
   aspect-ratio: 1 / 1;
   background: #f0f0f0;
   border: 4px solid #333;
@@ -379,17 +410,26 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: grid;
-
-  gap: 1px;
-  background-color: #c2c2c2;
+  
 }
+.game-info {
+  display: flex;
 
+  flex-direction: column;
+  min-width: 250px;
+}
 .grid-cell {
   background-color: #fff;
   border-radius: 2px;
   height: 100%;
   width: 100%;
   transition: background-color 0.1s;
+}
+
+/* 边界单元格样式 */
+.border-cell {
+  background-color: #e0e0e0 !important;
+  border: 1px solid #bdbdbd;
 }
 
 .snake-segment {
@@ -436,33 +476,51 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 20px;  /* 增加垂直间距 */
+  margin: 20px 0;  /* 添加上下外边距 */
 }
 
 .control-row {
   display: flex;
-  gap: 20px;
+  gap: 30px;  /* 增加按钮之间的间距 */
   justify-content: center;
 }
 
 .mobile-controls .el-button {
-  width: 50px;
-  height: 50px;
-  font-size: 20px;
+  width: 70px;  /* 增加按钮宽度 */
+  height: 70px;  /* 增加按钮高度 */
+  font-size: 24px;  /* 增加图标大小 */
+  border: 2px solid #dcdfe6;  /* 添加边框 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  /* 添加阴影效果 */
+  transition: all 0.3s ease;  /* 添加过渡效果 */
+}
+
+.mobile-controls .el-button:active {
+  transform: scale(0.95);  /* 点击时的缩放效果 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-controls .el-button:not(:disabled):hover {
+  background-color: #f5f7fa;  /* 悬停效果 */
+  border-color: #409eff;
 }
 
 /* 通用操作按钮 */
 .action-buttons {
   display: flex;
   gap: 12px;
-
-  justify-content: center;
+  justify-content: space-around;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .info-alert {
   width: 100%;
   font-size: 14px;
+  display: flex;
+  gap: 12px;
+  
+  
 }
 
 /* 响应式：PC 隐藏虚拟按钮 */
