@@ -2,7 +2,7 @@
   <span
     class="zombie"
     :class="{ damaged: zombie.isDamaged }"
-    :style="{ left: zombie.x + 'px' }"
+    :style="{ left: zombie.x + 'px', top: '30px', position: 'absolute' }"
     >{{ zombie.emoji }}</span
   >
 </template>
@@ -15,11 +15,10 @@ const props = defineProps({
 
 <style scoped>
 .zombie {
-  position: absolute;
-  top: 30px;
   font-size: 28px;
   transition: left 0.1s linear;
   z-index: 4;
+  pointer-events: none;
 }
 .zombie.damaged {
   opacity: 0.6;

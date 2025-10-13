@@ -18,7 +18,7 @@
       :key="sunToken.id"
       class="sun-token"
       :data-sun-id="sunToken.id"
-      :style="{ left: sunToken.x + 'px', top: sunToken.y + 'px' }"
+      :style="{ left: sunToken.x + 'px', top: sunToken.y + 'px', zIndex: 20 }"
       @click.stop="$emit('collect-sun', sunToken.id)"
     >
       ☀️ {{ sunToken.value }}

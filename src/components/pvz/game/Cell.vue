@@ -2,7 +2,7 @@
 <template>
   <div class="cell" @click="$emit('click')">
     <slot name="plant" :plant="plant">
-      <Plant v-if="plant" :type="plant.type" />
+      <Plant v-if="plant" :type="plant.type" :emoji="plant.emoji" />
     </slot>
     <slot name="bullets" :bullets="bullets">
       <Bullet v-for="bullet in bullets" :key="bullet.id" :bullet="bullet" />
@@ -23,6 +23,7 @@
           left: 10px;
           font-size: 22px;
           cursor: pointer;
+          z-index: 10;
         "
         >☀️</span
       >

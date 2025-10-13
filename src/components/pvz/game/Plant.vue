@@ -4,6 +4,7 @@
 
 <script setup>
 import { computed } from "vue";
+import { registeredPlants } from "../../../composables/pvz/plants";
 const props = defineProps({
   type: String,
   emoji: {
@@ -11,11 +12,10 @@ const props = defineProps({
     default: "",
   },
 });
-const emojiMap = {
-  sunflower: "🌻",
-  peashooter: "🌱",
-};
-const emoji = computed(() => props.emoji || emojiMap[props.type] || "🌱");
+const emoji = computed(
+  () =>
+    props.emoji || (props.type && registeredPlants[props.type]?.emoji) || "🌱"
+);
 </script>
 
 <style scoped>

@@ -1,118 +1,76 @@
 // src/composables/pvz/useGameLogic.js
 import { ref, reactive, computed, onUnmounted } from 'vue'
 import { useTimer } from './useTimer'
-
-// === 植物/僵尸注册表（可动态扩展） ===
-export const registeredPlants = reactive({
-    sunflower: {
-        displayName: '向日葵',
-        cost: 50,
-        emoji: '🌻',
-        cooldown: 5000,
-        onPlace: (row, col, ctx) => {
-            const taskId = ctx.startPeriodicTask(() => {
-                ctx.spawnSun({ row, col })
-            }, 10000)
-            return { taskId }
-        },
-        onRemove: (data, ctx) => {
-            if (data?.taskId) ctx.stopPeriodicTask(data.taskId)
-        }
-    },
-    peashooter: {
-        displayName: '豌豆射手',
-        cost: 100,
-        emoji: '🌱',
-        cooldown: 7500,
-        onPlace: (row, col, ctx) => {
-            const taskId = ctx.startPeriodicTask(() => {
-                ctx.spawnBullet({ row, type: 'pea' })
-            }, 1500)
-            return { taskId }
-        },
-        onRemove: (data, ctx) => {
-            if (data?.taskId) ctx.stopPeriodicTask(data.taskId)
-        }
-    }
-})
-export const registeredZombies = reactive({
-    basic: {
-        displayName: '普通僵尸',
-        emoji: '🧟',
-        hp: 3,
-        speed: 1,
-        reward: 0
-    }
-})
-
-// 动态注册方法
-export function registerPlant(type, config) {
-    registeredPlants[type] = config
-}
-export function registerZombie(type, config) {
-    registeredZombies[type] = config
-}
+import { registeredPlants, registerPlant } from './plants'
+import { registeredZombies, registerZombie } from './zombies'
+import { createEventBus } from './events'
+import { createBullet, bulletTypes } from './bullets'
 
 const ROWS = 5
 const COLS = 9
 const LAWN_WIDTH = COLS * 80
 
+/**
+ * 植物大战僵尸主游戏逻辑
+ * 负责所有状态管理、事件钩子、核心行为
+ * 植物与僵尸通过注册表和事件配对，便于扩展新类型
+ */
 export function useGameLogic() {
+    // 定时任务管理，返回定时器相关方法
     const { startPeriodicTask, stopPeriodicTask, clearAllTasks } = useTimer()
+    // 事件总线，提供 on/emit 事件订阅与触发
+    const { on, emit } = createEventBus()
 
-    // === 状态 ===
-    const sun = ref(50)
+    // --- 游戏状态 ---
+    // 阳光数
+    const sun = ref(500)
+    // 当前选中的植物类型
     const selectedPlant = ref(null)
+    // 游戏是否进行中
     const isRunning = ref(false)
+    // 游戏是否结束
     const gameOver = ref(false)
+    // 是否胜利
     const win = ref(false)
+    // 植物冷却时间戳
     const plantCooldowns = reactive({})
 
+    // --- 网格与动态元素 ---
+    // grid[row][col] 存储植物实例
     const grid = reactive(
         Array.from({ length: ROWS + 1 }, (_, i) =>
             Array.from({ length: COLS + 1 }, () => (i === 0 ? null : null))
         )
     )
+    // 子弹对象数组
     const bullets = reactive([])
+    // 僵尸对象数组
     const zombies = reactive([])
+    // 阳光token对象数组
     const sunTokens = reactive([])
 
-    // === 事件钩子（可扩展）===
-    const hooks = {
-        onGameStart: [],
-        onGameOver: [],
-        onPlantPlaced: [],
-        onZombieSpawned: [],
-        onSunCollected: []
-    }
-    function on(event, fn) {
-        if (hooks[event]) hooks[event].push(fn)
-    }
-    function emit(event, ...args) {
-        if (hooks[event]) hooks[event].forEach(fn => fn(...args))
-    }
-
-    // === 上下文 ===
+    // --- 游戏上下文（供植物/僵尸/子弹行为调用）---
     const gameContext = {
         sun,
         grid,
         startPeriodicTask,
         stopPeriodicTask,
-        spawnBullet,
+        spawnBullet: (bullet) => {
+            bullets.push(bullet)
+        },
         spawnZombie,
-        spawnSun
+        spawnSun,
+        emit,
+        getZombiesInRow: (row) => zombies.filter(z => z.row === row) // 提供给植物判断同行僵尸
     }
 
-    // === 抽象生成函数，便于扩展 ===
-    function spawnBullet({ row, type = 'pea' }) {
-        bullets.push({
-            id: Date.now() + Math.random(),
-            row,
-            x: 80,
-            type,
-            emoji: type === 'pea' ? '🟢' : '💥'
-        })
-    }
+    /**
+     * 生成僵尸（绑定在行上）
+     * @param {Object} opts
+     * @param {number} opts.row - 行号
+     * @param {string} opts.type - 僵尸类型
+     * 原理：在指定行的最右侧生成一个僵尸对象，加入 zombies 数组
+     */
     function spawnZombie({ row, type = 'basic' }) {
         const config = registeredZombies[type]
         zombies.push({
@@ -124,10 +82,19 @@ export function useGameLogic() {
             speed: config.speed,
             type,
             emoji: config.emoji,
-            isDamaged: false
+            isDamaged: false,
+            ...config.initialState // 支持僵尸初始状态
         })
         emit('onZombieSpawned', row, type)
     }
+
+    /**
+     * 生成阳光token
+     * @param {Object} opts
+     * @param {number} opts.row
+     * @param {number} opts.col
+     * 原理：在指定格子中心生成阳光token，加入 sunTokens 数组
+     */
     function spawnSun({ row, col }) {
         const x = (col - 1) * 80 + 40
         const y = (row - 1) * 80 + 40
@@ -138,18 +105,39 @@ export function useGameLogic() {
             value: 25,
             expiresAt: Date.now() + 10000
         })
+        emit('onSunProduced', { row, col })
     }
 
-    // === 计算属性 ===
+    // --- 计算属性 ---
+    /**
+     * 获取某行的所有子弹
+     * @param {number} row
+     * @returns {Array}
+     * 原理：过滤 bullets 数组，返回指定行的子弹
+     */
     const getBulletsInRow = computed(() => (row) => bullets.filter(b => b.row === row))
+    /**
+     * 获取某行的所有僵尸
+     * @param {number} row
+     * @returns {Array}
+     */
     const getZombiesInRow = computed(() => (row) => zombies.filter(z => z.row === row))
+    /**
+     * 获取某行的所有阳光token
+     * @param {number} row
+     * @returns {Array}
+     */
     const getSunTokensInRow = computed(() => (row) => {
         const yMin = (row - 1) * 80
         const yMax = row * 80
         return sunTokens.filter(s => s.y >= yMin && s.y < yMax)
     })
 
-    // === 核心方法 ===
+    /**
+     * 收集阳光
+     * @param {string|number} sunId
+     * 原理：找到对应id的阳光token，增加阳光数并移除token
+     */
     const collectSun = (sunId) => {
         const idx = sunTokens.findIndex(s => s.id === sunId)
         if (idx !== -1) {
@@ -159,11 +147,21 @@ export function useGameLogic() {
         }
     }
 
+    /**
+     * 判断植物是否冷却完毕
+     * @param {string} type
+     * @returns {boolean}
+     * 原理：比较当前时间与冷却时间戳
+     */
     const isPlantReady = (type) => {
         const lastUsed = plantCooldowns[type] || 0
         return Date.now() >= lastUsed
     }
 
+    /**
+     * 启动游戏，包含主循环、僵尸生成、冷却刷新等
+     * 原理：定时推进游戏状态，处理移动、碰撞、胜负判定
+     */
     const startGame = () => {
         if (isRunning.value) return
         isRunning.value = true
@@ -171,7 +169,7 @@ export function useGameLogic() {
         win.value = false
         emit('onGameStart')
 
-        // 游戏主循环
+        // 主循环：推进所有动态元素
         const gameLoopId = startPeriodicTask(() => {
             // 移除过期阳光
             for (let i = sunTokens.length - 1; i >= 0; i--) {
@@ -179,72 +177,95 @@ export function useGameLogic() {
                     sunTokens.splice(i, 1)
                 }
             }
-
-            // 子弹移动
+            // 子弹移动和碰撞检测
             for (let i = bullets.length - 1; i >= 0; i--) {
-                bullets[i].x += 8
-                if (bullets[i].x > LAWN_WIDTH + 100) bullets.splice(i, 1)
-            }
+                const bullet = bullets[i]
+                const bulletType = bulletTypes[bullet.type] || bulletTypes['pea']
 
+                // 移动子弹
+                bullet.x += bulletType.speed
+
+                // 检查是否超出边界
+                if (bullet.x > LAWN_WIDTH + 100) {
+                    bullets.splice(i, 1)
+                    continue
+                }
+
+                // 检查碰撞
+                const zombiesInRow = zombies.filter(z => z.row === bullet.row)
+                for (const zombie of zombiesInRow) {
+                    if (Math.abs(bullet.x - zombie.x) < 30) {
+                        bullets.splice(i, 1)
+                        zombie.hp--
+                        zombie.isDamaged = true
+                        setTimeout(() => zombie.isDamaged = false, 200)
+                        emit('onZombieHit', { zombie, bullet })
+
+                        if (zombie.hp <= 0) {
+                            const idx = zombies.findIndex(z => z.id === zombie.id)
+                            if (idx !== -1) {
+                                zombies.splice(idx, 1)
+                                emit('onZombieKilled', zombie)
+                            }
+                        }
+                        break
+                    }
+                }
+            }
             // 僵尸移动
             for (const z of zombies) {
                 z.x -= z.speed
                 if (z.x < 0) {
                     gameOver.value = true
                     isRunning.value = false
+                    emit('onGameOver', false)
                 }
             }
-
-            // 碰撞检测：子弹 vs 僵尸
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i]
-                for (const z of zombies) {
-                    if (b.row === z.row && Math.abs(b.x - z.x) < 40) {
-                        bullets.splice(i, 1)
-                        z.hp--
-                        z.isDamaged = true
-                        setTimeout(() => z.isDamaged = false, 200)
-                        if (z.hp <= 0) {
-                            const idx = zombies.findIndex(_z => _z.id === z.id)
-                            if (idx !== -1) zombies.splice(idx, 1)
-                        }
-                        break
-                    }
-                }
-            }
-
-            // 胜利条件：消灭所有僵尸且阳光≥300
-            if (zombies.length === 0 && sun.value >= 300) {
+            // 胜利条件
+            if (zombies.length === 0 && sun.value >= 3000) {
                 win.value = true
                 gameOver.value = true
                 isRunning.value = false
+                emit('onGameOver', true)
             }
         }, 100)
 
-        // 僵尸生成
+        // 僵尸生成定时器（每9秒一只，随机行）
         const zombieSpawnerId = startPeriodicTask(() => {
             if (isRunning.value) {
                 const row = Math.floor(Math.random() * ROWS) + 1
-                gameContext.spawnZombie({ row })
+                spawnZombie({ row })
             }
-        }, 3000)
+        }, 9000)
 
-        // 清理函数
+        // 冷却倒计时刷新（每秒触发响应式更新）
+        cooldownTimerId = startPeriodicTask(() => {
+            Object.keys(plantCooldowns).forEach(type => {
+                if (plantCooldowns[type]) {
+                    plantCooldowns[type] = plantCooldowns[type]
+                }
+            })
+        }, 1000)
+
+        // 组件卸载时清理所有定时器
         onUnmounted(() => {
             stopPeriodicTask(gameLoopId)
             stopPeriodicTask(zombieSpawnerId)
+            if (cooldownTimerId) stopPeriodicTask(cooldownTimerId)
         })
     }
 
+    /**
+     * 重置游戏，清空所有状态
+     * 原理：停止所有定时器，清空所有动态元素和状态
+     */
     const resetGame = () => {
         clearAllTasks()
-        sun.value = 50
+        sun.value = 500
         selectedPlant.value = null
         isRunning.value = false
         gameOver.value = false
         win.value = false
-
-        // 清理植物
         for (let r = 1; r <= ROWS; r++) {
             for (let c = 1; c <= COLS; c++) {
                 if (grid[r][c]) {
@@ -254,13 +275,18 @@ export function useGameLogic() {
                 }
             }
         }
-
         bullets.length = 0
         zombies.length = 0
         sunTokens.length = 0
         Object.keys(plantCooldowns).forEach(k => delete plantCooldowns[k])
+        emit('onGameReset')
     }
 
+    /**
+     * 选择植物
+     * @param {string} type
+     * 原理：切换当前选中的植物类型，需满足阳光和冷却条件
+     */
     const selectPlant = (type) => {
         if (!type) {
             selectedPlant.value = null
@@ -271,6 +297,12 @@ export function useGameLogic() {
         selectedPlant.value = selectedPlant.value === type ? null : type
     }
 
+    /**
+     * 放置植物
+     * @param {number} row
+     * @param {number} col
+     * 原理：在指定格子放置植物，扣除阳光并设置冷却，调用植物的 onPlace
+     */
     const placePlant = (row, col) => {
         if (!isRunning.value || !selectedPlant.value || grid[row][col]) return
         const type = selectedPlant.value
@@ -285,6 +317,7 @@ export function useGameLogic() {
         emit('onPlantPlaced', row, col, type)
     }
 
+    // 导出所有状态、行为、注册表、事件
     return {
         sun,
         selectedPlant,
@@ -305,6 +338,6 @@ export function useGameLogic() {
         registeredZombies,
         registerPlant,
         registerZombie,
-        on // 事件订阅
+        on // 事件订阅，便于配对和扩展
     }
 }
