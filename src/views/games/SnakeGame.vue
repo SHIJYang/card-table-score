@@ -364,7 +364,7 @@ onUnmounted(() => {
 <style scoped>
 .game-card {
   margin: 0 auto;
-  width: 95%;
+  width: 99%;
   max-width: 1000px;
 }
 

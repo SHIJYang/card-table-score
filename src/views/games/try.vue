@@ -7,7 +7,7 @@
         <FuzzyText
           text="404"
           :font-size="180"
-          font-weight="900"
+          font-weight="800"
           color="#8c8c8c"
           :enable-hover="true"
           :base-intensity="0.2"
@@ -16,7 +16,7 @@
         <FuzzyText
           text="error"
           :font-size="80"
-          font-weight="900"
+          font-weight="800"
           color="#8c8c8c"
           :enable-hover="true"
           :base-intensity="0.2"
@@ -40,5 +40,6 @@ import FuzzyText from "../../components/gsap/FuzzyText.vue";
   justify-content: center;
   align-items: center;
   gap: 20px;
+  padding: 0;
 }
 </style>
