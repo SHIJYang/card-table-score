@@ -13,7 +13,7 @@
       /> -->
 
       <ClickSpark
-        spark-color="#ff6b6b"
+        spark-color="#0dffb7"
         :spark-size="10"
         :spark-radius="40"
         :spark-count="20"
