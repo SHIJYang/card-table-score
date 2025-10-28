@@ -1,235 +1,227 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header>Header</el-header>
-      <el-container>
-        <el-aside width="auto">
-          <topnav />
-        </el-aside>
-        <el-main style="padding: 0">
-          <div class="score-system">
-            <el-row :gutter="24">
-              <el-col :span="24">
-                <el-card
-                  class="main-card animate__animated animate__fadeInLeft"
-                >
-                  <template #header>
-                    <div class="card-header">
-                      <div class="title">
-                        <el-icon><Trophy /></el-icon>
-                        <span>计分板</span>
-                      </div>
-                      <div class="add-player-form">
-                        <el-input
-                          v-model="newPlayerName"
-                          placeholder="输入玩家昵称"
-                          size="small"
-                          @keyup.enter="handleAddPlayer"
-                          class="player-input"
-                        >
-                          <template #prefix>
-                            <el-icon><User /></el-icon>
-                          </template>
-                        </el-input>
-                        <el-button
-                          type="primary"
-                          @click="handleAddPlayer"
-                          class="add-btn"
-                        >
-                          <el-icon><Plus /></el-icon>新增玩家
-                        </el-button>
-                      </div>
+      <el-header style="padding: 0"><topnav /></el-header>
+
+      <el-main style="padding: 0">
+        <div class="score-system">
+          <el-row :gutter="24">
+            <el-col :span="24">
+              <el-card class="main-card animate__animated animate__fadeInLeft">
+                <template #header>
+                  <div class="card-header">
+                    <div class="title">
+                      <el-icon><Trophy /></el-icon>
+                      <span>计分板</span>
                     </div>
-                  </template>
-                  <div v-if="players.length === 0" class="empty-state">
-                    <el-empty
-                      description="暂无玩家，请添加玩家开始游戏"
-                      :image-size="120"
-                    >
+                    <div class="add-player-form">
+                      <el-input
+                        v-model="newPlayerName"
+                        placeholder="输入玩家昵称"
+                        size="small"
+                        @keyup.enter="handleAddPlayer"
+                        class="player-input"
+                      >
+                        <template #prefix>
+                          <el-icon><User /></el-icon>
+                        </template>
+                      </el-input>
                       <el-button
                         type="primary"
-                        @click="
-                          newPlayerName = '玩家1';
-                          handleAddPlayer();
-                        "
-                        >添加示例玩家</el-button
+                        @click="handleAddPlayer"
+                        class="add-btn"
                       >
-                    </el-empty>
+                        <el-icon><Plus /></el-icon>新增玩家
+                      </el-button>
+                    </div>
                   </div>
-                  <el-table
-                    v-else
-                    :data="players"
-                    :stripe="true"
-                    :border="true"
-                    class="custom-table"
+                </template>
+                <div v-if="players.length === 0" class="empty-state">
+                  <el-empty
+                    description="暂无玩家，请添加玩家开始游戏"
+                    :image-size="120"
                   >
-                    <el-table-column label="玩家名称" width="220">
-                      <template #default="scope">
-                        <div class="player-name" v-if="!scope.row.isEditing">
-                          <el-avatar :size="28" :src="scope.row.avatar">
-                            {{ scope.row.name.charAt(0) }}
-                          </el-avatar>
-                          <span class="player-name-text">{{
-                            scope.row.name
-                          }}</span>
-                          <div class="player-actions">
-                            <el-button
-                              type="primary"
-                              link
-                              @click="startEditName(scope.row)"
-                            >
-                              <el-icon><Edit /></el-icon>
-                            </el-button>
-                            <el-button
-                              type="danger"
-                              link
-                              @click="removePlayer(scope.$index)"
-                            >
-                              <el-icon><Delete /></el-icon>
-                            </el-button>
-                          </div>
-                        </div>
-                        <div class="player-name-edit" v-else>
-                          <el-input
-                            v-model="scope.row.editingName"
-                            size="small"
-                            @keyup.enter="finishEditName(scope.row)"
-                          />
+                    <el-button
+                      type="primary"
+                      @click="
+                        newPlayerName = '玩家1';
+                        handleAddPlayer();
+                      "
+                      >添加示例玩家</el-button
+                    >
+                  </el-empty>
+                </div>
+                <el-table
+                  v-else
+                  :data="players"
+                  :stripe="true"
+                  :border="true"
+                  class="custom-table"
+                >
+                  <el-table-column label="玩家名称" width="150">
+                    <template #default="scope">
+                      <div class="player-name" v-if="!scope.row.isEditing">
+                        <el-avatar :size="28" :src="scope.row.avatar">
+                          {{ scope.row.name.charAt(0) }}
+                        </el-avatar>
+                        <span class="player-name-text">{{
+                          scope.row.name
+                        }}</span>
+                        <div class="player-actions">
                           <el-button
-                            type="success"
+                            type="primary"
                             link
-                            @click="finishEditName(scope.row)"
+                            @click="startEditName(scope.row)"
                           >
-                            <el-icon><Check /></el-icon>
+                            <el-icon><Edit /></el-icon>
                           </el-button>
                           <el-button
                             type="danger"
                             link
-                            @click="cancelEditName(scope.row)"
+                            @click="removePlayer(scope.$index)"
                           >
-                            <el-icon><Close /></el-icon>
+                            <el-icon><Delete /></el-icon>
                           </el-button>
                         </div>
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="score" label="当前分数" width="100">
-                      <template #default="scope">
-                        <span
-                          :class="{
-                            'score-positive': scope.row.score > 0,
-                            'score-negative': scope.row.score < 0,
-                            'score-zero': scope.row.score === 0,
-                          }"
+                      </div>
+                      <div class="player-name-edit" v-else>
+                        <el-input
+                          v-model="scope.row.editingName"
+                          size="small"
+                          @keyup.enter="finishEditName(scope.row)"
+                        />
+                        <el-button
+                          type="success"
+                          link
+                          @click="finishEditName(scope.row)"
                         >
-                          {{ scope.row.score }}
-                        </span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="操作" min-width="220">
-                      <template #default="scope">
-                        <div class="button-group">
-                          <el-input-number
-                            v-model="scope.row.scoreInput"
-                            :min="1"
-                            :max="100"
+                          <el-icon><Check /></el-icon>
+                        </el-button>
+                        <el-button
+                          type="danger"
+                          link
+                          @click="cancelEditName(scope.row)"
+                        >
+                          <el-icon><Close /></el-icon>
+                        </el-button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="score" label="当前分数" width="84">
+                    <template #default="scope">
+                      <span
+                        :class="{
+                          'score-positive': scope.row.score > 0,
+                          'score-negative': scope.row.score < 0,
+                          'score-zero': scope.row.score === 0,
+                        }"
+                      >
+                        {{ scope.row.score }}
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" min-width="220">
+                    <template #default="scope">
+                      <div class="button-group">
+                        <el-input-number
+                          v-model="scope.row.scoreInput"
+                          :min="1"
+                          :max="100"
+                          size="small"
+                          class="score-input"
+                          controls-position="right"
+                        />
+                        <div class="score-actions">
+                          <el-button
+                            type="primary"
                             size="small"
-                            class="score-input"
-                            controls-position="right"
-                          />
-                          <div class="score-actions">
-                            <el-button
-                              type="primary"
-                              size="small"
-                              @click="addScore(scope.row)"
-                              class="score-btn"
-                            >
-                              <el-icon><Plus /></el-icon>加分
-                            </el-button>
-                            <el-button
-                              type="danger"
-                              size="small"
-                              @click="minusScore(scope.row)"
-                              class="score-btn"
-                            >
-                              <el-icon><Minus /></el-icon>减分
-                            </el-button>
-                          </div>
+                            @click="addScore(scope.row)"
+                            class="score-btn"
+                          >
+                            <el-icon><Plus /></el-icon>加分
+                          </el-button>
+                          <el-button
+                            type="danger"
+                            size="small"
+                            @click="minusScore(scope.row)"
+                            class="score-btn"
+                          >
+                            <el-icon><Minus /></el-icon>减分
+                          </el-button>
                         </div>
-                      </template>
-                    </el-table-column>
-                  </el-table>
-                  <div v-if="players.length > 0" class="score-summary">
-                    <div class="summary-item">
-                      <span class="label">总分：</span>
-                      <span class="value">{{ totalScore }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <div v-if="players.length > 0" class="score-summary">
+                  <div class="summary-item">
+                    <span class="label">总分：</span>
+                    <span class="value">{{ totalScore }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="label">最高分：</span>
+                    <span class="value">{{ highestScore.score }}</span>
+                    <span class="player">({{ highestScore.name }})</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="label">最低分：</span>
+                    <span class="value">{{ lowestScore.score }}</span>
+                    <span class="player">({{ lowestScore.name }})</span>
+                  </div>
+                </div>
+              </el-card>
+              <el-card
+                class="history-card animate__animated animate__fadeInLeft"
+                style="margin-top: 24px"
+              >
+                <template #header>
+                  <div class="card-header">
+                    <div class="title">
+                      <el-icon><Timer /></el-icon>
+                      <span>历史记录</span>
                     </div>
-                    <div class="summary-item">
-                      <span class="label">最高分：</span>
-                      <span class="value">{{ highestScore.score }}</span>
-                      <span class="player">({{ highestScore.name }})</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="label">最低分：</span>
-                      <span class="value">{{ lowestScore.score }}</span>
-                      <span class="player">({{ lowestScore.name }})</span>
+                    <div class="header-actions">
+                      <el-button type="info" text @click="handleClearHistory">
+                        清空记录
+                      </el-button>
+                      <el-button type="primary" link @click="toggleHistory">
+                        <el-icon
+                          ><component
+                            :is="isHistoryCollapsed ? 'ArrowDown' : 'ArrowUp'"
+                        /></el-icon>
+                        {{ isHistoryCollapsed ? "展开" : "收起" }}
+                      </el-button>
                     </div>
                   </div>
-                </el-card>
-                <el-card
-                  class="history-card animate__animated animate__fadeInLeft"
-                  style="margin-top: 24px"
-                >
-                  <template #header>
-                    <div class="card-header">
-                      <div class="title">
-                        <el-icon><Timer /></el-icon>
-                        <span>历史记录</span>
-                      </div>
-                      <div class="header-actions">
-                        <el-button type="info" text @click="handleClearHistory">
-                          清空记录
-                        </el-button>
-                        <el-button type="primary" link @click="toggleHistory">
-                          <el-icon
-                            ><component
-                              :is="
-                                isHistoryCollapsed ? 'ArrowDown' : 'ArrowUp'
-                              "
-                          /></el-icon>
-                          {{ isHistoryCollapsed ? "展开" : "收起" }}
-                        </el-button>
-                      </div>
+                </template>
+                <el-collapse-transition>
+                  <div v-show="!isHistoryCollapsed">
+                    <div v-if="history.length <= 1" class="empty-state">
+                      <el-empty
+                        description="暂无历史记录"
+                        :image-size="80"
+                      ></el-empty>
                     </div>
-                  </template>
-                  <el-collapse-transition>
-                    <div v-show="!isHistoryCollapsed">
-                      <div v-if="history.length <= 1" class="empty-state">
-                        <el-empty
-                          description="暂无历史记录"
-                          :image-size="80"
-                        ></el-empty>
-                      </div>
-                      <el-timeline v-else>
-                        <el-timeline-item
-                          v-for="(record, index) in history"
-                          :key="index"
-                          :type="record.type"
-                          :timestamp="record.time"
-                          :hollow="true"
-                        >
-                          <div class="timeline-content">
-                            {{ record.content }}
-                          </div>
-                        </el-timeline-item>
-                      </el-timeline>
-                    </div>
-                  </el-collapse-transition>
-                </el-card>
-              </el-col>
-            </el-row>
-          </div>
-        </el-main>
-      </el-container>
+                    <el-timeline v-else>
+                      <el-timeline-item
+                        v-for="(record, index) in history"
+                        :key="index"
+                        :type="record.type"
+                        :timestamp="record.time"
+                        :hollow="true"
+                      >
+                        <div class="timeline-content">
+                          {{ record.content }}
+                        </div>
+                      </el-timeline-item>
+                    </el-timeline>
+                  </div>
+                </el-collapse-transition>
+              </el-card>
+            </el-col>
+          </el-row>
+        </div>
+      </el-main>
     </el-container>
   </div>
 </template>
@@ -592,9 +584,7 @@ const lowestScore = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
-  background-color: #fafafa;
+  padding: 5px 0px;
 }
 
 .card-header .title {
@@ -603,6 +593,7 @@ const lowestScore = computed(() => {
   gap: 8px;
   font-size: 16px;
   font-weight: 500;
+
   color: var(--text-color);
 }
 
@@ -610,7 +601,9 @@ const lowestScore = computed(() => {
   font-size: 18px;
   color: var(--primary-color);
 }
-
+.card-header .title span {
+  min-width: 50px;
+}
 .add-player-form {
   display: flex;
   align-items: center;
@@ -637,13 +630,13 @@ const lowestScore = computed(() => {
 .player-name {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 180px;
+  gap: 2px;
+  min-width: 80px;
 }
 
 .player-name-text {
   flex: 1;
-  min-width: 80px;
+  min-width: 40px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -651,13 +644,9 @@ const lowestScore = computed(() => {
 
 .player-actions {
   display: flex;
-  gap: 4px;
+
   margin-left: auto;
   flex-shrink: 0;
-}
-
-.player-actions .el-button {
-  padding: 4px;
 }
 
 .player-actions .el-button:hover {
@@ -667,11 +656,11 @@ const lowestScore = computed(() => {
 .player-name-edit {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .custom-table {
-  margin-top: 12px;
+  margin-top: 6px;
   border-radius: var(--border-radius);
   overflow: hidden;
 }
@@ -755,9 +744,8 @@ const lowestScore = computed(() => {
 }
 
 .score-summary {
-  margin-top: 20px;
   padding: 16px;
-  background-color: #f9f9f9;
+
   border-radius: var(--border-radius);
   display: flex;
   flex-wrap: wrap;

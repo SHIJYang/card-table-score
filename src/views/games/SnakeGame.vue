@@ -1,98 +1,94 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header>Header</el-header>
-      <el-container>
-        <el-aside width="auto">
-          <Topnav />
-        </el-aside>
-        <el-main style="padding: 0">
-          <el-card class="game-card">
-            <template #header>
-              <div class="card-header">
-                <h2>🐍 贪吃蛇</h2>
-                <div class="score-level">
-                  <span class="score">得分: {{ score }}</span>
-                  <span class="level">等级: {{ level }}</span>
-                  <span v-if="highScore > 0" class="high-score"
-                    >最高: {{ highScore }}</span
-                  >
-                </div>
-              </div>
-            </template>
+      <el-header style="padding: 0"><Topnav /></el-header>
 
-            <div class="game-container">
-              
-              <!-- 游戏面板 -->
-              <div class="game-board-wrapper">
-                <div class="game-board" ref="gameBoardRef" id="game-board">
+      <el-main style="padding: 0">
+        <el-card class="game-card">
+          <template #header>
+            <div class="card-header">
+              <h2>🐍 贪吃蛇</h2>
+              <div class="score-level">
+                <span class="score">得分: {{ score }}</span>
+                <span class="level">等级: {{ level }}</span>
+                <span v-if="highScore > 0" class="high-score"
+                  >最高: {{ highScore }}</span
+                >
+              </div>
+            </div>
+          </template>
+
+          <div class="game-container">
+            <!-- 游戏面板 -->
+            <div class="game-board-wrapper">
+              <div class="game-board" ref="gameBoardRef" id="game-board">
+                <div
+                  v-for="y in gridRows"
+                  :key="`row-${y}`"
+                  class="grid-row"
+                  :style="{ display: 'flex' }"
+                >
                   <div
-                    v-for="y in gridRows"
-                    :key="`row-${y}`"
-                    class="grid-row"
-                    :style="{ display: 'flex' }"
-                  >
-                    <div
-                      v-for="x in gridCols"
-                      :key="`cell-${x}-${y}`"
-                      class="grid-cell"
-                      :class="{
-                        'snake-segment': isSnakeSegment(x, y),
-                        'snake-head': isSnakeHead(x, y),
-                        food: isFood(x, y),
-                        'border-cell': isBorderCell(x, y)
-                      }"
-                    ></div>
-                  </div>
+                    v-for="x in gridCols"
+                    :key="`cell-${x}-${y}`"
+                    class="grid-cell"
+                    :class="{
+                      'snake-segment': isSnakeSegment(x, y),
+                      'snake-head': isSnakeHead(x, y),
+                      food: isFood(x, y),
+                      'border-cell': isBorderCell(x, y),
+                    }"
+                  ></div>
                 </div>
               </div>
+            </div>
 
-              <!-- 控制按钮（移动端友好） -->
-              <div class="mobile-controls" v-if="isMobile">
-                <div class="control-row">
-                  <el-button
-                    circle
-                    @click="changeDirection('up')"
-                    :disabled="!canChangeDirection('up')"
-                  >
-                    <el-icon><ArrowUp /></el-icon>
-                  </el-button>
-                </div>
-                <div class="control-row">
-                  <el-button
-                    circle
-                    @click="changeDirection('left')"
-                    :disabled="!canChangeDirection('left')"
-                  >
-                    <el-icon><ArrowLeft /></el-icon>
-                  </el-button>
-                  <el-button circle @click="pauseGame" v-if="isPlaying">
-                    <el-icon
-                      ><VideoPause v-if="isPaused" /><VideoPlay v-else
-                    /></el-icon>
-                  </el-button>
-                  <el-button
-                    circle
-                    @click="changeDirection('right')"
-                    :disabled="!canChangeDirection('right')"
-                  >
-                    <el-icon><ArrowRight /></el-icon>
-                  </el-button>
-                </div>
-                <div class="control-row">
-                  <el-button
-                    circle
-                    @click="changeDirection('down')"
-                    :disabled="!canChangeDirection('down')"
-                  >
-                    <el-icon><ArrowDown /></el-icon>
-                  </el-button>
-                </div>
+            <!-- 控制按钮（移动端友好） -->
+            <div class="mobile-controls" v-if="isMobile">
+              <div class="control-row">
+                <el-button
+                  circle
+                  @click="changeDirection('up')"
+                  :disabled="!canChangeDirection('up')"
+                >
+                  <el-icon><ArrowUp /></el-icon>
+                </el-button>
               </div>
+              <div class="control-row">
+                <el-button
+                  circle
+                  @click="changeDirection('left')"
+                  :disabled="!canChangeDirection('left')"
+                >
+                  <el-icon><ArrowLeft /></el-icon>
+                </el-button>
+                <el-button circle @click="pauseGame" v-if="isPlaying">
+                  <el-icon
+                    ><VideoPause v-if="isPaused" /><VideoPlay v-else
+                  /></el-icon>
+                </el-button>
+                <el-button
+                  circle
+                  @click="changeDirection('right')"
+                  :disabled="!canChangeDirection('right')"
+                >
+                  <el-icon><ArrowRight /></el-icon>
+                </el-button>
+              </div>
+              <div class="control-row">
+                <el-button
+                  circle
+                  @click="changeDirection('down')"
+                  :disabled="!canChangeDirection('down')"
+                >
+                  <el-icon><ArrowDown /></el-icon>
+                </el-button>
+              </div>
+            </div>
 
-              <!-- 游戏说明 -->
-              <div class="game-info">
-                 <div class="action-buttons">
+            <!-- 游戏说明 -->
+            <div class="game-info">
+              <div class="action-buttons">
                 <el-button
                   type="primary"
                   @click="startGame"
@@ -104,29 +100,23 @@
                 <el-button type="warning" @click="resetGame" size="large"
                   >重新开始</el-button
                 >
-                
               </div>
-                <el-alert
-                  title="玩法说明"
-                  type="info"
-                  :closable="false"
-                  class="info-alert"
-                >
-                  <p>吃到食物得分，撞墙或自己则游戏结束</p>
-                  <p>每得 100 分升一级，速度加快</p>
-                  <p>PC：方向键控制；手机：点击方向按钮</p>
-                  
-                </el-alert>
-
- 
-              </div>
-
-              <!-- 操作按钮（通用） -->
-              
+              <el-alert
+                title="玩法说明"
+                type="info"
+                :closable="false"
+                class="info-alert"
+              >
+                <p>吃到食物得分，撞墙或自己则游戏结束</p>
+                <p>每得 100 分升一级，速度加快</p>
+                <p>PC：方向键控制；手机：点击方向按钮</p>
+              </el-alert>
             </div>
-          </el-card>
-        </el-main>
-      </el-container>
+
+            <!-- 操作按钮（通用） -->
+          </div>
+        </el-card>
+      </el-main>
     </el-container>
   </div>
 </template>
@@ -174,7 +164,7 @@ const food = ref({ x: 15, y: 8 });
 
 // 判断是否为边界单元格
 const isBorderCell = (x, y) => {
-  return x === 0 || x === gridCols +1  || y === 0 || y === gridRows +1;
+  return x === 0 || x === gridCols + 1 || y === 0 || y === gridRows + 1;
 };
 
 // 初始化最高分
@@ -304,16 +294,25 @@ const gameLoop = () => {
 // 修复边界判定 - 这是关键修复！
 const checkCollision = (head) => {
   // 检查墙壁碰撞 - 网格坐标从 0 到 gridCols-1 和 0 到 gridRows-1
-  if (head.x < 1 || head.x >= gridCols+1 || head.y < 1 || head.y >= gridRows+1) {
-    return `撞墙！位置: (${head.x}, ${head.y})，边界: X:0-${gridCols-1}, Y:0-${gridRows-1}`;
+  if (
+    head.x < 1 ||
+    head.x >= gridCols + 1 ||
+    head.y < 1 ||
+    head.y >= gridRows + 1
+  ) {
+    return `撞墙！位置: (${head.x}, ${head.y})，边界: X:0-${
+      gridCols - 1
+    }, Y:0-${gridRows - 1}`;
   }
-  
+
   // 检查自身碰撞 (跳过头部)
-  const bodyCollision = snake.value.slice(1).some((s) => s.x === head.x && s.y === head.y);
+  const bodyCollision = snake.value
+    .slice(1)
+    .some((s) => s.x === head.x && s.y === head.y);
   if (bodyCollision) {
     return `撞到自己身体！位置: (${head.x}, ${head.y})`;
   }
-  
+
   return null;
 };
 
@@ -388,12 +387,11 @@ onUnmounted(() => {
 .game-container {
   display: flex;
   flex-direction: row;
+  justify-content: center;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
-
-
 
 .game-board-wrapper {
   width: 95%;
@@ -410,7 +408,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: grid;
-  
 }
 .game-info {
   display: flex;
@@ -476,32 +473,32 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;  /* 增加垂直间距 */
-  margin: 20px 0;  /* 添加上下外边距 */
+  gap: 20px; /* 增加垂直间距 */
+  margin: 20px 0; /* 添加上下外边距 */
 }
 
 .control-row {
   display: flex;
-  gap: 30px;  /* 增加按钮之间的间距 */
+  gap: 30px; /* 增加按钮之间的间距 */
   justify-content: center;
 }
 
 .mobile-controls .el-button {
-  width: 70px;  /* 增加按钮宽度 */
-  height: 70px;  /* 增加按钮高度 */
-  font-size: 24px;  /* 增加图标大小 */
-  border: 2px solid #dcdfe6;  /* 添加边框 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  /* 添加阴影效果 */
-  transition: all 0.3s ease;  /* 添加过渡效果 */
+  width: 70px; /* 增加按钮宽度 */
+  height: 70px; /* 增加按钮高度 */
+  font-size: 24px; /* 增加图标大小 */
+  border: 2px solid #dcdfe6; /* 添加边框 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
+  transition: all 0.3s ease; /* 添加过渡效果 */
 }
 
 .mobile-controls .el-button:active {
-  transform: scale(0.95);  /* 点击时的缩放效果 */
+  transform: scale(0.95); /* 点击时的缩放效果 */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-controls .el-button:not(:disabled):hover {
-  background-color: #f5f7fa;  /* 悬停效果 */
+  background-color: #f5f7fa; /* 悬停效果 */
   border-color: #409eff;
 }
 
@@ -519,8 +516,6 @@ onUnmounted(() => {
   font-size: 14px;
   display: flex;
   gap: 12px;
-  
-  
 }
 
 /* 响应式：PC 隐藏虚拟按钮 */

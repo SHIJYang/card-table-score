@@ -5,7 +5,11 @@
   "dependencies": {
     "animate.css": "^4.1.1",
     "element-plus": "^2.5.6",
+    "gsap": "^3.13.0",
+    "motion-v": "^1.7.4",
     "pinia": "^2.1.7",
+    "postprocessing": "^6.37.8",
+    "three": "^0.180.0",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },
@@ -28,9 +32,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
-    "vite": "^5.1.4",
-    "@vue/compiler-sfc": "^3.4.21"
+    "@vue/compiler-sfc": "^3.4.21",
+    "vite": "^5.1.4"
   },
   "homepage": "."
 }
-
