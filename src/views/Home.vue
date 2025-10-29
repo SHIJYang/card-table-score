@@ -3,7 +3,7 @@
     <topnav />
 
     <div class="main">
-      <el-card style="width: 80%; height: 200px"
+      <el-card style="width: 92%; height: 200px"
         ><CircularGallery
           :items="[
             {
@@ -22,7 +22,7 @@
           :bend="0"
           text-color="#afafaf"
           :border-radius="0.05"
-          font="bold 30px Arial"
+          font="bold 80px Arial"
           :scroll-speed="5"
           :scroll-ease="0.05"
           class="canvas"
