@@ -63,13 +63,19 @@
         :extra-scale="1.2"
         class="interactive-area"
       ></ClickSpark> -->
-
+<!-- <ShinyText
+          text="Just some shiny text!"
+          :disabled="false"
+          :speed="3"
+          class-name="your-custom-class"
+        /> -->
 <script setup>
 import Topnav from "../topnav/TopNav.vue";
 import FuzzyText from "../../components/gsap/FuzzyText.vue";
 import ClickSpark from "../../components/ClickSpark.vue";
 import Squares from "../../components/gsap/Squares.vue";
 import TiltedCard from "../../components/gsap/TiltedCard.vue";
+import ShinyText from "../../components/gsap/ShinyText.vue";
 </script>
 
 <style scoped>
