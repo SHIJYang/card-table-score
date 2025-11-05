@@ -18,6 +18,11 @@ const routes = [
         component: () => import('../views/games/GomokuGame.vue')
     },
     {
+        path: '/shop',
+        name: 'Shop',
+        component: () => import('../views/games/ShopGame.vue')
+    },
+    {
         path: '/score',
         name: 'Score',
         component: () => import('../views/games/ScoreSystem.vue')

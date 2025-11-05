@@ -318,20 +318,21 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 24px;
-  padding: 20px;
 }
 
 .game-board-container {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  height: 100%;
 }
 
 .game-board {
   background: #deb887;
   border: 2px solid #8b4513;
   border-radius: 4px;
-  padding: 20px;
+  padding: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -521,8 +522,8 @@ onMounted(() => {
 
 @media (max-width: 480px) {
   .board-cell {
-    width: 16px;
-    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
   }
 
   .stone {

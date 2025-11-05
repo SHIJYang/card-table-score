@@ -29,7 +29,7 @@
         :italic="true"
         text-color="#8c8c8c"
         stroke-color="#27FF64"
-        :min-font-size="36"
+        :min-font-size="43"
     /></view>
     <el-sub-menu index="">
       <template #title>游戏列表</template>
@@ -40,6 +40,10 @@
       <el-menu-item index="/gomoku">
         <el-icon><setting /></el-icon>
         <span>五子棋</span>
+      </el-menu-item>
+      <el-menu-item index="/shop">
+        <el-icon><setting /></el-icon>
+        <span>shop</span>
       </el-menu-item>
       <el-menu-item index="/snake">
         <el-icon>🐍</el-icon>

@@ -61,9 +61,6 @@
                   <el-table-column label="玩家名称" width="150">
                     <template #default="scope">
                       <div class="player-name" v-if="!scope.row.isEditing">
-                        <el-avatar :size="28" :src="scope.row.avatar">
-                          {{ scope.row.name.charAt(0) }}
-                        </el-avatar>
                         <span class="player-name-text">{{
                           scope.row.name
                         }}</span>
@@ -107,7 +104,7 @@
                       </div>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="score" label="当前分数" width="84">
+                  <el-table-column prop="score" label="分数" width="54">
                     <template #default="scope">
                       <span
                         :class="{
@@ -123,13 +120,12 @@
                   <el-table-column label="操作" min-width="220">
                     <template #default="scope">
                       <div class="button-group">
-                        <el-input-number
+                        <el-input
                           v-model="scope.row.scoreInput"
                           :min="1"
                           :max="100"
                           size="small"
                           class="score-input"
-                          controls-position="right"
                         />
                         <div class="score-actions">
                           <el-button
@@ -138,7 +134,7 @@
                             @click="addScore(scope.row)"
                             class="score-btn"
                           >
-                            <el-icon><Plus /></el-icon>加分
+                            <el-icon><Plus /></el-icon>
                           </el-button>
                           <el-button
                             type="danger"
@@ -146,7 +142,7 @@
                             @click="minusScore(scope.row)"
                             class="score-btn"
                           >
-                            <el-icon><Minus /></el-icon>减分
+                            <el-icon><Minus /></el-icon>
                           </el-button>
                         </div>
                       </div>
@@ -248,7 +244,7 @@ const players = ref([
   {
     name: "玩家1",
     score: 0,
-    scoreInput: 10,
+    scoreInput: 1,
     avatar: "",
     isEditing: false,
     editingName: "",
@@ -256,7 +252,7 @@ const players = ref([
   {
     name: "玩家2",
     score: 0,
-    scoreInput: 10,
+    scoreInput: 1,
     avatar: "",
     isEditing: false,
     editingName: "",
@@ -346,7 +342,7 @@ const handleAddPlayer = () => {
   const newPlayer = {
     name: newPlayerName.value,
     score: 0,
-    scoreInput: 10,
+    scoreInput: 1,
     avatar: "",
     isEditing: false,
     editingName: "",
@@ -695,13 +691,13 @@ const lowestScore = computed(() => {
 
 .score-actions {
   display: flex;
-  gap: 4px;
+
   flex-shrink: 0;
 }
 
 .score-btn {
   padding: 6px 8px;
-  min-width: 60px;
+  min-width: 20px;
   font-size: 13px;
 }
 
@@ -811,7 +807,7 @@ const lowestScore = computed(() => {
 
   .score-btn {
     padding: 4px 6px;
-    min-width: 55px;
+    min-width: 3%;
     font-size: 12px;
   }
 }
@@ -828,7 +824,7 @@ const lowestScore = computed(() => {
 
   .score-btn {
     padding: 4px;
-    min-width: 50px;
+    min-width: 30px;
     font-size: 12px;
   }
 }
