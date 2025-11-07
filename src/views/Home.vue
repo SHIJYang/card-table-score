@@ -58,69 +58,6 @@
           </div>
         </div>
       </section>
-
-      <!-- 特色游戏区域 -->
-      <section class="featured-section">
-        <div class="container">
-          <div class="section-header">
-            <h2 class="section-title">热门推荐</h2>
-            <p class="section-subtitle">精选最受欢迎的游戏</p>
-          </div>
-
-          <div class="featured-grid">
-            <div
-              v-for="game in featuredGames"
-              :key="game.id"
-              class="featured-card"
-              :style="{ '--accent-color': game.color }"
-            >
-              <div class="card-badge">{{ game.category }}</div>
-              <div class="card-image">
-                <img :src="game.image" :alt="game.name" />
-                <div class="card-overlay">
-                  <button class="play-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M8 5V19L19 12L8 5Z" fill="currentColor" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="card-content">
-                <h3 class="card-title">{{ game.name }}</h3>
-                <p class="card-description">{{ game.description }}</p>
-                <div class="card-meta">
-                  <div class="meta-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.7764 3 12 3C8.22355 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <path
-                        d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                    </svg>
-                    <span>{{ game.players }}</span>
-                  </div>
-                  <div class="meta-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                    </svg>
-                    <span>{{ game.rating }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- 游戏分类区域 -->
       <section class="categories-section">
         <div class="container">
@@ -157,26 +94,32 @@
             <p class="cta-description">
               加入数百万玩家，立即体验精彩的游戏世界
             </p>
-            <div class="cta-actions">
-              <button class="btn btn-large btn-primary">
-                <span>免费开始游戏</span>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M13.75 6.75L19.25 12L13.75 17.25"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M19 12H4.75"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
+          </div>
+        </div>
+      </section>
+      <!-- 特色游戏区域 -->
+      <section class="featured-section">
+        <div class="container">
+          <div class="section-header">
+            <h2 class="section-title">热门推荐</h2>
+            <p class="section-subtitle">精选最受欢迎的游戏</p>
+          </div>
+
+          <div class="featured-grid">
+            <div
+              v-for="game in featuredGames"
+              :key="game.id"
+              class="featured-card"
+              :style="{ '--accent-color': game.color }"
+            >
+              <div class="card-image">
+                <img :src="game.image" :alt="game.name" />
+              </div>
+              <div class="card-content">
+                <h3 class="card-title">{{ game.name }}</h3>
+                <p class="card-description">{{ game.description }}</p>
+                <div class="card-meta"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -531,8 +474,8 @@ const gameCategories = [
 
 .card-content {
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  height: 200px;
+
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -813,7 +756,10 @@ const gameCategories = [
 /* CTA区域 */
 .cta-section {
   padding: 6rem 0;
+  height: 100vh;
   text-align: center;
+  display: flex;
+  align-items: center;
 }
 
 .cta-content {

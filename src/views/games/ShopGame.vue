@@ -814,7 +814,7 @@ onUnmounted(() => {
 .item-card {
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 20px;
+  padding: 10px;
   transition: all 0.3s ease;
   border: 2px solid transparent;
 }
@@ -913,7 +913,6 @@ onUnmounted(() => {
 
 .action-buttons {
   display: flex;
-  gap: 10px;
 }
 
 .buy-btn,
@@ -1165,10 +1164,6 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .action-section {
-    flex-direction: column;
-  }
-
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1192,12 +1187,7 @@ onUnmounted(() => {
     padding: 20px;
   }
 
-  .status-grid {
-    grid-template-columns: 1fr;
-  }
-
   .item-header {
-    flex-direction: column;
     text-align: center;
     gap: 12px;
   }
