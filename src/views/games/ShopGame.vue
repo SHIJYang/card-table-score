@@ -3,146 +3,178 @@
     <el-container>
       <el-header style="padding: 0"><topnav /></el-header>
 
-      <el-main class="error404">
+      <el-main class="game-main-container">
         <div id="app">
-          <el-container class="game-container">
-            <el-header class="game-header">
-              <h1>商场买卖游戏</h1>
-            </el-header>
+          <div class="game-container">
+            <!-- 设置界面 -->
+            <div v-if="!gameStarted" class="setup-screen">
+              <div class="setup-card">
+                <div class="card-header">
+                  <h1>商场买卖游戏</h1>
+                  <p class="subtitle">低买高卖，成为商场大亨！</p>
+                </div>
 
-            <el-main class="game-main">
-              <!-- 设置界面 -->
-              <div v-if="!gameStarted" class="setup-screen">
-                <el-card class="setup-card">
-                  <h2>游戏设置</h2>
-                  <el-form :model="gameConfig" label-width="150px">
-                    <el-form-item label="游戏天数:">
+                <div class="config-form">
+                  <div class="form-item">
+                    <label>游戏天数</label>
+                    <div class="input-group">
                       <el-input-number
                         v-model="gameConfig.totalDays"
                         :min="10"
                         :max="100"
-                        controls-position="right"
+                        size="large"
                       />
-                    </el-form-item>
+                      <span class="tip">建议20-40天</span>
+                    </div>
+                  </div>
 
-                    <el-form-item label="每天显示商品数量:">
+                  <div class="form-item">
+                    <label>每天商品数量</label>
+                    <div class="input-group">
                       <el-input-number
                         v-model="gameConfig.dailyItemCount"
                         :min="3"
                         :max="9"
-                        controls-position="right"
+                        size="large"
                       />
-                    </el-form-item>
+                      <span class="tip">每天随机出现的商品数量</span>
+                    </div>
+                  </div>
 
-                    <el-form-item label="价格波动幅度:">
+                  <div class="form-item">
+                    <label>价格波动幅度</label>
+                    <div class="input-group">
                       <el-select
                         v-model="gameConfig.priceVolatility"
                         placeholder="请选择"
-                      >
-                        <el-option label="低 (5%)" value="0.1" />
-                        <el-option label="中 (10%)" value="0.2" />
-                        <el-option label="高 (20%)" value="0.4" />
-                        <el-option label="极高 (30%)" value="0.6" />
-                      </el-select>
-                    </el-form-item>
-
-                    <el-form-item>
-                      <el-button
-                        type="primary"
                         size="large"
-                        @click="startGame"
-                        class="start-btn"
                       >
-                        开始游戏
-                      </el-button>
-                    </el-form-item>
-                  </el-form>
-                </el-card>
+                        <el-option label="低 (5%)" value="0.05" />
+                        <el-option label="中 (10%)" value="0.1" />
+                        <el-option label="高 (20%)" value="0.2" />
+                        <el-option label="极高 (30%)" value="0.3" />
+                      </el-select>
+                      <span class="tip">波动越大，风险与收益越高</span>
+                    </div>
+                  </div>
+
+                  <el-button
+                    type="primary"
+                    size="large"
+                    @click="startGame"
+                    class="start-btn"
+                  >
+                    开始游戏
+                  </el-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 游戏界面 -->
+            <div v-else class="game-screen">
+              <!-- 顶部状态栏 -->
+              <div class="status-bar">
+                <div class="status-grid">
+                  <div class="status-item">
+                    <span class="label">天数</span>
+                    <span class="value"
+                      >{{ gameState.day }}/{{ gameState.totalDays }}</span
+                    >
+                  </div>
+                  <div class="status-item">
+                    <span class="label">现金</span>
+                    <span class="value cash">¥{{ gameState.cash }}</span>
+                  </div>
+                  <div class="status-item">
+                    <span class="label">总资产</span>
+                    <span class="value total">¥{{ totalAssets }}</span>
+                  </div>
+                  <div class="status-item">
+                    <span class="label">收益率</span>
+                    <span class="value" :class="profitClass"
+                      >{{ profitPercentage }}%</span
+                    >
+                  </div>
+                </div>
               </div>
 
-              <!-- 游戏界面 -->
-              <div v-else class="game-screen">
-                <!-- 状态栏 -->
-                <el-row class="status-bar">
-                  <el-col :span="12">
-                    <div class="status-item">
-                      天数: <span>{{ gameState.day }}</span
-                      >/<span>{{ gameState.totalDays }}</span>
-                    </div>
-                  </el-col>
-                  <el-col :span="12">
-                    <div class="status-item">
-                      现金: <span>¥{{ gameState.cash }}</span>
-                    </div>
-                  </el-col>
-                </el-row>
-
-                <!-- 商品列表 -->
-                <el-row :gutter="20" class="items-container">
-                  <el-col
-                    :xs="24"
-                    :sm="12"
-                    :md="8"
+              <!-- 商品列表 -->
+              <div class="items-section">
+                <h2 class="section-title">今日商品</h2>
+                <div class="items-grid">
+                  <div
                     v-for="item in gameState.availableItems"
                     :key="item.id"
-                    class="item-col"
+                    class="item-card"
+                    :class="{
+                      'price-up': item.priceChange > 0,
+                      'price-down': item.priceChange < 0,
+                    }"
                   >
-                    <el-card
-                      class="item-card"
-                      :body-style="{ padding: '15px' }"
-                    >
-                      <div
-                        class="item-image-container"
-                        :title="itemDescriptions[item.id]"
-                      >
+                    <div class="item-header">
+                      <div class="item-image">
                         <img
-                          class="item-image"
                           :src="itemImages[item.id]"
                           :alt="item.name"
                           @error="handleImageError($event, item.id)"
                         />
-                        <div class="item-image-fallback">
-                          {{ item.name.charAt(0) }}
+                        <div class="price-change" v-if="item.priceChange !== 0">
+                          <i
+                            :class="
+                              item.priceChange > 0
+                                ? 'el-icon-top'
+                                : 'el-icon-bottom'
+                            "
+                          ></i>
+                          {{ Math.abs(item.priceChange) }}%
                         </div>
                       </div>
-
                       <div class="item-info">
-                        <div class="item-name">{{ item.name }}</div>
+                        <h3 class="item-name">{{ item.name }}</h3>
                         <div class="item-price">¥{{ item.currentPrice }}</div>
                       </div>
+                    </div>
 
-                      <div class="item-owned">
+                    <div class="item-stats">
+                      <div class="owned">
                         持有: {{ gameState.inventory[item.id] || 0 }}
                       </div>
+                    </div>
 
-                      <div class="action-buttons">
-                        <el-button
-                          class="buy-btn"
-                          @mousedown="startFastAction(item.id, 'buy')"
-                          @mouseup="stopFastAction"
-                          @mouseleave="stopFastAction"
-                          @touchstart="startFastAction(item.id, 'buy')"
-                          @touchend="stopFastAction"
-                        >
-                          买入
-                        </el-button>
+                    <div class="action-buttons">
+                      <el-button
+                        class="buy-btn"
+                        @mousedown="startFastAction(item.id, 'buy')"
+                        @mouseup="stopFastAction"
+                        @mouseleave="stopFastAction"
+                        @touchstart="startFastAction(item.id, 'buy')"
+                        @touchend="stopFastAction"
+                        :disabled="gameState.cash < item.currentPrice"
+                      >
+                        买入
+                      </el-button>
 
-                        <el-button
-                          class="sell-btn"
-                          @mousedown="startFastAction(item.id, 'sell')"
-                          @mouseup="stopFastAction"
-                          @mouseleave="stopFastAction"
-                          @touchstart="startFastAction(item.id, 'sell')"
-                          @touchend="stopFastAction"
-                        >
-                          卖出
-                        </el-button>
-                      </div>
-                    </el-card>
-                  </el-col>
-                </el-row>
+                      <el-button
+                        class="sell-btn"
+                        @mousedown="startFastAction(item.id, 'sell')"
+                        @mouseup="stopFastAction"
+                        @mouseleave="stopFastAction"
+                        @touchstart="startFastAction(item.id, 'sell')"
+                        @touchend="stopFastAction"
+                        :disabled="
+                          !gameState.inventory[item.id] ||
+                          gameState.inventory[item.id] <= 0
+                        "
+                      >
+                        卖出
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                <!-- 下一天按钮 -->
+              <!-- 操作区域 -->
+              <div class="action-section">
                 <el-button
                   type="primary"
                   size="large"
@@ -152,75 +184,95 @@
                   下一天
                 </el-button>
 
-                <!-- 交易记录 -->
-                <el-card class="history-container">
-                  <template #header>
-                    <div class="history-title">交易记录</div>
-                  </template>
-                  <div class="log-entries">
-                    <div
-                      v-for="(entry, index) in gameState.logEntries"
-                      :key="index"
-                      class="log-entry"
-                      :class="{
-                        profit: entry.includes('盈利'),
-                        loss: entry.includes('亏损'),
-                      }"
-                    >
-                      {{ entry }}
-                    </div>
-                  </div>
-                </el-card>
-
-                <!-- 库存 -->
-                <el-card v-if="showInventory" class="inventory-section">
-                  <template #header>
-                    <div class="inventory-title">未卖出物品</div>
-                  </template>
-                  <el-row :gutter="10" class="inventory-grid">
-                    <el-col
-                      v-for="item in inventoryItems"
-                      :key="item.id"
-                      :xs="12"
-                      :sm="8"
-                      :md="6"
-                      class="inventory-item-col"
-                    >
-                      <div class="inventory-item">
-                        <div class="item-image-container">
-                          <img
-                            :src="itemImages[item.id]"
-                            :alt="item.name"
-                            @error="handleImageError($event, item.id)"
-                          />
-                          <div class="item-image-fallback">
-                            {{ item.name.charAt(0) }}
-                          </div>
-                        </div>
-                        <span>{{ item.name }} ×{{ item.quantity }}</span>
-                        <span>¥{{ item.value }}</span>
-                      </div>
-                    </el-col>
-
-                    <!-- 总价值 -->
-                    <el-col :span="24" v-if="inventoryTotalValue > 0">
-                      <div class="inventory-total">
-                        <span>总价值</span>
-                        <span>¥{{ inventoryTotalValue }}</span>
-                      </div>
-                    </el-col>
-                  </el-row>
-                </el-card>
+                <el-button
+                  type="default"
+                  size="large"
+                  class="inventory-btn"
+                  @click="showInventory = !showInventory"
+                >
+                  {{ showInventory ? "隐藏库存" : "查看库存" }}
+                </el-button>
               </div>
-            </el-main>
-          </el-container>
+
+              <!-- 交易记录 -->
+              <div class="history-section">
+                <div class="section-header">
+                  <h3 class="section-title">交易记录</h3>
+                  <span class="record-count"
+                    >{{ gameState.logEntries.length }} 条记录</span
+                  >
+                </div>
+                <div class="log-container">
+                  <div
+                    v-for="(entry, index) in gameState.logEntries"
+                    :key="index"
+                    class="log-entry"
+                    :class="{
+                      profit: entry.includes('盈利'),
+                      loss: entry.includes('亏损'),
+                    }"
+                  >
+                    <i class="log-icon" :class="getLogIcon(entry)"></i>
+                    <span class="log-text">{{ entry }}</span>
+                  </div>
+                  <div
+                    v-if="gameState.logEntries.length === 0"
+                    class="empty-log"
+                  >
+                    <i class="el-icon-document"></i>
+                    <p>暂无交易记录</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 库存 -->
+              <div v-if="showInventory" class="inventory-section">
+                <div class="section-header">
+                  <h3 class="section-title">库存物品</h3>
+                  <span class="total-value"
+                    >总价值: ¥{{ inventoryTotalValue }}</span
+                  >
+                </div>
+                <div class="inventory-grid">
+                  <div
+                    v-for="item in inventoryItems"
+                    :key="item.id"
+                    class="inventory-item"
+                  >
+                    <div class="inv-item-image">
+                      <img
+                        :src="itemImages[item.id]"
+                        :alt="item.name"
+                        @error="handleImageError($event, item.id)"
+                      />
+                    </div>
+                    <div class="inv-item-info">
+                      <span class="inv-item-name">{{ item.name }}</span>
+                      <span class="inv-item-quantity"
+                        >×{{ item.quantity }}</span
+                      >
+                    </div>
+                    <span class="inv-item-value">¥{{ item.value }}</span>
+                  </div>
+
+                  <div
+                    v-if="inventoryItems.length === 0"
+                    class="empty-inventory"
+                  >
+                    <i class="el-icon-box"></i>
+                    <p>库存为空</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- 消息提示 -->
           <el-alert
             v-if="alert.show"
             :title="alert.message"
             :type="alert.type"
-            :closable="false"
+            :closable="true"
             show-icon
             class="alert-message"
             @close="closeAlert"
@@ -233,7 +285,6 @@
 
 <script setup>
 import Topnav from "../topnav/TopNav.vue";
-import FuzzyText from "../../components/gsap/FuzzyText.vue";
 import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 
 // 物品图片映射
@@ -292,7 +343,7 @@ const allItems = [
 const gameConfig = reactive({
   totalDays: 30,
   dailyItemCount: 6,
-  priceVolatility: "0.2",
+  priceVolatility: "0.1",
 });
 
 // 游戏状态
@@ -303,6 +354,7 @@ const gameState = reactive({
   inventory: {},
   availableItems: [],
   logEntries: [],
+  priceHistory: {},
   fastAction: {
     itemId: null,
     action: null,
@@ -346,9 +398,33 @@ const inventoryTotalValue = computed(() => {
   return inventoryItems.value.reduce((total, item) => total + item.value, 0);
 });
 
+const totalAssets = computed(() => {
+  return gameState.cash + inventoryTotalValue.value;
+});
+
+const profitPercentage = computed(() => {
+  const profit = totalAssets.value - 1000;
+  return ((profit / 1000) * 100).toFixed(2);
+});
+
+const profitClass = computed(() => {
+  const profit = totalAssets.value - 1000;
+  if (profit > 0) return "profit";
+  if (profit < 0) return "loss";
+  return "";
+});
+
 // 方法
 const handleImageError = (event, itemId) => {
   event.target.src = fallbackImages[itemId];
+};
+
+const getLogIcon = (entry) => {
+  if (entry.includes("买入")) return "el-icon-shopping-bag-1";
+  if (entry.includes("卖出")) return "el-icon-sold-out";
+  if (entry.includes("盈利")) return "el-icon-success";
+  if (entry.includes("亏损")) return "el-icon-error";
+  return "el-icon-info";
 };
 
 const showAlert = (message, type = "error") => {
@@ -356,7 +432,6 @@ const showAlert = (message, type = "error") => {
   alert.type = type;
   alert.show = true;
 
-  // 3秒后自动关闭
   setTimeout(() => {
     closeAlert();
   }, 3000);
@@ -367,41 +442,49 @@ const closeAlert = () => {
 };
 
 const startGame = () => {
-  // 更新游戏配置
   gameState.totalDays = gameConfig.totalDays;
   gameState.dailyItemCount = gameConfig.dailyItemCount;
   gameState.priceVolatility = parseFloat(gameConfig.priceVolatility);
 
-  // 重置游戏状态
   gameState.cash = 1000;
   gameState.day = 1;
   gameState.inventory = {};
   gameState.logEntries = [];
+  gameState.priceHistory = {};
 
-  // 初始化所有物品
   allItems.forEach((item) => {
     gameState.inventory[item.id] = 0;
+    gameState.priceHistory[item.id] = [item.basePrice];
   });
 
-  // 开始游戏
   gameStarted.value = true;
   showInventory.value = false;
-
-  // 开始第一天
   setupDay();
 };
 
 const setupDay = () => {
-  // 随机选择当天可交易的商品
   gameState.availableItems = [...allItems]
     .sort(() => 0.5 - Math.random())
     .slice(0, gameState.dailyItemCount);
 
-  // 为每个商品设置当天价格
   gameState.availableItems.forEach((item) => {
-    // 随机波动价格
+    const lastPrice =
+      gameState.priceHistory[item.id]?.[
+        gameState.priceHistory[item.id].length - 1
+      ] || item.basePrice;
+
     const change = (Math.random() * 2 - 1) * gameState.priceVolatility;
-    item.currentPrice = Math.max(1, Math.round(item.basePrice * (1 + change)));
+    const newPrice = Math.max(1, Math.round(lastPrice * (1 + change)));
+
+    const priceChange = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(1);
+
+    item.currentPrice = newPrice;
+    item.priceChange = parseFloat(priceChange);
+
+    if (!gameState.priceHistory[item.id]) {
+      gameState.priceHistory[item.id] = [];
+    }
+    gameState.priceHistory[item.id].push(newPrice);
   });
 };
 
@@ -411,16 +494,13 @@ const startFastAction = (itemId, action) => {
   gameState.fastAction.lastActionTime = Date.now();
   gameState.fastAction.speed = 1;
 
-  // 立即执行第一次操作
   performSingleAction();
 
-  // 开始快速连续操作
   gameState.fastAction.timer = setTimeout(() => {
     gameState.fastAction.interval = setInterval(() => {
       const now = Date.now();
-      // 加速曲线 - 按住时间越长速度越快
       const holdTime = (now - gameState.fastAction.lastActionTime) / 1000;
-      gameState.fastAction.speed = Math.min(1 + Math.pow(holdTime, 2), 10); // 最大10倍速
+      gameState.fastAction.speed = Math.min(1 + Math.pow(holdTime, 2), 10);
 
       if (
         now - gameState.fastAction.lastActionTime >
@@ -430,7 +510,7 @@ const startFastAction = (itemId, action) => {
         gameState.fastAction.lastActionTime = now;
       }
     }, 50);
-  }, 200); // 200ms后开始快速连续操作
+  }, 200);
 };
 
 const performSingleAction = () => {
@@ -459,9 +539,13 @@ const buyItem = (itemId, quantity = 1) => {
     gameState.inventory[item.id] =
       (gameState.inventory[item.id] || 0) + quantity;
 
-    gameState.logEntries.push(
+    gameState.logEntries.unshift(
       `第 ${gameState.day} 天: 买入 ${quantity} 个 ${item.name} (¥${totalCost})`
     );
+
+    if (gameState.logEntries.length > 50) {
+      gameState.logEntries.pop();
+    }
   } else {
     showAlert("现金不足！", "error");
     stopFastAction();
@@ -478,7 +562,6 @@ const sellItem = (itemId, quantity = 1) => {
     gameState.cash += totalValue;
     gameState.inventory[item.id] = currentQuantity - quantity;
 
-    // 计算盈亏 (与基础价格比较)
     const profit = (item.currentPrice - item.basePrice) * quantity;
     let profitText = "";
     if (profit > 0) {
@@ -487,49 +570,37 @@ const sellItem = (itemId, quantity = 1) => {
       profitText = ` (亏损 ¥${-profit})`;
     }
 
-    gameState.logEntries.push(
+    gameState.logEntries.unshift(
       `第 ${gameState.day} 天: 卖出 ${quantity} 个 ${item.name} (¥${totalValue})${profitText}`
     );
+
+    if (gameState.logEntries.length > 50) {
+      gameState.logEntries.pop();
+    }
   } else {
     showAlert("没有足够的商品可卖！", "error");
     stopFastAction();
   }
 };
 
-const calculateInventoryValue = () => {
-  let total = 0;
-  allItems.forEach((item) => {
-    if (gameState.inventory[item.id] > 0) {
-      const currentItem =
-        gameState.availableItems.find((i) => i.id === item.id) || item;
-      total +=
-        gameState.inventory[item.id] *
-        (currentItem.currentPrice || item.basePrice);
-    }
-  });
-  return total;
-};
-
 const nextDay = () => {
   gameState.day++;
 
   if (gameState.day > gameState.totalDays) {
-    // 游戏结束
     showInventory.value = true;
 
-    const totalAssets = gameState.cash;
-    const inventoryValue = calculateInventoryValue();
-    const totalValue = totalAssets + inventoryValue;
-    const profit = totalValue - 1000;
+    const totalAssetsValue = totalAssets.value;
+    const inventoryValue = inventoryTotalValue.value;
+    const profit = totalAssetsValue - 1000;
     const profitPercentage = ((profit / 1000) * 100).toFixed(2);
 
-    let resultMessage = `游戏结束！\n最终现金: ¥${totalAssets}`;
+    let resultMessage = `游戏结束！\n最终现金: ¥${gameState.cash}`;
 
     if (inventoryValue > 0) {
       resultMessage += `\n未卖出物品价值: ¥${inventoryValue}`;
     }
 
-    resultMessage += `\n总价值: ¥${totalValue}`;
+    resultMessage += `\n总价值: ¥${totalAssetsValue}`;
 
     if (profit > 0) {
       resultMessage += `\n盈利: ¥${profit} (+${profitPercentage}%)`;
@@ -539,11 +610,10 @@ const nextDay = () => {
       resultMessage += `\n盈亏平衡`;
     }
 
-    gameState.logEntries.push(resultMessage.replace(/\n/g, " - "));
+    gameState.logEntries.unshift(resultMessage.replace(/\n/g, " - "));
 
     showAlert(resultMessage.replace(/\n/g, "<br>"), "success");
 
-    // 返回设置界面
     setTimeout(() => {
       gameStarted.value = false;
       showInventory.value = false;
@@ -558,163 +628,287 @@ const nextDay = () => {
 
 // 生命周期
 onMounted(() => {
-  // 初始化库存
   allItems.forEach((item) => {
     gameState.inventory[item.id] = 0;
   });
 });
 
 onUnmounted(() => {
-  // 清理定时器
   stopFastAction();
 });
 </script>
 
 <style scoped>
-:root {
-  --primary-color: #3498db;
-  --secondary-color: #2ecc71;
-  --danger-color: #e74c3c;
-  --warning-color: #f39c12;
-  --dark-color: #2c3e50;
-  --light-color: #ecf0f1;
-  --border-radius: 8px;
-  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease;
-}
-
 * {
   box-sizing: border-box;
+}
+
+.game-main-container {
+  padding: 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
 }
 
 .game-container {
   max-width: 1200px;
   margin: 0 auto;
-  min-height: 100vh;
   padding: 20px;
+  min-height: calc(100vh - 60px);
 }
 
-.game-header {
-  text-align: center;
-  padding: 20px 0;
-}
-
-h1 {
-  color: var(--dark-color);
-  font-size: 2.2rem;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  padding: 10px 0;
+/* 设置界面样式 */
+.setup-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 40px 20px;
 }
 
 .setup-card {
-  max-width: 600px;
-  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 500px;
 }
 
-.setup-card h2 {
+.card-header {
   text-align: center;
-  margin-bottom: 20px;
-  color: var(--dark-color);
+  margin-bottom: 40px;
+}
+
+.card-header h1 {
+  color: #2c3e50;
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-item label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tip {
+  font-size: 0.85rem;
+  color: #95a5a6;
 }
 
 .start-btn {
   width: 100%;
-  margin-top: 20px;
+  height: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
 }
 
+/* 游戏界面样式 */
+.game-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 状态栏 */
 .status-bar {
-  background-color: var(--light-color);
-  padding: 12px 20px;
-  border-radius: var(--border-radius);
-  margin-bottom: 20px;
-  font-weight: bold;
-  color: var(--dark-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
 }
 
 .status-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 12px;
 }
 
-.status-item span {
-  font-weight: normal;
-  margin-left: 5px;
-  color: var(--primary-color);
+.status-item .label {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-bottom: 4px;
 }
 
-.items-container {
+.status-item .value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.status-item .cash {
+  color: #27ae60;
+}
+
+.status-item .total {
+  color: #3498db;
+}
+
+.status-item .profit {
+  color: #27ae60;
+}
+
+.status-item .loss {
+  color: #e74c3c;
+}
+
+/* 商品区域 */
+.items-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  color: #2c3e50;
+  font-size: 1.4rem;
   margin-bottom: 20px;
+  font-weight: 600;
 }
 
-.item-col {
-  margin-bottom: 20px;
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .item-card {
-  height: 100%;
-  transition: var(--transition);
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .item-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
-.item-image-container {
-  width: 100%;
-  height: 120px;
-  margin-bottom: 10px;
-  border-radius: var(--border-radius);
-  background-color: #f5f5f5;
+.item-card.price-up {
+  border-color: #27ae60;
+}
+
+.item-card.price-down {
+  border-color: #e74c3c;
+}
+
+.item-header {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .item-image {
-  max-width: 100%;
-  max-height: 100%;
+  position: relative;
+  width: 60px;
+  height: 60px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-image img {
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
-.item-image-fallback {
-  font-size: 2rem;
-  color: #ccc;
+.price-change {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.price-change .el-icon-top {
+  color: #27ae60;
+  font-size: 0.7rem;
+}
+
+.price-change .el-icon-bottom {
+  color: #e74c3c;
+  font-size: 0.7rem;
 }
 
 .item-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  flex: 1;
 }
 
 .item-name {
-  font-weight: bold;
-  font-size: 1.1rem;
-  color: var(--dark-color);
+  color: #2c3e50;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .item-price {
-  color: var(--danger-color);
-  font-size: 1rem;
-  font-weight: bold;
+  color: #e74c3c;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
-.item-owned {
-  color: var(--secondary-color);
-  margin-bottom: 15px;
-  font-weight: bold;
+.item-stats {
+  margin-bottom: 16px;
+}
+
+.owned {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  text-align: center;
+  background: white;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
 
 .action-buttons {
@@ -722,139 +916,263 @@ h1 {
   gap: 10px;
 }
 
-.buy-btn {
-  background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
-  color: white;
+.buy-btn,
+.sell-btn {
   flex: 1;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.buy-btn:hover {
-  background-color: #27ae60;
+.buy-btn {
+  background: #27ae60;
   border-color: #27ae60;
+  color: white;
+}
+
+.buy-btn:hover:not(:disabled) {
+  background: #219653;
+  border-color: #219653;
+  transform: translateY(-1px);
 }
 
 .sell-btn {
-  background-color: var(--danger-color);
-  border-color: var(--danger-color);
+  background: #e74c3c;
+  border-color: #e74c3c;
   color: white;
-  flex: 1;
 }
 
-.sell-btn:hover {
-  background-color: #c0392b;
+.sell-btn:hover:not(:disabled) {
+  background: #c0392b;
   border-color: #c0392b;
+  transform: translateY(-1px);
+}
+
+/* 操作区域 */
+.action-section {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
 }
 
 .next-day-btn {
-  width: 100%;
-  margin: 20px 0;
-  padding: 12px;
-  font-size: 1rem;
-}
-
-.history-container {
-  margin-top: 20px;
-}
-
-.history-title {
-  font-weight: bold;
-  color: var(--dark-color);
+  flex: 2;
+  height: 50px;
   font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
 }
 
-.log-entries {
-  max-height: 200px;
+.inventory-btn {
+  flex: 1;
+  height: 50px;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+/* 交易记录 */
+.history-section,
+.inventory-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.record-count,
+.total-value {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.log-container {
+  max-height: 300px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .log-entry {
-  margin-bottom: 8px;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
-.profit {
-  color: var(--secondary-color);
-  border-left: 3px solid var(--secondary-color);
+.log-entry:hover {
+  background: #e9ecef;
 }
 
-.loss {
-  color: var(--danger-color);
-  border-left: 3px solid var(--danger-color);
+.log-icon {
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
-.inventory-section {
-  margin-top: 20px;
+.log-text {
+  color: #2c3e50;
+  line-height: 1.4;
 }
 
-.inventory-title {
-  font-weight: bold;
-  color: var(--dark-color);
+.log-entry.profit {
+  border-left: 4px solid #27ae60;
 }
 
+.log-entry.loss {
+  border-left: 4px solid #e74c3c;
+}
+
+.empty-log {
+  text-align: center;
+  padding: 40px 20px;
+  color: #95a5a6;
+}
+
+.empty-log i {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.empty-log p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* 库存 */
 .inventory-grid {
-  margin-top: 10px;
-}
-
-.inventory-item-col {
-  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .inventory-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border-radius: var(--border-radius);
-  height: 100%;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
-.inventory-item .item-image-container {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 5px;
+.inventory-item:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
 }
 
-.inventory-item span {
-  font-size: 0.9rem;
-  text-align: center;
-  margin-bottom: 5px;
-}
-
-.inventory-total {
+.inv-item-image {
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 8px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  background-color: var(--light-color);
-  border-radius: var(--border-radius);
-  font-weight: bold;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
+.inv-item-image img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.inv-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inv-item-name {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.inv-item-quantity {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.inv-item-value {
+  color: #27ae60;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.empty-inventory {
+  text-align: center;
+  padding: 40px 20px;
+  color: #95a5a6;
+}
+
+.empty-inventory i {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.empty-inventory p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* 消息提示 */
 .alert-message {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1000;
-  max-width: 300px;
+  z-index: 9999;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .item-col {
-    width: 100%;
+  .game-container {
+    padding: 16px;
   }
 
-  .status-bar {
+  .setup-card {
+    padding: 24px;
+  }
+
+  .card-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-section {
     flex-direction: column;
-    gap: 10px;
   }
 
-  .status-item {
-    justify-content: space-between;
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .alert-message {
@@ -863,9 +1181,29 @@ h1 {
     left: 10px;
     max-width: none;
   }
+}
 
-  .inventory-item-col {
-    width: 50%;
+@media (max-width: 480px) {
+  .game-container {
+    padding: 12px;
+  }
+
+  .setup-card {
+    padding: 20px;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .item-image {
+    align-self: center;
   }
 }
 </style>

@@ -34,26 +34,21 @@
     <el-sub-menu index="">
       <template #title>游戏列表</template>
       <el-menu-item index="/score">
-        <el-icon><setting /></el-icon>
         <span>分数</span>
       </el-menu-item>
       <el-menu-item index="/gomoku">
-        <el-icon><setting /></el-icon>
         <span>五子棋</span>
       </el-menu-item>
       <el-menu-item index="/shop">
-        <el-icon><setting /></el-icon>
         <span>shop</span>
       </el-menu-item>
       <el-menu-item index="/snake">
-        <el-icon>🐍</el-icon>
         <span>贪吃蛇</span>
       </el-menu-item>
       <el-menu-item index="/2048">
         <span>2048</span>
       </el-menu-item>
       <el-menu-item index="/try">
-        <el-icon><setting /></el-icon>
         <span>404</span>
       </el-menu-item>
     </el-sub-menu>
@@ -92,5 +87,10 @@ const handleClose = (key: string, keyPath: string[]) => {
 el-header {
   padding: 0;
   --el-header-padding: 0;
+}
+span {
+  font-size: 20px;
+  width: 100%;
+  text-align: center;
 }
 </style>

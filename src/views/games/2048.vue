@@ -32,7 +32,7 @@
                 { 'cell-merged': mergedCells.has(`${rowIdx},${colIdx}`) },
               ]"
             >
-              {{ val || "" }}
+              <span class="cell-number">{{ val || "" }}</span>
             </div>
           </div>
 
@@ -572,13 +572,28 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
+  position: relative;
   transition: all 0.2s ease;
 }
 
 .cell:last-child {
   margin-right: 0;
+}
+
+/* 修复数字显示位置 */
+.cell-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+  /* 确保文字垂直居中 */
+  position: relative;
+  top: 0;
+  left: 0;
 }
 
 /* 数字方块颜色 */
@@ -694,7 +709,7 @@ button:hover {
   background-color: rgba(237, 194, 46, 0.5);
 }
 
-/* 响应式调整 */
+/* 响应式调整 - 重点修复手机端数字显示问题 */
 @media (max-width: 420px) {
   .game-container {
     padding: 10px;
@@ -705,18 +720,107 @@ button:hover {
     height: 0;
     padding-bottom: calc(25% - 8px);
     margin-right: 8px;
-    font-size: 18px;
+    position: relative;
   }
 
-  .cell-128,
-  .cell-256,
-  .cell-512 {
+  .cell-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: auto;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  /* 针对不同数字大小调整字体大小 */
+  .cell-128 .cell-number,
+  .cell-256 .cell-number,
+  .cell-512 .cell-number {
     font-size: 16px;
   }
 
-  .cell-1024,
-  .cell-2048 {
+  .cell-1024 .cell-number,
+  .cell-2048 .cell-number {
+    font-size: 14px;
+  }
+
+  /* 游戏信息区域在手机端的调整 */
+  .game-info {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .game-info h1 {
+    font-size: 32px;
+  }
+
+  .score-panel {
+    text-align: center;
+  }
+
+  .score-panel div {
+    font-size: 1rem;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+/* 针对小屏幕手机的额外优化 */
+@media (max-width: 360px) {
+  .game-container {
+    padding: 8px;
+  }
+
+  .cell-number {
+    font-size: 16px;
+  }
+
+  .cell-128 .cell-number,
+  .cell-256 .cell-number,
+  .cell-512 .cell-number {
+    font-size: 14px;
+  }
+
+  .cell-1024 .cell-number,
+  .cell-2048 .cell-number {
     font-size: 12px;
+  }
+
+  .game-info h1 {
+    font-size: 28px;
+  }
+}
+
+/* 针对横屏模式的优化 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-container {
+    padding: 10px;
+    max-width: 100%;
+  }
+
+  .game-info {
+    flex-direction: row;
+    margin-bottom: 15px;
+  }
+
+  .cell {
+    width: 60px;
+    height: 60px;
+  }
+
+  .cell-number {
+    font-size: 18px;
   }
 }
 </style>

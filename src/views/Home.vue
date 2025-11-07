@@ -1,225 +1,305 @@
 <template>
-  <div class="common-layout">
+  <div class="game-homepage">
+    <!-- 导航栏 -->
     <topnav />
 
-    <div class="main">
+    <!-- 主要内容 -->
+    <main class="main-content">
       <!-- 英雄区域 -->
-      <div class="hero-section">
+      <section class="hero-section">
         <div class="hero-background">
-          <ImageTrail
-            :items="[
-              'https://picsum.photos/id/287/300/300',
-              'https://picsum.photos/id/1001/300/300',
-              'https://picsum.photos/id/1025/300/300',
-              'https://picsum.photos/id/1026/300/300',
-              'https://picsum.photos/id/1027/300/300',
-              'https://picsum.photos/id/1028/300/300',
-              'https://picsum.photos/id/1029/300/300',
-              'https://picsum.photos/id/1030/300/300',
-            ]"
-            :variant="6"
-          />
-        </div>
-
-        <div class="hero-content">
-          <h1 class="hero-title">游戏乐园</h1>
-          <p class="hero-subtitle">探索精彩纷呈的小游戏世界</p>
-          <div class="hero-buttons">
-            <el-button type="primary" size="large" class="hero-btn"
-              >开始游戏</el-button
-            >
-            <el-button size="large" class="hero-btn secondary"
-              >查看合集</el-button
-            >
+          <div class="hero-glow"></div>
+          <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
           </div>
         </div>
-      </div>
 
-      <!-- 游戏展示区域 -->
-      <div class="section-container">
-        <el-card class="game-showcase" body-style="padding: 0 20px">
-          <CircularGallery
-            :items="gameItems"
-            :bend="0"
-            text-color="#afafaf"
-            :border-radius="0.05"
-            :scroll-speed="5"
-            :scroll-ease="0.05"
-            class="canvas"
-          />
-        </el-card>
-      </div>
+        <div class="hero-container">
+          <div class="hero-content">
+            <div class="hero-badge">🎮 发现无限乐趣</div>
+            <h1 class="hero-title">
+              <span class="title-line">探索精彩</span>
+              <span class="title-line accent">游戏世界</span>
+            </h1>
+            <p class="hero-description">
+              沉浸式体验各类精品小游戏，从益智解谜到动作冒险，总有一款适合你
+            </p>
 
-      <!-- 游戏分类区域 -->
-      <div class="section-container">
-        <div class="game-categories">
-          <h2 class="section-title">游戏分类</h2>
-          <div class="chroma-grid-wrapper">
-            <ChromaGrid
-              :items="items"
-              :radius="300"
-              :damping="0.45"
-              :fadeOut="0.6"
-              ease="power3.out"
-            />
+            <div class="hero-stats">
+              <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">精品游戏</div>
+              </div>
+              <div class="stat">
+                <div class="stat-number">1</div>
+                <div class="stat-label">活跃玩家</div>
+              </div>
+              <div class="stat">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">在线畅玩</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-preview">
+            <div class="preview-card">
+              <CircularGallery
+                :items="featuredGames"
+                :bend="0"
+                text-color="#afafaf"
+                :border-radius="0.05"
+                :scroll-speed="5"
+                :scroll-ease="0.05"
+                class="canvas"
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- 特色游戏区域 -->
-      <div class="section-container">
-        <div class="featured-games">
-          <h2 class="section-title">热门游戏</h2>
-          <div class="games-grid">
-            <div class="game-card" v-for="game in featuredGames" :key="game.id">
-              <div class="game-image">
+      <section class="featured-section">
+        <div class="container">
+          <div class="section-header">
+            <h2 class="section-title">热门推荐</h2>
+            <p class="section-subtitle">精选最受欢迎的游戏</p>
+          </div>
+
+          <div class="featured-grid">
+            <div
+              v-for="game in featuredGames"
+              :key="game.id"
+              class="featured-card"
+              :style="{ '--accent-color': game.color }"
+            >
+              <div class="card-badge">{{ game.category }}</div>
+              <div class="card-image">
                 <img :src="game.image" :alt="game.name" />
-                <div class="game-overlay"></div>
+                <div class="card-overlay">
+                  <button class="play-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M8 5V19L19 12L8 5Z" fill="currentColor" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div class="game-info">
-                <h4>{{ game.name }}</h4>
-                <p>{{ game.description }}</p>
-                <div class="game-stats">
-                  <span class="players">👥 {{ game.players }}</span>
-                  <el-button type="primary" size="small">立即游玩</el-button>
+              <div class="card-content">
+                <h3 class="card-title">{{ game.name }}</h3>
+                <p class="card-description">{{ game.description }}</p>
+                <div class="card-meta">
+                  <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.7764 3 12 3C8.22355 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
+                      <path
+                        d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
+                    </svg>
+                    <span>{{ game.players }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
+                    </svg>
+                    <span>{{ game.rating }}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <!-- 游戏分类区域 -->
+      <section class="categories-section">
+        <div class="container">
+          <div class="section-header">
+            <h2 class="section-title">游戏分类</h2>
+            <p class="section-subtitle">选择你喜欢的游戏类型</p>
+          </div>
+
+          <div class="categories-grid">
+            <div
+              v-for="category in gameCategories"
+              :key="category.id"
+              class="category-card"
+              :style="{ '--category-color': category.color }"
+            >
+              <div class="category-icon">
+                <span>{{ category.icon }}</span>
+              </div>
+              <h3 class="category-name">{{ category.name }}</h3>
+              <p class="category-count">{{ category.count }} 款游戏</p>
+              <div class="category-hover">
+                <button class="explore-btn">探索</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA区域 -->
+      <section class="cta-section">
+        <div class="container">
+          <div class="cta-content">
+            <h2 class="cta-title">准备好开始游戏了吗？</h2>
+            <p class="cta-description">
+              加入数百万玩家，立即体验精彩的游戏世界
+            </p>
+            <div class="cta-actions">
+              <button class="btn btn-large btn-primary">
+                <span>免费开始游戏</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M13.75 6.75L19.25 12L13.75 17.25"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M19 12H4.75"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
 import Topnav from "../views/topnav/TopNav.vue";
 import CircularGallery from "../components/gsap/CircularGallery.vue";
-import DotGrid from "../components/gsap/DotGrid.vue";
-import ChromaGrid from "../components/gsap/ChromaGrid.vue";
-import ImageTrail from "../components/gsap/ImageTrail.vue";
-
-// 游戏数据
-const gameItems = ref([
-  { image: "https://picsum.photos/800/600?random=1", text: "益智解谜" },
-  { image: "https://picsum.photos/800/600?random=2", text: "动作冒险" },
-  { image: "https://picsum.photos/800/600?random=3", text: "休闲放松" },
-  { image: "https://picsum.photos/800/600?random=4", text: "策略对战" },
-  { image: "https://picsum.photos/800/600?random=5", text: "角色扮演" },
-  { image: "https://picsum.photos/800/600?random=6", text: "多人竞技" },
-]);
-
-const items = ref([
-  {
-    image: "https://picsum.photos/300?random=7",
-    title: "益智游戏",
-    subtitle: "锻炼大脑思维",
-    handle: "@puzzle",
-    borderColor: "#3B82F6",
-    gradient: "linear-gradient(145deg, #3B82F6, #1E40AF)",
-    url: "",
-  },
-  {
-    image: "https://picsum.photos/300?random=8",
-    title: "动作游戏",
-    subtitle: "刺激冒险体验",
-    handle: "@action",
-    borderColor: "#EF4444",
-    gradient: "linear-gradient(145deg, #EF4444, #DC2626)",
-    url: "",
-  },
-  {
-    image: "https://picsum.photos/300?random=9",
-    title: "休闲游戏",
-    subtitle: "放松身心娱乐",
-    handle: "@casual",
-    borderColor: "#10B981",
-    gradient: "linear-gradient(145deg, #10B981, #059669)",
-    url: "",
-  },
-  {
-    image: "https://picsum.photos/300?random=10",
-    title: "策略游戏",
-    subtitle: "考验智慧谋略",
-    handle: "@strategy",
-    borderColor: "#F59E0B",
-    gradient: "linear-gradient(145deg, #F59E0B, #D97706)",
-    url: "",
-  },
-]);
-
-const featuredGames = ref([
+// 特色游戏数据
+const featuredGames = [
   {
     id: 1,
     name: "迷宫探险",
-    description: "在复杂的迷宫中寻找出路，考验你的方向感",
-    image: "https://picsum.photos/400/300?random=7",
-    players: "1.2万",
+    text: "迷宫探险",
+    description: "在复杂的迷宫中寻找出路，考验你的方向感和逻辑思维",
+    image: "https://picsum.photos/400/300?random=11",
+    players: "12,458",
+    rating: "4.8",
+    category: "益智",
+    color: "#3B82F6",
   },
   {
     id: 2,
     name: "数字华容道",
-    description: "经典的数字滑动拼图游戏",
-    image: "https://picsum.photos/400/300?random=8",
-    players: "8.5千",
+    text: "迷宫探险",
+    description: "经典的数字滑动拼图游戏，挑战你的大脑极限",
+    image: "https://picsum.photos/400/300?random=12",
+    players: "8,742",
+    rating: "4.9",
+    category: "解谜",
+    color: "#10B981",
   },
   {
     id: 3,
     name: "宝石消除",
-    description: "绚丽多彩的消除类游戏",
-    image: "https://picsum.photos/400/300?random=9",
-    players: "2.3万",
+    text: "宝石消除",
+    description: "绚丽多彩的消除类游戏，享受视觉和操作的乐趣",
+    image: "https://picsum.photos/400/300?random=13",
+    players: "23,156",
+    rating: "4.7",
+    category: "休闲",
+    color: "#F59E0B",
   },
   {
     id: 4,
     name: "太空射击",
-    description: "刺激的太空战斗体验",
-    image: "https://picsum.photos/400/300?random=10",
-    players: "1.8万",
+    text: "太空射击",
+    description: "刺激的太空战斗体验，展现你的操作技巧",
+    image: "https://picsum.photos/400/300?random=14",
+    players: "18,329",
+    rating: "4.6",
+    category: "动作",
+    color: "#EF4444",
+  },
+];
+
+// 游戏分类数据
+const gameCategories = [
+  {
+    id: 1,
+    name: "益智解谜",
+    icon: "🧩",
+    count: 15,
+    color: "#3B82F6",
+  },
+  {
+    id: 2,
+    name: "动作冒险",
+    icon: "🎯",
+    count: 12,
+    color: "#EF4444",
+  },
+  {
+    id: 3,
+    name: "休闲放松",
+    icon: "🌴",
+    count: 18,
+    color: "#10B981",
+  },
+  {
+    id: 4,
+    name: "策略对战",
+    icon: "♟️",
+    count: 9,
+    color: "#8B5CF6",
   },
   {
     id: 5,
-    name: "记忆翻牌",
-    description: "挑战你的记忆力极限",
-    image: "https://picsum.photos/400/300?random=11",
-    players: "1.5万",
+    name: "角色扮演",
+    icon: "🦸",
+    count: 7,
+    color: "#F59E0B",
   },
   {
     id: 6,
-    name: "拼图大师",
-    description: "完成精美的图片拼图",
-    image: "https://picsum.photos/400/300?random=12",
-    players: "9.2千",
+    name: "多人竞技",
+    icon: "👥",
+    count: 11,
+    color: "#EC4899",
   },
-]);
+];
 </script>
 
 <style scoped>
-.main {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 0px;
-  position: relative;
-  overflow: hidden;
+.game-homepage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #9ec0ff 0%, #98f7b7 50%, #ff8080 100%);
+  color: rgb(88, 73, 105);
 }
 
-/* 通用容器 */
-.section-container {
-  width: 92%;
-  margin: 2rem 0;
+.main-content {
+  width: 100%;
 }
 
 /* 英雄区域 */
 .hero-section {
-  width: 100%;
-  height: 600px;
   position: relative;
+  min-height: 90vh;
   display: flex;
   align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 
@@ -232,208 +312,572 @@ const featuredGames = ref([
   z-index: 1;
 }
 
-.hero-content {
+.hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.15) 0%,
+    transparent 70%
+  );
+  filter: blur(80px);
+}
+
+.floating-shapes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+  opacity: 0.1;
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 150px;
+  height: 150px;
+  top: 60%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.shape-3 {
+  width: 100px;
+  height: 100px;
+  bottom: 20%;
+  left: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+.hero-container {
   position: relative;
   z-index: 2;
-  text-align: center;
-  color: white;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.hero-content {
+  max-width: 500px;
+}
+
+.hero-badge {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
 }
 
 .hero-title {
-  font-size: 4rem;
+  font-size: 3.5rem;
   font-weight: 800;
-  margin-bottom: 1rem;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
 }
 
-.hero-subtitle {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+.title-line {
+  display: block;
 }
 
-.hero-buttons {
+.title-line.accent {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-description {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2.5rem;
+}
+
+.hero-actions {
   display: flex;
   gap: 1rem;
-  justify-content: center;
+  margin-bottom: 3rem;
 }
 
-.hero-btn {
-  padding: 12px 32px;
-  font-size: 1.1rem;
-  border-radius: 8px;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.hero-btn.secondary {
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
 }
 
-.hero-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
 }
 
-/* 游戏展示区域 */
-.game-showcase {
-  width: 100%;
-  padding: 20px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* 游戏分类区域 */
-.game-categories {
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.btn-large {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat {
   text-align: center;
-  padding: 2rem 0;
 }
 
-.chroma-grid-wrapper {
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-preview {
   display: flex;
   justify-content: center;
-  margin-top: 2rem;
+  align-items: center;
+}
+
+.preview-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 0 20px;
+  width: 98%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.card-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.card-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.card-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.card-content {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-scene {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scene-element {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: 8px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.scene-element:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.scene-element:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 /* 特色游戏区域 */
-.featured-games {
-  width: 100%;
+.featured-section {
+  padding: 6rem 0;
+  position: relative;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 4rem;
 }
 
 .section-title {
   font-size: 2.5rem;
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #333;
   font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #fff, rgba(255, 255, 255, 0.8));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.games-grid {
+.section-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.featured-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
 }
 
-.game-card {
-  background: white;
-  border-radius: 15px;
+.featured-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.game-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-}
-
-.game-image {
-  width: 100%;
-  height: 200px;
   position: relative;
+}
+
+.featured-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--accent-color);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.card-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: var(--accent-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.card-image {
+  position: relative;
+  height: 200px;
   overflow: hidden;
 }
 
-.game-image img {
+.card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-.game-overlay {
+.featured-card:hover .card-image img {
+  transform: scale(1.1);
+}
+
+.card-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(0, 0, 0, 0.1) 100%
-  );
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.game-card:hover .game-image img {
+.featured-card:hover .card-overlay {
+  opacity: 1;
+}
+
+.play-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.play-btn:hover {
   transform: scale(1.1);
 }
 
-.game-info {
+.card-content {
   padding: 1.5rem;
 }
 
-.game-info h4 {
-  font-size: 1.3rem;
+.card-title {
+  font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #333;
 }
 
-.game-info p {
-  color: #666;
-  line-height: 1.6;
+.card-description {
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
   margin-bottom: 1rem;
-  font-size: 0.95rem;
-}
-
-.game-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.players {
-  color: #888;
   font-size: 0.9rem;
+}
+
+.card-meta {
+  display: flex;
+  gap: 1rem;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.meta-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 分类区域 */
+.categories-section {
+  padding: 6rem 0;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.category-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--category-color);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.category-card:hover::before {
+  transform: scaleX(1);
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--category-color);
+}
+
+.category-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.category-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.category-count {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.category-hover {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.category-card:hover .category-hover {
+  opacity: 1;
+}
+
+.explore-btn {
+  background: var(--category-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.explore-btn:hover {
+  transform: scale(1.05);
+}
+
+/* CTA区域 */
+.cta-section {
+  padding: 6rem 0;
+  text-align: center;
+}
+
+.cta-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.cta-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.cta-description {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2.5rem;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .hero-section {
-    height: 500px;
+  .hero-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
   }
 
   .hero-title {
     font-size: 2.5rem;
   }
 
-  .hero-subtitle {
-    font-size: 1.2rem;
+  .hero-actions {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
-  .hero-buttons {
-    flex-direction: column;
-    align-items: center;
+  .hero-stats {
+    justify-content: center;
   }
 
-  .section-container {
-    width: 95%;
-  }
-
-  .games-grid {
+  .featured-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+  }
+
+  .categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  .hero-title {
+    font-size: 2rem;
   }
 
   .section-title {
     font-size: 2rem;
   }
-}
 
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: 2rem;
-  }
-
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-
-  .hero-btn {
-    width: 100%;
-    max-width: 250px;
+  .hero-stats {
+    gap: 1rem;
   }
 }
 </style>
