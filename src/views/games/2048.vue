@@ -383,19 +383,40 @@ const checkWin = () => {
 
 // 检查是否还有可能的移动
 const hasPossibleMoves = () => {
-  // 检查是否有相邻相同的数字
+  // 首先检查是否有空格子
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      if (grid.value[row][col] === 0) {
+        return true; // 有空格子，游戏可以继续
+      }
+    }
+  }
+
+  // 如果没有空格子，检查是否有相邻相同的数字
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
       const val = grid.value[row][col];
-      if (
-        (col < 3 && grid.value[row][col + 1] === val) ||
-        (row < 3 && grid.value[row + 1][col] === val)
-      ) {
+
+      // 检查右侧相邻
+      if (col < 3 && grid.value[row][col + 1] === val) {
+        return true;
+      }
+      // 检查下方相邻
+      if (row < 3 && grid.value[row + 1][col] === val) {
+        return true;
+      }
+      // 检查左侧相邻
+      if (col > 0 && grid.value[row][col - 1] === val) {
+        return true;
+      }
+      // 检查上方相邻
+      if (row > 0 && grid.value[row - 1][col] === val) {
         return true;
       }
     }
   }
-  return false;
+
+  return false; // 没有空格子且没有相邻相同数字，游戏结束
 };
 
 // 重新开始游戏
