@@ -22,16 +22,13 @@
                         @keyup.enter="handleAddPlayer"
                         class="player-input"
                       >
-                        <template #prefix>
-                          <el-icon><User /></el-icon>
-                        </template>
                       </el-input>
                       <el-button
                         type="primary"
                         @click="handleAddPlayer"
                         class="add-btn"
                       >
-                        <el-icon><Plus /></el-icon>新增玩家
+                        新增
                       </el-button>
                     </div>
                   </div>
@@ -244,7 +241,7 @@ const players = ref([
   {
     name: "玩家1",
     score: 0,
-    scoreInput: 1,
+    scoreInput: 10,
     avatar: "",
     isEditing: false,
     editingName: "",
@@ -252,7 +249,7 @@ const players = ref([
   {
     name: "玩家2",
     score: 0,
-    scoreInput: 1,
+    scoreInput: 10,
     avatar: "",
     isEditing: false,
     editingName: "",
@@ -280,13 +277,13 @@ const loadData = () => {
     const saved = localStorage.getItem("scoreData");
     if (saved) {
       const data = JSON.parse(saved);
-      // 确保每个玩家都有scoreInput属性
       if (data.players && Array.isArray(data.players)) {
         data.players.forEach((player) => {
           if (!player.scoreInput) {
             player.scoreInput = 10;
           }
-          // 添加编辑状态属性
+          // 确保 scoreInput 是数字类型
+          player.scoreInput = Number(player.scoreInput);
           player.isEditing = false;
           player.editingName = "";
         });
@@ -299,14 +296,12 @@ const loadData = () => {
     }
   } catch (error) {
     console.error("加载数据失败:", error);
-    // 出错时使用默认数据
   }
 };
 
 // 保存数据到本地存储
 const saveData = () => {
   try {
-    // 移除临时编辑状态属性再保存
     const playersToSave = players.value.map((player) => {
       const { isEditing, editingName, ...rest } = player;
       return rest;
@@ -330,7 +325,6 @@ const handleAddPlayer = () => {
     return;
   }
 
-  // 检查昵称是否重复
   const nameExists = players.value.some(
     (player) => player.name === newPlayerName.value
   );
@@ -342,7 +336,7 @@ const handleAddPlayer = () => {
   const newPlayer = {
     name: newPlayerName.value,
     score: 0,
-    scoreInput: 1,
+    scoreInput: 10, // 默认值设为10
     avatar: "",
     isEditing: false,
     editingName: "",
@@ -356,11 +350,10 @@ const handleAddPlayer = () => {
   });
 
   saveData();
-  newPlayerName.value = ""; // 重置输入框
+  newPlayerName.value = "";
 };
 
 const startEditName = (player) => {
-  // 先关闭其他正在编辑的行
   players.value.forEach((p) => {
     if (p !== player && p.isEditing) {
       p.isEditing = false;
@@ -378,7 +371,6 @@ const finishEditName = (player) => {
     return;
   }
 
-  // 检查昵称是否重复（排除自己）
   const nameExists = players.value.some(
     (p) => p !== player && p.name === player.editingName
   );
@@ -445,7 +437,6 @@ const resetGame = () => {
     type: "warning",
   })
     .then(() => {
-      // 保留玩家，但重置分数
       players.value.forEach((player) => {
         player.score = 0;
       });
@@ -498,26 +489,34 @@ const handleClearHistory = () => {
 onMounted(loadData);
 
 const addScore = (player) => {
-  if (!player.scoreInput) {
-    player.scoreInput = 10; // 确保有默认值
+  // 确保 scoreInput 是有效的数字
+  let scoreToAdd = Number(player.scoreInput);
+  if (isNaN(scoreToAdd) || scoreToAdd <= 0) {
+    scoreToAdd = 10; // 如果无效，使用默认值
+    player.scoreInput = 10;
   }
-  player.score += player.scoreInput;
+
+  player.score += scoreToAdd;
   history.value.unshift({
     time: new Date().toLocaleString(),
-    content: `${player.name} 加分 ${player.scoreInput}`,
+    content: `${player.name} 加分 ${scoreToAdd}`,
     type: "success",
   });
   saveData();
 };
 
 const minusScore = (player) => {
-  if (!player.scoreInput) {
-    player.scoreInput = 10; // 确保有默认值
+  // 确保 scoreInput 是有效的数字
+  let scoreToMinus = Number(player.scoreInput);
+  if (isNaN(scoreToMinus) || scoreToMinus <= 0) {
+    scoreToMinus = 10; // 如果无效，使用默认值
+    player.scoreInput = 10;
   }
-  player.score -= player.scoreInput;
+
+  player.score -= scoreToMinus;
   history.value.unshift({
     time: new Date().toLocaleString(),
-    content: `${player.name} 减分 ${player.scoreInput}`,
+    content: `${player.name} 减分 ${scoreToMinus}`,
     type: "danger",
   });
   saveData();
@@ -555,7 +554,6 @@ const lowestScore = computed(() => {
   );
 });
 </script>
-
 <style scoped>
 .score-system {
   width: 100%;
@@ -580,7 +578,6 @@ const lowestScore = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 0px;
 }
 
 .card-header .title {
@@ -607,7 +604,8 @@ const lowestScore = computed(() => {
 }
 
 .player-input {
-  width: 150px;
+  width: 120px;
+  height: 100%;
   transition: all var(--transition-duration) ease;
 }
 

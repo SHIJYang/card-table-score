@@ -118,16 +118,6 @@
                           :alt="item.name"
                           @error="handleImageError($event, item.id)"
                         />
-                        <div class="price-change" v-if="item.priceChange !== 0">
-                          <i
-                            :class="
-                              item.priceChange > 0
-                                ? 'el-icon-top'
-                                : 'el-icon-bottom'
-                            "
-                          ></i>
-                          {{ Math.abs(item.priceChange) }}%
-                        </div>
                       </div>
                       <div class="item-info">
                         <h3 class="item-name">{{ item.name }}</h3>
@@ -794,7 +784,7 @@ onUnmounted(() => {
 .items-section {
   background: white;
   border-radius: 16px;
-  padding: 24px;
+  padding: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -807,7 +797,7 @@ onUnmounted(() => {
 
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 2fr));
   gap: 20px;
 }
 
@@ -950,7 +940,7 @@ onUnmounted(() => {
 /* 操作区域 */
 .action-section {
   display: flex;
-  gap: 16px;
+  gap: 0px;
   justify-content: center;
 }
 
@@ -1158,10 +1148,6 @@ onUnmounted(() => {
 
   .status-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .items-grid {
-    grid-template-columns: 1fr;
   }
 
   .section-header {
