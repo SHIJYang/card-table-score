@@ -8,16 +8,18 @@
           <h1>2048</h1>
           <div class="score-panel">
             <div>分数: {{ score }}</div>
+            <div>最高分: {{ highScore }}</div>
             <button @click="resetGame">重新开始</button>
           </div>
         </div>
 
         <div
           class="game-board"
-          @keydown="handleKeyDown"
-          @keyup="afterMove"
           tabindex="0"
           ref="boardRef"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
         >
           <div class="grid-cell" v-for="(row, rowIdx) in grid" :key="rowIdx">
             <div
@@ -25,19 +27,29 @@
               v-for="(val, colIdx) in row"
               :key="colIdx"
               :class="[
-                'cell-' + val,
+                val ? 'cell-' + val : '',
                 { 'cell-moved': movedCells.has(`${rowIdx},${colIdx}`) },
+                { 'cell-merged': mergedCells.has(`${rowIdx},${colIdx}`) },
               ]"
             >
               {{ val || "" }}
             </div>
           </div>
-        </div>
 
-        <div class="game-over" v-if="isGameOver">
-          <p>游戏结束!</p>
-          <p>最终得分: {{ score }}</p>
-          <button @click="resetGame">再来一局</button>
+          <!-- 游戏结束遮罩 -->
+          <div class="game-over" v-if="isGameOver">
+            <p>游戏结束!</p>
+            <p>最终得分: {{ score }}</p>
+            <button @click="resetGame">再来一局</button>
+          </div>
+
+          <!-- 胜利提示 -->
+          <div class="game-win" v-if="isWin && !isGameOver">
+            <p>恭喜你赢了!</p>
+            <p>当前得分: {{ score }}</p>
+            <button @click="continueGame">继续游戏</button>
+            <button @click="resetGame">再来一局</button>
+          </div>
         </div>
       </el-main>
     </el-container>
@@ -46,15 +58,23 @@
 
 <script setup>
 import Topnav from "../topnav/TopNav.vue";
-import FuzzyText from "../../components/gsap/FuzzyText.vue";
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 
 // 游戏状态
 const grid = ref([]);
 const score = ref(0);
+const highScore = ref(0);
 const isGameOver = ref(false);
+const isWin = ref(false);
 const movedCells = ref(new Set());
+const mergedCells = ref(new Set());
 const boardRef = ref(null);
+
+// 触摸相关状态
+const touchStartX = ref(0);
+const touchStartY = ref(0);
+const touchEndX = ref(0);
+const touchEndY = ref(0);
 
 // 初始化游戏
 const initGame = () => {
@@ -64,10 +84,19 @@ const initGame = () => {
     .map(() => Array(4).fill(0));
   score.value = 0;
   isGameOver.value = false;
+  isWin.value = false;
+  movedCells.value.clear();
+  mergedCells.value.clear();
 
   // 随机生成两个初始数字
   generateRandomNumber();
   generateRandomNumber();
+
+  // 读取最高分
+  const savedHighScore = localStorage.getItem("2048_highScore");
+  if (savedHighScore) {
+    highScore.value = parseInt(savedHighScore);
+  }
 };
 
 // 随机生成数字(90%概率2，10%概率4)
@@ -96,31 +125,48 @@ const generateRandomNumber = () => {
 const move = (direction) => {
   let moved = false;
   movedCells.value.clear();
+  mergedCells.value.clear();
+  // 深拷贝当前网格用于比较
+  const originalGrid = JSON.parse(JSON.stringify(grid.value));
 
   switch (direction) {
     case "up":
       for (let col = 0; col < 4; col++) {
+        // 先处理移动，再处理合并
+        // 移动
         for (let row = 1; row < 4; row++) {
           if (grid.value[row][col] !== 0) {
             let newRow = row;
-            // 移动到最上方
             while (newRow > 0 && grid.value[newRow - 1][col] === 0) {
               grid.value[newRow - 1][col] = grid.value[newRow][col];
               grid.value[newRow][col] = 0;
               newRow--;
               moved = true;
-              movedCells.value.add(`${newRow},${col}`);
             }
-            // 合并相同数字
-            if (
-              newRow > 0 &&
-              grid.value[newRow - 1][col] === grid.value[newRow][col]
-            ) {
-              grid.value[newRow - 1][col] *= 2;
-              score.value += grid.value[newRow - 1][col];
+          }
+        }
+        // 合并
+        for (let row = 1; row < 4; row++) {
+          if (
+            grid.value[row][col] !== 0 &&
+            grid.value[row][col] === grid.value[row - 1][col]
+          ) {
+            grid.value[row - 1][col] *= 2;
+            score.value += grid.value[row - 1][col];
+            grid.value[row][col] = 0;
+            moved = true;
+            mergedCells.value.add(`${row - 1},${col}`);
+          }
+        }
+        // 再次移动，处理合并后产生的空位
+        for (let row = 1; row < 4; row++) {
+          if (grid.value[row][col] !== 0) {
+            let newRow = row;
+            while (newRow > 0 && grid.value[newRow - 1][col] === 0) {
+              grid.value[newRow - 1][col] = grid.value[newRow][col];
               grid.value[newRow][col] = 0;
+              newRow--;
               moved = true;
-              movedCells.value.add(`${newRow - 1},${col}`);
             }
           }
         }
@@ -129,6 +175,7 @@ const move = (direction) => {
 
     case "down":
       for (let col = 0; col < 4; col++) {
+        // 移动
         for (let row = 2; row >= 0; row--) {
           if (grid.value[row][col] !== 0) {
             let newRow = row;
@@ -137,17 +184,31 @@ const move = (direction) => {
               grid.value[newRow][col] = 0;
               newRow++;
               moved = true;
-              movedCells.value.add(`${newRow},${col}`);
             }
-            if (
-              newRow < 3 &&
-              grid.value[newRow + 1][col] === grid.value[newRow][col]
-            ) {
-              grid.value[newRow + 1][col] *= 2;
-              score.value += grid.value[newRow + 1][col];
+          }
+        }
+        // 合并
+        for (let row = 2; row >= 0; row--) {
+          if (
+            grid.value[row][col] !== 0 &&
+            grid.value[row][col] === grid.value[row + 1][col]
+          ) {
+            grid.value[row + 1][col] *= 2;
+            score.value += grid.value[row + 1][col];
+            grid.value[row][col] = 0;
+            moved = true;
+            mergedCells.value.add(`${row + 1},${col}`);
+          }
+        }
+        // 再次移动
+        for (let row = 2; row >= 0; row--) {
+          if (grid.value[row][col] !== 0) {
+            let newRow = row;
+            while (newRow < 3 && grid.value[newRow + 1][col] === 0) {
+              grid.value[newRow + 1][col] = grid.value[newRow][col];
               grid.value[newRow][col] = 0;
+              newRow++;
               moved = true;
-              movedCells.value.add(`${newRow + 1},${col}`);
             }
           }
         }
@@ -156,6 +217,7 @@ const move = (direction) => {
 
     case "left":
       for (let row = 0; row < 4; row++) {
+        // 移动
         for (let col = 1; col < 4; col++) {
           if (grid.value[row][col] !== 0) {
             let newCol = col;
@@ -164,17 +226,31 @@ const move = (direction) => {
               grid.value[row][newCol] = 0;
               newCol--;
               moved = true;
-              movedCells.value.add(`${row},${newCol}`);
             }
-            if (
-              newCol > 0 &&
-              grid.value[row][newCol - 1] === grid.value[row][newCol]
-            ) {
-              grid.value[row][newCol - 1] *= 2;
-              score.value += grid.value[row][newCol - 1];
+          }
+        }
+        // 合并
+        for (let col = 1; col < 4; col++) {
+          if (
+            grid.value[row][col] !== 0 &&
+            grid.value[row][col] === grid.value[row][col - 1]
+          ) {
+            grid.value[row][col - 1] *= 2;
+            score.value += grid.value[row][col - 1];
+            grid.value[row][col] = 0;
+            moved = true;
+            mergedCells.value.add(`${row},${col - 1}`);
+          }
+        }
+        // 再次移动
+        for (let col = 1; col < 4; col++) {
+          if (grid.value[row][col] !== 0) {
+            let newCol = col;
+            while (newCol > 0 && grid.value[row][newCol - 1] === 0) {
+              grid.value[row][newCol - 1] = grid.value[row][newCol];
               grid.value[row][newCol] = 0;
+              newCol--;
               moved = true;
-              movedCells.value.add(`${row},${newCol - 1}`);
             }
           }
         }
@@ -183,6 +259,7 @@ const move = (direction) => {
 
     case "right":
       for (let row = 0; row < 4; row++) {
+        // 移动
         for (let col = 2; col >= 0; col--) {
           if (grid.value[row][col] !== 0) {
             let newCol = col;
@@ -191,22 +268,47 @@ const move = (direction) => {
               grid.value[row][newCol] = 0;
               newCol++;
               moved = true;
-              movedCells.value.add(`${row},${newCol}`);
             }
-            if (
-              newCol < 3 &&
-              grid.value[row][newCol + 1] === grid.value[row][newCol]
-            ) {
-              grid.value[row][newCol + 1] *= 2;
-              score.value += grid.value[row][newCol + 1];
+          }
+        }
+        // 合并
+        for (let col = 2; col >= 0; col--) {
+          if (
+            grid.value[row][col] !== 0 &&
+            grid.value[row][col] === grid.value[row][col + 1]
+          ) {
+            grid.value[row][col + 1] *= 2;
+            score.value += grid.value[row][col + 1];
+            grid.value[row][col] = 0;
+            moved = true;
+            mergedCells.value.add(`${row},${col + 1}`);
+          }
+        }
+        // 再次移动
+        for (let col = 2; col >= 0; col--) {
+          if (grid.value[row][col] !== 0) {
+            let newCol = col;
+            while (newCol < 3 && grid.value[row][newCol + 1] === 0) {
+              grid.value[row][newCol + 1] = grid.value[row][newCol];
               grid.value[row][newCol] = 0;
+              newCol++;
               moved = true;
-              movedCells.value.add(`${row},${newCol + 1}`);
             }
           }
         }
       }
       break;
+  }
+
+  // 记录移动的单元格
+  if (moved) {
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        if (originalGrid[i][j] !== grid.value[i][j] && grid.value[i][j] !== 0) {
+          movedCells.value.add(`${i},${j}`);
+        }
+      }
+    }
   }
 
   return moved;
@@ -235,6 +337,10 @@ const handleKeyDown = (e) => {
       e.preventDefault();
       break;
   }
+
+  if (moved) {
+    setTimeout(afterMove, 100); // 等待动画完成
+  }
 };
 
 // 移动后操作
@@ -242,9 +348,35 @@ const afterMove = () => {
   if (movedCells.value.size > 0) {
     // 生成新数字
     const canGenerate = generateRandomNumber();
+
+    // 检查是否获胜
+    checkWin();
+
     // 检查游戏是否结束
     if (!canGenerate && !hasPossibleMoves()) {
       isGameOver.value = true;
+      // 更新最高分
+      if (score.value > highScore.value) {
+        highScore.value = score.value;
+        localStorage.setItem("2048_highScore", highScore.value.toString());
+      }
+    }
+  }
+};
+
+// 检查是否获胜(出现2048)
+const checkWin = () => {
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      if (grid.value[i][j] >= 2048) {
+        isWin.value = true;
+        // 更新最高分
+        if (score.value > highScore.value) {
+          highScore.value = score.value;
+          localStorage.setItem("2048_highScore", highScore.value.toString());
+        }
+        return;
+      }
     }
   }
 };
@@ -271,11 +403,75 @@ const resetGame = () => {
   initGame();
 };
 
+// 继续游戏（关闭胜利提示）
+const continueGame = () => {
+  isWin.value = false;
+};
+
+// 触摸事件处理
+const handleTouchStart = (e) => {
+  touchStartX.value = e.touches[0].clientX;
+  touchStartY.value = e.touches[0].clientY;
+};
+
+const handleTouchMove = (e) => {
+  e.preventDefault(); // 防止页面滚动
+};
+
+const handleTouchEnd = (e) => {
+  if (isGameOver.value) return;
+
+  touchEndX.value = e.changedTouches[0].clientX;
+  touchEndY.value = e.changedTouches[0].clientY;
+
+  const diffX = touchEndX.value - touchStartX.value;
+  const diffY = touchEndY.value - touchStartY.value;
+  const minSwipeDistance = 30; // 最小滑动距离
+
+  // 判断滑动方向
+  if (Math.abs(diffX) > Math.abs(diffY)) {
+    // 水平滑动
+    if (Math.abs(diffX) > minSwipeDistance) {
+      if (diffX > 0) {
+        move("right");
+      } else {
+        move("left");
+      }
+      setTimeout(afterMove, 100);
+    }
+  } else {
+    // 垂直滑动
+    if (Math.abs(diffY) > minSwipeDistance) {
+      if (diffY > 0) {
+        move("down");
+      } else {
+        move("up");
+      }
+      setTimeout(afterMove, 100);
+    }
+  }
+};
+
+// 监听分数变化，更新最高分
+watch(score, (newVal) => {
+  if (newVal > highScore.value) {
+    highScore.value = newVal;
+    localStorage.setItem("2048_highScore", highScore.value.toString());
+  }
+});
+
 // 初始化
 onMounted(() => {
   initGame();
   // 聚焦棋盘以接收键盘事件
   boardRef.value.focus();
+  // 全局监听键盘事件
+  window.addEventListener("keydown", handleKeyDown);
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeyDown);
 });
 </script>
 
@@ -292,6 +488,12 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  color: #776e65;
+}
+
+.game-info h1 {
+  margin: 0;
+  font-size: 40px;
 }
 
 .score-panel {
@@ -301,6 +503,10 @@ onMounted(() => {
 .score-panel div {
   font-size: 1.2rem;
   margin-bottom: 10px;
+  background-color: #bbada0;
+  color: #eee4da;
+  padding: 5px 10px;
+  border-radius: 3px;
 }
 
 button {
@@ -311,6 +517,11 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #705d4c;
 }
 
 .game-board {
@@ -319,6 +530,7 @@ button {
   padding: 10px;
   position: relative;
   outline: none;
+  touch-action: manipulation; /* 优化触摸体验 */
 }
 
 .grid-cell {
@@ -376,54 +588,114 @@ button {
 .cell-128 {
   background-color: #edcf72;
   color: #f9f6f2;
+  font-size: 20px;
 }
 .cell-256 {
   background-color: #edcc61;
   color: #f9f6f2;
+  font-size: 20px;
 }
 .cell-512 {
   background-color: #edc850;
   color: #f9f6f2;
+  font-size: 20px;
 }
 .cell-1024 {
   background-color: #edc53f;
   color: #f9f6f2;
+  font-size: 16px;
 }
 .cell-2048 {
   background-color: #edc22e;
   color: #f9f6f2;
+  font-size: 16px;
 }
 
-/* 移动动画 */
+/* 动画效果 */
 .cell-moved {
-  animation: scale 0.2s ease;
+  animation: move 0.2s ease;
 }
 
-@keyframes scale {
+.cell-merged {
+  animation: merge 0.3s ease;
+}
+
+@keyframes move {
   0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
   100% {
     transform: scale(1);
   }
 }
 
-.game-over {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgba(238, 228, 218, 0.9);
-  padding: 20px;
-  border-radius: 6px;
-  text-align: center;
+@keyframes merge {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
-.game-over p {
+/* 游戏结束和胜利遮罩 */
+.game-over,
+.game-win {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(238, 228, 218, 0.9);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.game-over p,
+.game-win p {
   margin: 10px 0;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
+  color: #776e65;
+  font-weight: bold;
+}
+
+.game-win {
+  background-color: rgba(237, 194, 46, 0.5);
+}
+
+/* 响应式调整 */
+@media (max-width: 420px) {
+  .game-container {
+    padding: 10px;
+  }
+
+  .cell {
+    width: calc(25% - 8px);
+    height: 0;
+    padding-bottom: calc(25% - 8px);
+    margin-right: 8px;
+    font-size: 18px;
+  }
+
+  .cell-128,
+  .cell-256,
+  .cell-512 {
+    font-size: 16px;
+  }
+
+  .cell-1024,
+  .cell-2048 {
+    font-size: 12px;
+  }
 }
 </style>

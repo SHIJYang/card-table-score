@@ -16,7 +16,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        min-width: 150px;
+        min-width: 140px;
       "
     >
       <TextPressure
@@ -29,7 +29,7 @@
         :italic="true"
         text-color="#8c8c8c"
         stroke-color="#27FF64"
-        :min-font-size="43"
+        :min-font-size="36"
     /></view>
     <el-sub-menu index="">
       <template #title>游戏列表</template>
