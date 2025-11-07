@@ -49,6 +49,9 @@
         <el-icon>🐍</el-icon>
         <span>贪吃蛇</span>
       </el-menu-item>
+      <el-menu-item index="/2048">
+        <span>2048</span>
+      </el-menu-item>
       <el-menu-item index="/try">
         <el-icon><setting /></el-icon>
         <span>404</span>

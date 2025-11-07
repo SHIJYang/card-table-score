@@ -23,6 +23,11 @@ const routes = [
         component: () => import('../views/games/ShopGame.vue')
     },
     {
+        path: '/2048',
+        name: '2048',
+        component: () => import('../views/games/2048.vue')
+    },
+    {
         path: '/score',
         name: 'Score',
         component: () => import('../views/games/ScoreSystem.vue')
