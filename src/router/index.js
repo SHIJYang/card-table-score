@@ -37,6 +37,26 @@ const routes = [
         name: 'Try',
         component: () => import('../views/games/try.vue')
     },
+    {
+        path: '/examples/store',
+        name: 'StoreExample',
+        component: () => import('../examples/StoreExample.vue')
+    },
+    {
+        path: '/examples/api',
+        name: 'ApiExample',
+        component: () => import('../examples/ApiExample.vue')
+    },
+    {
+        path: '/examples/quickstart',
+        name: 'QuickStart',
+        component: () => import('../examples/QuickStart.vue')
+    },
+    {
+        path: '/user/settings',
+        name: 'UserSettings',
+        component: () => import('../views/UserSettings.vue')
+    },
 
 ]
 
