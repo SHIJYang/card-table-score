@@ -2,6 +2,7 @@
   "name": "score-management",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "animate.css": "^4.1.1",
     "axios": "^1.13.2",
@@ -36,6 +37,8 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
     "@vue/compiler-sfc": "^3.4.21",
+    "sass": "^1.94.0",
+    "sass-embedded": "^1.93.3",
     "vite": "^5.1.4"
   },
   "homepage": "."

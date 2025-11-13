@@ -37,16 +37,23 @@ export const useUserStore = defineStore('user', {
       try {
         const res = await userApi.login(loginForm)
         
+        // 检查响应数据
+        if (!res || !res.data) {
+          throw new Error('登录响应数据格式错误')
+        }
+        
         // 保存token和用户信息
         this.token = res.data.token
         this.userInfo = res.data.userInfo
         this.isLogin = true
         localStorage.setItem('token', res.data.token)
         
-        ElMessage.success('登录成功')
+        ElMessage.success(res.message || '登录成功')
         return true
       } catch (error) {
-        ElMessage.error('登录失败：' + (error.message || '未知错误'))
+        console.error('登录失败:', error)
+        const errorMsg = error.message || error.response?.data?.message || '登录失败'
+        ElMessage.error(errorMsg)
         return false
       }
     },

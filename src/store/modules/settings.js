@@ -92,8 +92,10 @@ export const useSettingsStore = defineStore('settings', {
      * @param {String} lang - 语言代码 'zh-CN' | 'en-US'
      */
     setLanguage(lang) {
-      this.language = lang
-      localStorage.setItem('language', lang)
+      // 如果传入的是事件对象，提取值
+      const newLang = typeof lang === 'string' ? lang : this.language
+      this.language = newLang
+      localStorage.setItem('language', newLang)
       ElMessage.success('语言设置已更新')
     },
 
@@ -110,9 +112,11 @@ export const useSettingsStore = defineStore('settings', {
      * @param {Boolean} enabled - 是否启用
      */
     setSoundEnabled(enabled) {
-      this.soundEnabled = enabled
-      localStorage.setItem('soundEnabled', enabled)
-      ElMessage.success(`音效已${enabled ? '开启' : '关闭'}`)
+      // 如果传入的是事件对象，使用当前值
+      const newValue = typeof enabled === 'boolean' ? enabled : this.soundEnabled
+      this.soundEnabled = newValue
+      localStorage.setItem('soundEnabled', newValue)
+      ElMessage.success(`音效已${newValue ? '开启' : '关闭'}`)
     },
 
     /**
@@ -127,9 +131,11 @@ export const useSettingsStore = defineStore('settings', {
      * @param {Boolean} enabled - 是否启用
      */
     setMusicEnabled(enabled) {
-      this.musicEnabled = enabled
-      localStorage.setItem('musicEnabled', enabled)
-      ElMessage.success(`音乐已${enabled ? '开启' : '关闭'}`)
+      // 如果传入的是事件对象，使用当前值
+      const newValue = typeof enabled === 'boolean' ? enabled : this.musicEnabled
+      this.musicEnabled = newValue
+      localStorage.setItem('musicEnabled', newValue)
+      ElMessage.success(`音乐已${newValue ? '开启' : '关闭'}`)
     },
 
     /**
@@ -144,7 +150,9 @@ export const useSettingsStore = defineStore('settings', {
      * @param {Number} volume - 音量 0-100
      */
     setVolume(volume) {
-      this.volume = Math.max(0, Math.min(100, volume))
+      // 如果传入的是事件对象，使用当前值
+      const newVolume = typeof volume === 'number' ? volume : this.volume
+      this.volume = Math.max(0, Math.min(100, newVolume))
       localStorage.setItem('volume', this.volume)
     },
 
@@ -153,9 +161,11 @@ export const useSettingsStore = defineStore('settings', {
      * @param {Boolean} enabled - 是否启用
      */
     setAnimationEnabled(enabled) {
-      this.animationEnabled = enabled
-      localStorage.setItem('animationEnabled', enabled)
-      ElMessage.success(`动画效果已${enabled ? '开启' : '关闭'}`)
+      // 如果传入的是事件对象，使用当前值
+      const newValue = typeof enabled === 'boolean' ? enabled : this.animationEnabled
+      this.animationEnabled = newValue
+      localStorage.setItem('animationEnabled', newValue)
+      ElMessage.success(`动画效果已${newValue ? '开启' : '关闭'}`)
     },
 
     /**
@@ -163,9 +173,11 @@ export const useSettingsStore = defineStore('settings', {
      * @param {Boolean} enabled - 是否启用
      */
     setNotificationEnabled(enabled) {
-      this.notificationEnabled = enabled
-      localStorage.setItem('notificationEnabled', enabled)
-      ElMessage.success(`通知已${enabled ? '开启' : '关闭'}`)
+      // 如果传入的是事件对象，使用当前值
+      const newValue = typeof enabled === 'boolean' ? enabled : this.notificationEnabled
+      this.notificationEnabled = newValue
+      localStorage.setItem('notificationEnabled', newValue)
+      ElMessage.success(`通知已${newValue ? '开启' : '关闭'}`)
     },
 
     /**

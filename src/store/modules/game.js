@@ -270,7 +270,7 @@ export const useGameStore = defineStore('game', {
     /**
      * 获取Top游戏排行（按游玩次数）
      */
-    topGamesByPlayCount: (state, getters) => (limit = 5) => {
+    topGamesByPlayCount: (_state, getters) => (limit = 5) => {
       return Object.values(getters.gameStatsMap)
         .filter(s => s.playCount > 0)
         .sort((a, b) => b.playCount - a.playCount)
@@ -560,8 +560,8 @@ export const useGameStore = defineStore('game', {
     },
 
     /**
-     * 获取游戏历史记录
-     * @param {Object} params - { page, pageSize }
+     * 获取游戏历史记录（支持高级筛选）
+     * @param {Object} params - { page, pageSize, gameId, startDate, endDate, minScore, maxScore, keyword }
      * @returns {Promise<Array>} - 历史记录
      */
     async fetchGameHistory(params = { page: 1, pageSize: 10 }) {
@@ -577,6 +577,60 @@ export const useGameStore = defineStore('game', {
     },
 
     /**
+     * 新增游戏记录
+     * @param {Object} recordData - { gameId, score, playTime, playDate, remark }
+     * @returns {Promise<Object|null>} - 新增的记录
+     */
+    async addGameRecord(recordData) {
+      try {
+        const res = await gameApi.addGameRecord(recordData)
+        
+        // 添加到本地列表头部
+        this.gameHistory.unshift(res.data)
+        this.gameHistoryTotal++
+        
+        // 更新统计
+        this.gameStats.totalPlayed++
+        this.gameStats.totalScore += recordData.score
+        if (recordData.score > this.gameStats.highestScore) {
+          this.gameStats.highestScore = recordData.score
+        }
+        
+        ElMessage.success('添加成功')
+        return res.data
+      } catch (error) {
+        ElMessage.error('添加失败')
+        console.error('添加游戏记录失败', error)
+        return null
+      }
+    },
+
+    /**
+     * 更新游戏记录
+     * @param {Number} recordId - 记录ID
+     * @param {Object} updateData - 更新的数据
+     * @returns {Promise<boolean>} - 是否更新成功
+     */
+    async updateGameRecord(recordId, updateData) {
+      try {
+        const res = await gameApi.updateGameRecord(recordId, updateData)
+        
+        // 更新本地列表
+        const index = this.gameHistory.findIndex(item => item.id === recordId)
+        if (index > -1) {
+          this.gameHistory[index] = res.data
+        }
+        
+        ElMessage.success('更新成功')
+        return true
+      } catch (error) {
+        ElMessage.error('更新失败')
+        console.error('更新游戏记录失败', error)
+        return false
+      }
+    },
+
+    /**
      * 删除游戏记录
      * @param {Number} recordId - 记录ID
      * @returns {Promise<boolean>} - 是否删除成功
@@ -584,12 +638,72 @@ export const useGameStore = defineStore('game', {
     async deleteGameRecord(recordId) {
       try {
         await gameApi.deleteGameRecord(recordId)
-        this.gameHistory = this.gameHistory.filter(item => item.id !== recordId)
+        
+        // 从本地列表移除
+        const index = this.gameHistory.findIndex(item => item.id === recordId)
+        if (index > -1) {
+          const record = this.gameHistory[index]
+          this.gameHistory.splice(index, 1)
+          this.gameHistoryTotal--
+          
+          // 更新统计
+          this.gameStats.totalPlayed--
+          this.gameStats.totalScore -= record.score
+        }
+        
         ElMessage.success('删除成功')
         return true
       } catch (error) {
         ElMessage.error('删除失败')
+        console.error('删除游戏记录失败', error)
         return false
+      }
+    },
+
+    /**
+     * 批量删除游戏记录
+     * @param {Array<Number>} recordIds - 记录ID数组
+     * @returns {Promise<boolean>} - 是否删除成功
+     */
+    async batchDeleteGameRecords(recordIds) {
+      try {
+        const res = await gameApi.batchDeleteGameRecords(recordIds)
+        
+        // 从本地列表移除
+        recordIds.forEach(id => {
+          const index = this.gameHistory.findIndex(item => item.id === id)
+          if (index > -1) {
+            const record = this.gameHistory[index]
+            this.gameHistory.splice(index, 1)
+            this.gameHistoryTotal--
+            
+            // 更新统计
+            this.gameStats.totalPlayed--
+            this.gameStats.totalScore -= record.score
+          }
+        })
+        
+        ElMessage.success(res.message || `成功删除 ${recordIds.length} 条记录`)
+        return true
+      } catch (error) {
+        ElMessage.error('批量删除失败')
+        console.error('批量删除游戏记录失败', error)
+        return false
+      }
+    },
+
+    /**
+     * 获取游戏记录详情
+     * @param {Number} recordId - 记录ID
+     * @returns {Promise<Object|null>} - 记录详情
+     */
+    async fetchGameRecordDetail(recordId) {
+      try {
+        const res = await gameApi.getGameRecordDetail(recordId)
+        return res.data
+      } catch (error) {
+        console.error('获取游戏记录详情失败', error)
+        return null
       }
     },
 

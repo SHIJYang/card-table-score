@@ -33,25 +33,30 @@ let currentToken = 'mock-token-' + Date.now()
 export function userMock(mock) {
   // 用户登录
   mock.onPost('/user/login').reply((config) => {
-    const { username, password } = JSON.parse(config.data)
-    
-    const user = mockUsers.find(
-      (u) => u.username === username && u.password === password
-    )
-
-    if (user) {
-      currentToken = 'mock-token-' + Date.now()
-      const { password, ...userInfo } = user
-      return successResponse(
-        {
-          token: currentToken,
-          userInfo,
-        },
-        '登录成功'
+    try {
+      const { username, password } = JSON.parse(config.data)
+      
+      const user = mockUsers.find(
+        (u) => u.username === username && u.password === password
       )
-    }
 
-    return errorResponse('用户名或密码错误', 401)
+      if (user) {
+        currentToken = 'mock-token-' + Date.now()
+        const { password: _, ...userInfo } = user
+        return successResponse(
+          {
+            token: currentToken,
+            userInfo,
+          },
+          '登录成功'
+        )
+      }
+
+      return errorResponse('用户名或密码错误', 401)
+    } catch (error) {
+      console.error('登录 Mock 错误:', error)
+      return errorResponse('登录请求处理失败', 500)
+    }
   })
 
   // 用户注册

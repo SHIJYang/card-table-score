@@ -1,8 +1,6 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header style="padding: 0"><Topnav /></el-header>
-
       <el-main style="padding: 0">
         <el-card class="game-card">
           <template #header>
@@ -124,7 +122,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { ElMessage } from "element-plus";
-import Topnav from "../topnav/TopNav.vue";
 import {
   ArrowUp,
   ArrowDown,

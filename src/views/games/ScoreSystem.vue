@@ -1,8 +1,6 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header style="padding: 0"><topnav /></el-header>
-
       <el-main style="padding: 0">
         <div class="score-system">
           <el-row :gutter="24">
@@ -235,7 +233,6 @@ import {
   ArrowDown,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import Topnav from "../topnav/TopNav.vue";
 
 const players = ref([
   {

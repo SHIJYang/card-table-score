@@ -1,8 +1,5 @@
 <template>
   <div class="game-homepage">
-    <!-- 导航栏 -->
-    <topnav />
-
     <!-- 主要内容 -->
     <main class="main-content">
       <!-- 英雄区域 -->
@@ -129,7 +126,6 @@
 </template>
 
 <script setup lang="ts">
-import Topnav from "../views/topnav/TopNav.vue";
 import CircularGallery from "../components/gsap/CircularGallery.vue";
 // 特色游戏数据
 const featuredGames = [
@@ -228,7 +224,7 @@ const gameCategories = [
 
 <style scoped>
 .game-homepage {
-  min-height: 100vh;
+  min-height: calc(100vh - 60px); /* 减去导航栏高度 */
   background: linear-gradient(135deg, #9ec0ff 0%, #98f7b7 50%, #ff8080 100%);
   color: rgb(88, 73, 105);
 }

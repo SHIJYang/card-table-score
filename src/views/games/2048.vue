@@ -1,8 +1,6 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header style="padding: 0"><topnav /></el-header>
-
       <el-main class="game-container">
         <div class="game-info">
           <h1>2048</h1>
@@ -57,7 +55,6 @@
 </template>
 
 <script setup>
-import Topnav from "../topnav/TopNav.vue";
 import { ref, onMounted, onUnmounted, watch } from "vue";
 
 // 游戏状态

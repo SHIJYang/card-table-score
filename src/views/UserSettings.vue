@@ -8,14 +8,6 @@
           @select="handleMenuSelect"
           class="settings-menu"
         >
-          <el-menu-item index="profile">
-            <el-icon><User /></el-icon>
-            <span>基础信息</span>
-          </el-menu-item>
-          <el-menu-item index="security">
-            <el-icon><Lock /></el-icon>
-            <span>账号安全</span>
-          </el-menu-item>
           <el-menu-item index="game-history">
             <el-icon><Trophy /></el-icon>
             <span>游戏记录</span>
@@ -33,152 +25,10 @@
 
       <!-- 主内容区 -->
       <el-main class="settings-main">
-        <!-- 基础信息 -->
-        <div v-show="activeTab === 'profile'" class="settings-section">
-          <div class="section-header">
-            <h2>基础信息</h2>
-            <p class="section-desc">管理您的个人资料信息</p>
-          </div>
-
-          <el-card class="info-card">
-            <!-- 头像上传 -->
-            <div class="avatar-section">
-              <el-avatar :size="100" :src="userStore.userAvatar || defaultAvatar">
-                {{ userStore.userName?.charAt(0) }}
-              </el-avatar>
-              <div class="avatar-actions">
-                <el-upload
-                  :show-file-list="false"
-                  :before-upload="handleAvatarUpload"
-                  accept="image/*"
-                >
-                  <el-button type="primary" size="small">
-                    <el-icon><Upload /></el-icon>
-                    更换头像
-                  </el-button>
-                </el-upload>
-                <p class="upload-tip">支持 JPG、PNG，不超过 2MB</p>
-              </div>
-            </div>
-
-            <el-divider />
-
-            <!-- 基础信息表单 -->
-            <el-form
-              ref="profileFormRef"
-              :model="profileForm"
-              :rules="profileRules"
-              label-width="100px"
-              class="profile-form"
-            >
-              <el-form-item label="用户名" prop="username">
-                <el-input v-model="profileForm.username" disabled />
-              </el-form-item>
-
-              <el-form-item label="昵称" prop="name">
-                <el-input v-model="profileForm.name" placeholder="请输入昵称" />
-              </el-form-item>
-
-              <el-form-item label="邮箱" prop="email">
-                <el-input v-model="profileForm.email" placeholder="请输入邮箱" />
-              </el-form-item>
-
-              <el-form-item label="手机号" prop="phone">
-                <el-input v-model="profileForm.phone" placeholder="请输入手机号" />
-              </el-form-item>
-
-              <el-form-item label="性别" prop="gender">
-                <el-radio-group v-model="profileForm.gender">
-                  <el-radio label="male">男</el-radio>
-                  <el-radio label="female">女</el-radio>
-                  <el-radio label="other">保密</el-radio>
-                </el-radio-group>
-              </el-form-item>
-
-              <el-form-item label="生日" prop="birthday">
-                <el-date-picker
-                  v-model="profileForm.birthday"
-                  type="date"
-                  placeholder="选择生日"
-                  style="width: 100%"
-                />
-              </el-form-item>
-
-              <el-form-item label="个人简介" prop="bio">
-                <el-input
-                  v-model="profileForm.bio"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="介绍一下自己吧"
-                  maxlength="200"
-                  show-word-limit
-                />
-              </el-form-item>
-
-              <el-form-item>
-                <el-button type="primary" @click="handleUpdateProfile" :loading="updating">
-                  保存修改
-                </el-button>
-                <el-button @click="handleResetProfile">重置</el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </div>
-
-        <!-- 账号安全 -->
-        <div v-show="activeTab === 'security'" class="settings-section">
-          <div class="section-header">
-            <h2>账号安全</h2>
-            <p class="section-desc">保护您的账号安全</p>
-          </div>
-
-          <el-card class="info-card">
-            <el-form
-              ref="passwordFormRef"
-              :model="passwordForm"
-              :rules="passwordRules"
-              label-width="120px"
-            >
-              <el-form-item label="当前密码" prop="oldPassword">
-                <el-input
-                  v-model="passwordForm.oldPassword"
-                  type="password"
-                  placeholder="请输入当前密码"
-                  show-password
-                />
-              </el-form-item>
-
-              <el-form-item label="新密码" prop="newPassword">
-                <el-input
-                  v-model="passwordForm.newPassword"
-                  type="password"
-                  placeholder="请输入新密码"
-                  show-password
-                />
-              </el-form-item>
-
-              <el-form-item label="确认新密码" prop="confirmPassword">
-                <el-input
-                  v-model="passwordForm.confirmPassword"
-                  type="password"
-                  placeholder="请再次输入新密码"
-                  show-password
-                />
-              </el-form-item>
-
-              <el-form-item>
-                <el-button type="primary" @click="handleChangePassword" :loading="changingPassword">
-                  修改密码
-                </el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </div>
-
         <!-- 游戏记录 -->
         <div v-show="activeTab === 'game-history'" class="settings-section">
           <div class="section-header">
-            <h2>游戏记录</h2>
+            <h2>🎮 游戏记录</h2>
             <p class="section-desc">查看您的游戏历史记录</p>
           </div>
 
@@ -371,7 +221,7 @@
         <!-- 数据统计 -->
         <div v-show="activeTab === 'statistics'" class="settings-section">
           <div class="section-header">
-            <h2>数据统计</h2>
+            <h2>📊 数据统计</h2>
             <p class="section-desc">您的游戏数据概览</p>
           </div>
 
@@ -440,7 +290,7 @@
         <!-- 偏好设置 -->
         <div v-show="activeTab === 'preferences'" class="settings-section">
           <div class="section-header">
-            <h2>偏好设置</h2>
+            <h2>⚙️ 偏好设置</h2>
             <p class="section-desc">个性化您的使用体验</p>
           </div>
 
@@ -497,77 +347,20 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  User, Lock, Trophy, DataAnalysis, Setting, Upload,
+  Trophy, DataAnalysis, Setting,
   Search, Delete, Star, Medal, Timer
 } from '@element-plus/icons-vue'
-import { useUserStore, useGameStore, useSettingsStore } from '@/store'
+import { useGameStore, useSettingsStore } from '@/store'
 
 // Store
-const userStore = useUserStore()
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 
 // 当前激活的标签页
-const activeTab = ref('profile')
-
-// 默认头像
-const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const activeTab = ref('game-history')
 
 // 加载状态
-const updating = ref(false)
-const changingPassword = ref(false)
 const loadingHistory = ref(false)
-
-// ========== 基础信息 ==========
-const profileFormRef = ref(null)
-const profileForm = reactive({
-  username: '',
-  name: '',
-  email: '',
-  phone: '',
-  gender: 'other',
-  birthday: '',
-  bio: ''
-})
-
-const profileRules = {
-  name: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ],
-  phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-  ]
-}
-
-// ========== 账号安全 ==========
-const passwordFormRef = ref(null)
-const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-const validateConfirmPassword = (rule, value, callback) => {
-  if (value !== passwordForm.newPassword) {
-    callback(new Error('两次输入的密码不一致'))
-  } else {
-    callback()
-  }
-}
-
-const passwordRules = {
-  oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请再次输入新密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' }
-  ]
-}
 
 // ========== 游戏记录 ==========
 const historyFilter = reactive({
@@ -669,81 +462,6 @@ const handleMenuSelect = (index) => {
   activeTab.value = index
 }
 
-// 头像上传
-const handleAvatarUpload = async (file) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件!')
-    return false
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB!')
-    return false
-  }
-
-  // 调用 Store 上传头像
-  await userStore.uploadAvatar(file)
-  return false // 阻止默认上传行为
-}
-
-// 更新基础信息
-const handleUpdateProfile = async () => {
-  if (!profileFormRef.value) return
-
-  await profileFormRef.value.validate(async (valid) => {
-    if (valid) {
-      updating.value = true
-      try {
-        const success = await userStore.updateUserInfo({
-          name: profileForm.name,
-          email: profileForm.email,
-          phone: profileForm.phone,
-          gender: profileForm.gender,
-          birthday: profileForm.birthday,
-          bio: profileForm.bio
-        })
-        if (success) {
-          ElMessage.success('信息更新成功')
-        }
-      } finally {
-        updating.value = false
-      }
-    }
-  })
-}
-
-// 重置基础信息表单
-const handleResetProfile = () => {
-  loadUserInfo()
-}
-
-// 修改密码
-const handleChangePassword = async () => {
-  if (!passwordFormRef.value) return
-
-  await passwordFormRef.value.validate(async (valid) => {
-    if (valid) {
-      changingPassword.value = true
-      try {
-        await userStore.changePassword({
-          oldPassword: passwordForm.oldPassword,
-          newPassword: passwordForm.newPassword
-        })
-        // 清空表单
-        Object.assign(passwordForm, {
-          oldPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        })
-      } finally {
-        changingPassword.value = false
-      }
-    }
-  })
-}
-
 // 搜索游戏记录
 const handleSearchHistory = async () => {
   historyPagination.page = 1
@@ -810,7 +528,10 @@ const handleDeleteRecord = async (row) => {
   }).then(async () => {
     const success = await gameStore.deleteGameRecord(row.id)
     if (success) {
+      // 重新加载游戏历史
       await loadGameHistory()
+      // 重新计算统计数据
+      loadUserStats()
     }
   }).catch(() => {})
 }
@@ -857,22 +578,6 @@ const formatDate = (date) => {
 
 // ========== 数据加载 ==========
 
-// 加载用户信息
-const loadUserInfo = async () => {
-  const userInfo = await userStore.fetchUserInfo()
-  if (userInfo) {
-    Object.assign(profileForm, {
-      username: userInfo.username,
-      name: userInfo.name,
-      email: userInfo.email,
-      phone: userInfo.phone || '',
-      gender: userInfo.gender || 'other',
-      birthday: userInfo.birthday || '',
-      bio: userInfo.bio || ''
-    })
-  }
-}
-
 // 加载游戏历史
 const loadGameHistory = async () => {
   loadingHistory.value = true
@@ -887,21 +592,65 @@ const loadGameHistory = async () => {
   }
 }
 
-// 加载用户统计
-const loadUserStats = async () => {
-  const stats = await userStore.fetchUserStats()
-  if (stats) {
-    Object.assign(userStats, stats)
+// 加载用户统计（从本地游戏记录计算）
+const loadUserStats = () => {
+  const history = gameStore.gameHistory
+  
+  if (history.length === 0) {
+    Object.assign(userStats, {
+      totalPlayed: 0,
+      totalScore: 0,
+      highestScore: 0,
+      totalPlayTime: 0,
+      topGames: []
+    })
+    return
   }
+
+  // 计算统计数据
+  const totalPlayed = history.length
+  const totalScore = history.reduce((sum, record) => sum + record.score, 0)
+  const highestScore = Math.max(...history.map(r => r.score))
+  const totalPlayTime = history.reduce((sum, record) => sum + record.playTime, 0)
+
+  // 计算Top游戏
+  const gameStatsMap = {}
+  history.forEach(record => {
+    if (!gameStatsMap[record.gameId]) {
+      gameStatsMap[record.gameId] = {
+        gameName: record.gameName,
+        playCount: 0,
+        totalScore: 0,
+        bestScore: 0
+      }
+    }
+    const stats = gameStatsMap[record.gameId]
+    stats.playCount++
+    stats.totalScore += record.score
+    stats.bestScore = Math.max(stats.bestScore, record.score)
+  })
+
+  const topGames = Object.values(gameStatsMap)
+    .map(stats => ({
+      ...stats,
+      avgScore: Math.round(stats.totalScore / stats.playCount)
+    }))
+    .sort((a, b) => b.playCount - a.playCount)
+    .slice(0, 5)
+
+  Object.assign(userStats, {
+    totalPlayed,
+    totalScore,
+    highestScore,
+    totalPlayTime,
+    topGames
+  })
 }
 
 // 页面初始化
 onMounted(async () => {
-  await Promise.all([
-    loadUserInfo(),
-    loadGameHistory(),
-    loadUserStats()
-  ])
+  await loadGameHistory()
+  loadUserStats()
 })
 </script>
 

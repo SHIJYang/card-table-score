@@ -64,7 +64,27 @@ export const getGameHistory = (params) => {
   return request.get('/game/history', params)
 }
 
+// 新增游戏记录
+export const addGameRecord = (data) => {
+  return request.post('/game/history', data)
+}
+
+// 更新游戏记录
+export const updateGameRecord = (recordId, data) => {
+  return request.put(`/game/history/${recordId}`, data)
+}
+
 // 删除游戏记录
 export const deleteGameRecord = (recordId) => {
   return request.delete(`/game/history/${recordId}`)
+}
+
+// 批量删除游戏记录
+export const batchDeleteGameRecords = (recordIds) => {
+  return request.post('/game/history/batch-delete', { ids: recordIds })
+}
+
+// 获取游戏记录详情
+export const getGameRecordDetail = (recordId) => {
+  return request.get(`/game/history/${recordId}`)
 }

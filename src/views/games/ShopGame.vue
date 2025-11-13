@@ -1,8 +1,6 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header style="padding: 0"><topnav /></el-header>
-
       <el-main class="game-main-container">
         <div id="app">
           <div class="game-container">
@@ -274,7 +272,6 @@
 </template>
 
 <script setup>
-import Topnav from "../topnav/TopNav.vue";
 import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 
 // 物品图片映射

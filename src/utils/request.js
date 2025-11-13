@@ -26,9 +26,8 @@ service.interceptors.request.use(
       })
     }
 
-    // 获取token
-    const userStore = useUserStore()
-    const token = userStore.token
+    // 获取token - 优先从 localStorage 获取，避免 Pinia 未初始化的问题
+    const token = localStorage.getItem('token')
 
     // 添加token到请求头
     if (token) {
@@ -61,16 +60,23 @@ service.interceptors.response.use(
 
     // 根据自定义错误码判断请求是否成功
     if (res.code !== 200 && res.code !== 0) {
-      // 错误提示
-      ElMessage.error(res.message || '请求失败')
-
       // token过期或无效
       if (res.code === 401 || res.code === 403) {
-        const userStore = useUserStore()
-        userStore.logout()
+        // 清除本地token
+        localStorage.removeItem('token')
+        // 尝试获取 userStore 并登出
+        try {
+          const userStore = useUserStore()
+          userStore.logout()
+        } catch (e) {
+          console.warn('无法访问 userStore:', e)
+        }
         // 可以跳转到登录页
         // window.location.href = '/login'
       }
+
+      // 错误提示 - 不在这里显示，让业务层处理
+      // ElMessage.error(res.message || '请求失败')
 
       return Promise.reject(new Error(res.message || '请求失败'))
     }
@@ -92,8 +98,14 @@ service.interceptors.response.use(
           break
         case 401:
           message = '未授权，请重新登录'
-          const userStore = useUserStore()
-          userStore.logout()
+          // 清除本地token
+          localStorage.removeItem('token')
+          try {
+            const userStore = useUserStore()
+            userStore.logout()
+          } catch (e) {
+            console.warn('无法访问 userStore:', e)
+          }
           break
         case 403:
           message = '拒绝访问'
@@ -122,7 +134,8 @@ service.interceptors.response.use(
       message = '网络连接异常'
     }
 
-    ElMessage.error(message)
+    // 不在拦截器中显示错误，让业务层处理
+    // ElMessage.error(message)
     return Promise.reject(error)
   }
 )

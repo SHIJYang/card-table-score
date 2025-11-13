@@ -17,23 +17,27 @@ const MOCK_ENABLED = import.meta.env.VITE_MOCK_ENABLED === 'true'
  */
 export function setupMock(instance) {
   if (!MOCK_ENABLED) {
-    console.log('Mock数据已禁用')
+    console.log('📦 Mock数据已禁用')
     return
   }
 
-  console.log('Mock数据已启用')
+  console.log('🎭 Mock数据已启用')
 
   // 创建Mock适配器
   const mock = new MockAdapter(instance, { delayResponse: 300 })
 
   // 注册用户相关Mock
   userMock(mock)
+  console.log('✅ 用户Mock已注册')
 
   // 注册游戏相关Mock
   gameMock(mock)
+  console.log('✅ 游戏Mock已注册')
 
   // 其他未匹配的请求通过
   mock.onAny().passThrough()
+  
+  console.log('🚀 Mock系统初始化完成')
 }
 
 /**

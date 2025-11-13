@@ -1,8 +1,6 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header style="padding: 0"><topnav /></el-header>
-
       <el-main style="padding: 0">
         <el-card class="game-card">
           <template #header>
@@ -112,7 +110,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import Topnav from "../topnav/TopNav.vue";
 
 // 游戏状态
 const gameBoard = ref(null);

@@ -1,8 +1,6 @@
 <template>
   <div class="common-layout">
     <el-container>
-      <el-header style="padding: 0"><topnav /></el-header>
-
       <el-main class="error404">
         <FuzzyText
           text="404"
@@ -70,7 +68,6 @@
           class-name="your-custom-class"
         /> -->
 <script setup>
-import Topnav from "../topnav/TopNav.vue";
 import FuzzyText from "../../components/gsap/FuzzyText.vue";
 import ClickSpark from "../../components/ClickSpark.vue";
 import Squares from "../../components/gsap/Squares.vue";

@@ -1,12 +1,19 @@
 <template>
   <div id="app">
-    <router-view></router-view>
+    <!-- 全局导航栏 -->
+    <topnav />
+    
+    <!-- 页面内容 -->
+    <div class="page-content">
+      <router-view></router-view>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { onMounted } from "vue";
 import { initTheme } from "./theme/index.js";
+import Topnav from "./views/topnav/TopNav.vue";
 
 // 初始化主题
 onMounted(() => {
@@ -18,7 +25,7 @@ onMounted(() => {
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap");
 
 #app {
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   font-family: "Noto Sans SC", sans-serif;
   background: linear-gradient(
@@ -26,6 +33,12 @@ onMounted(() => {
     var(--bgPrimary-color) 0%,
     var(--bgSecondary-color) 100%
   );
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1;
   overflow: auto;
 }
 

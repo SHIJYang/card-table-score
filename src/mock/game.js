@@ -189,10 +189,104 @@ export function gameMock(mock) {
     return successResponse(paginationData(ranking, page, pageSize))
   })
 
-  // 获取游戏历史记录
+  // 获取游戏历史记录（支持高级筛选）
   mock.onGet('/game/history').reply((config) => {
-    const { page = 1, pageSize = 10 } = config.params
-    return successResponse(paginationData(mockGameHistory, page, pageSize))
+    const { 
+      page = 1, 
+      pageSize = 10, 
+      gameId, 
+      startDate, 
+      endDate,
+      minScore,
+      maxScore,
+      keyword
+    } = config.params
+
+    let filteredHistory = [...mockGameHistory]
+
+    // 按游戏ID筛选
+    if (gameId) {
+      filteredHistory = filteredHistory.filter(r => r.gameId === Number(gameId))
+    }
+
+    // 按日期范围筛选
+    if (startDate) {
+      filteredHistory = filteredHistory.filter(r => new Date(r.playDate) >= new Date(startDate))
+    }
+    if (endDate) {
+      filteredHistory = filteredHistory.filter(r => new Date(r.playDate) <= new Date(endDate))
+    }
+
+    // 按分数范围筛选
+    if (minScore) {
+      filteredHistory = filteredHistory.filter(r => r.score >= Number(minScore))
+    }
+    if (maxScore) {
+      filteredHistory = filteredHistory.filter(r => r.score <= Number(maxScore))
+    }
+
+    // 按关键词搜索（游戏名称）
+    if (keyword) {
+      filteredHistory = filteredHistory.filter(r => r.gameName.includes(keyword))
+    }
+
+    return successResponse(paginationData(filteredHistory, page, pageSize))
+  })
+
+  // 新增游戏记录
+  mock.onPost('/game/history').reply((config) => {
+    const data = JSON.parse(config.data)
+    const game = mockGames.find((g) => g.id === data.gameId)
+
+    if (!game) {
+      return successResponse(null, '游戏不存在')
+    }
+
+    const record = {
+      id: mockGameHistory.length + 1,
+      gameId: data.gameId,
+      gameName: game.name,
+      gameIcon: game.icon,
+      score: data.score,
+      playTime: data.playTime || 0,
+      ranking: data.ranking || null,
+      playDate: data.playDate || new Date().toISOString(),
+      createTime: new Date().toLocaleString(),
+      remark: data.remark || '',
+    }
+
+    mockGameHistory.unshift(record)
+    return successResponse(record, '添加成功')
+  })
+
+  // 获取游戏记录详情
+  mock.onGet(/\/game\/history\/\d+$/).reply((config) => {
+    const id = Number(config.url.match(/\/game\/history\/(\d+)/)[1])
+    const record = mockGameHistory.find((r) => r.id === id)
+
+    if (record) {
+      return successResponse(record)
+    }
+
+    return successResponse(null, '记录不存在')
+  })
+
+  // 更新游戏记录
+  mock.onPut(/\/game\/history\/\d+/).reply((config) => {
+    const id = Number(config.url.match(/\/game\/history\/(\d+)/)[1])
+    const data = JSON.parse(config.data)
+    const index = mockGameHistory.findIndex((r) => r.id === id)
+
+    if (index > -1) {
+      mockGameHistory[index] = {
+        ...mockGameHistory[index],
+        ...data,
+        updateTime: new Date().toLocaleString(),
+      }
+      return successResponse(mockGameHistory[index], '更新成功')
+    }
+
+    return successResponse(null, '记录不存在')
   })
 
   // 删除游戏记录
@@ -206,5 +300,25 @@ export function gameMock(mock) {
     }
 
     return successResponse(null, '记录不存在')
+  })
+
+  // 批量删除游戏记录
+  mock.onPost('/game/history/batch-delete').reply((config) => {
+    const { ids } = JSON.parse(config.data)
+    
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return successResponse(null, '请选择要删除的记录')
+    }
+
+    let deletedCount = 0
+    ids.forEach(id => {
+      const index = mockGameHistory.findIndex((r) => r.id === id)
+      if (index > -1) {
+        mockGameHistory.splice(index, 1)
+        deletedCount++
+      }
+    })
+
+    return successResponse({ deletedCount }, `成功删除 ${deletedCount} 条记录`)
   })
 }
