@@ -36,18 +36,18 @@ export const useUserStore = defineStore('user', {
     async login(loginForm) {
       try {
         const res = await userApi.login(loginForm)
-        
+
         // 检查响应数据
         if (!res || !res.data) {
           throw new Error('登录响应数据格式错误')
         }
-        
+
         // 保存token和用户信息
         this.token = res.data.token
         this.userInfo = res.data.userInfo
         this.isLogin = true
         localStorage.setItem('token', res.data.token)
-        
+
         ElMessage.success(res.message || '登录成功')
         return true
       } catch (error) {

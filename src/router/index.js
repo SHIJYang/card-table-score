@@ -38,6 +38,11 @@ const routes = [
         component: () => import('../views/games/try.vue')
     },
     {
+        path: '/img',
+        name: 'Img',
+        component: () => import('../views/love/picture.vue')
+    },
+    {
         path: '/examples/store',
         name: 'StoreExample',
         component: () => import('../examples/StoreExample.vue')
@@ -56,6 +61,10 @@ const routes = [
         path: '/user/settings',
         name: 'UserSettings',
         component: () => import('../views/UserSettings.vue')
+    }, {
+        path: '/user/img',
+        name: 'Img',
+        component: () => import('../views/love/picture.vue')
     },
 
 ]

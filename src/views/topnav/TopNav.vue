@@ -10,7 +10,7 @@
     <!-- Logo/Home -->
     <el-menu-item index="/">
       <el-icon :size="24">🏠</el-icon>
-      <span style="margin-left: 8px; font-weight: 600;">首页</span>
+      <span style="margin-left: 8px; font-weight: 600">首页</span>
     </el-menu-item>
 
     <!-- 中间标题 -->
@@ -90,19 +90,23 @@
     </el-sub-menu>
 
     <!-- 设置菜单 -->
-    <el-menu-item index="/user/settings">
-      <el-icon><Setting /></el-icon>
-      <span>设置</span>
-    </el-menu-item>
+    <el-sub-menu index="/user/settings">
+      <template #title>
+        <el-icon><Setting /></el-icon>
+        <span>设置</span> </template
+      ><el-menu-item index="/user/img">
+        <el-icon><Setting /></el-icon>
+        <span>图片设置</span> </el-menu-item
+      ><el-menu-item index="/user/settings">
+        <el-icon><Setting /></el-icon>
+        <span>基础设置</span>
+      </el-menu-item>
+    </el-sub-menu>
   </el-menu>
 </template>
 
 <script lang="ts" setup>
-import {
-  Document,
-  Menu as IconMenu,
-  Setting,
-} from "@element-plus/icons-vue";
+import { Document, Menu as IconMenu, Setting } from "@element-plus/icons-vue";
 import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 
@@ -162,7 +166,7 @@ const router = useRouter();
   .el-menu-demo span {
     display: none;
   }
-  
+
   .el-menu-demo :deep(.el-sub-menu__title span) {
     display: none;
   }

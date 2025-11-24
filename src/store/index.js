@@ -13,7 +13,7 @@ export { useUserStore } from './modules/user'
 export { useGameStore } from './modules/game'
 export { useSettingsStore } from './modules/settings'
 export { useAppStore } from './modules/app'
-
+export { useImageStore } from './modules/picture'
 // 为了向后兼容，也可以这样导入
 // import * as stores from '@/store'
 // const userStore = stores.useUserStore()
