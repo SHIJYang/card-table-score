@@ -40,7 +40,7 @@ const routes = [
     {
         path: '/img',
         name: 'Img',
-        component: () => import('../views/love/picture.vue')
+        component: () => import('../views/sets/picture.vue')
     },
     {
         path: '/examples/store',
@@ -58,13 +58,23 @@ const routes = [
         component: () => import('../examples/QuickStart.vue')
     },
     {
-        path: '/user/settings',
-        name: 'UserSettings',
-        component: () => import('../views/UserSettings.vue')
+        path: '/sets/picture',
+        name: 'picture',
+        component: () => import('../views/sets/picture.vue')
+    },
+    {
+        path: '/sets/Statistics',
+        name: 'Statistics',
+        component: () => import('../views/sets/Statistics.vue')
     }, {
-        path: '/user/img',
-        name: 'Img',
-        component: () => import('../views/love/picture.vue')
+        path: '/sets/GameHistory',
+        name: 'GameHistory',
+        component: () => import('../views/sets/GameHistory.vue')
+    },
+    {
+        path: '/sets/habits',
+        name: 'habits',
+        component: () => import('../views/sets/habits.vue')
     },
 
 ]
