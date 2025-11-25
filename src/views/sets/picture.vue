@@ -74,14 +74,14 @@
           type="primary"
           @click="showUploadDialog = true"
           :disabled="imageStore.isStorageFull"
-          icon="Plus"
+          :icon="Plus"
         >
           上传
         </el-button>
         <el-button
           @click="fetchData"
           :loading="imageStore.loading.images"
-          icon="Refresh"
+          :icon="Refresh"
         >
           刷新
         </el-button>
@@ -89,7 +89,7 @@
           type="danger"
           @click="handleBatchDelete"
           :disabled="selectedImages.length === 0"
-          icon="Delete"
+          :icon="Delete"
         >
           删除 ({{ selectedImages.length }})
         </el-button>
