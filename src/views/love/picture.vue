@@ -18,7 +18,7 @@
         <div class="storage-progress">
           <div class="progress-header">
             <span>存储空间</span>
-            <span>{{ Math.round(imageStore.storageUsage) }}%</span>
+            <span>{{ storageUsagePercent }}%</span>
           </div>
           <el-progress
             :percentage="imageStore.storageUsage"
@@ -29,13 +29,13 @@
           <div class="storage-details">
             <span
               >已使用:
-              {{ (imageStore.userProfile?.size || 0).toFixed(2) }} MB</span
+              {{ formatStorageSize(imageStore.userProfile?.size) }}</span
             >
             <span
               >总容量:
-              {{ (imageStore.userProfile?.capacity || 0).toFixed(2) }} MB</span
+              {{ formatStorageSize(imageStore.userProfile?.capacity) }}</span
             >
-            <span>剩余: {{ imageStore.remainingStorage.toFixed(2) }} MB</span>
+            <span>剩余: {{ formatStorageSize(remainingStorage) }}</span>
           </div>
         </div>
         <div class="stats">
@@ -74,26 +74,32 @@
           type="primary"
           @click="showUploadDialog = true"
           :disabled="imageStore.isStorageFull"
+          icon="Plus"
         >
-          <el-icon><Plus /></el-icon> 上传图片
+          上传
         </el-button>
-        <el-button @click="fetchData" :loading="imageStore.loading.images">
-          <el-icon><Refresh /></el-icon> 刷新
+        <el-button
+          @click="fetchData"
+          :loading="imageStore.loading.images"
+          icon="Refresh"
+        >
+          刷新
         </el-button>
         <el-button
           type="danger"
           @click="handleBatchDelete"
           :disabled="selectedImages.length === 0"
+          icon="Delete"
         >
-          <el-icon><Delete /></el-icon> 批量删除 ({{ selectedImages.length }})
+          删除 ({{ selectedImages.length }})
         </el-button>
       </div>
       <div class="search-filter">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜索图片..."
+          placeholder="搜索..."
           clearable
-          style="width: 200px"
+          style="width: 120px"
           @clear="handleSearch"
           @keyup.enter="handleSearch"
         >
@@ -103,38 +109,53 @@
         </el-input>
         <el-select
           v-model="filterPermission"
-          placeholder="权限筛选"
+          placeholder="权限"
           @change="handleSearch"
           clearable
+          style="width: 100px"
         >
-          <el-option label="公开图片" value="public" />
-          <el-option label="私有图片" value="private" />
-        </el-select>
-        <el-select
-          v-model="filterAlbum"
-          placeholder="相册筛选"
-          @change="handleSearch"
-          clearable
-        >
-          <el-option
-            v-for="album in imageStore.albumList"
-            :key="album.id"
-            :label="album.name"
-            :value="album.id"
-          />
-        </el-select>
-        <el-select
-          v-model="sortOrder"
-          placeholder="排序方式"
-          @change="handleSearch"
-          clearable
-        >
-          <el-option label="最新上传" value="newest" />
-          <el-option label="最早上传" value="earliest" />
-          <el-option label="文件最大" value="utmost" />
-          <el-option label="文件最小" value="least" />
+          <el-option label="公开" value="public" />
+          <el-option label="私有" value="private" />
         </el-select>
       </div>
+    </div>
+
+    <!-- 筛选器折叠按钮 -->
+    <div class="filter-toggle" @click="showFilter = !showFilter">
+      <span>{{ showFilter ? "收起筛选" : "更多筛选" }}</span>
+      <el-icon class="filter-icon">
+        {{ showFilter ? "ArrowUp" : "ArrowDown" }}
+      </el-icon>
+    </div>
+
+    <!-- 展开的筛选器 -->
+    <div class="expanded-filter" v-if="showFilter">
+      <el-select
+        v-model="filterAlbum"
+        placeholder="相册筛选"
+        @change="handleSearch"
+        clearable
+        style="width: 100%; margin-bottom: 10px"
+      >
+        <el-option
+          v-for="album in imageStore.albumList"
+          :key="album.id"
+          :label="album.name"
+          :value="album.id"
+        />
+      </el-select>
+      <el-select
+        v-model="sortOrder"
+        placeholder="排序方式"
+        @change="handleSearch"
+        clearable
+        style="width: 100%"
+      >
+        <el-option label="最新上传" value="newest" />
+        <el-option label="最早上传" value="earliest" />
+        <el-option label="文件最大" value="utmost" />
+        <el-option label="文件最小" value="least" />
+      </el-select>
     </div>
 
     <!-- 图片列表 -->
@@ -257,8 +278,8 @@
           v-model:current-page="imageStore.imagePagination.current_page"
           :page-size="imageStore.imagePagination.per_page"
           :total="imageStore.imagePagination.total"
-          :page-sizes="[20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[10, 20, 50]"
+          layout="total, prev, pager, next"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -269,7 +290,7 @@
     <el-dialog
       v-model="showUploadDialog"
       title="上传图片"
-      width="600px"
+      width="90%"
       :before-close="handleUploadDialogClose"
     >
       <el-upload
@@ -304,7 +325,7 @@
               v-model="uploadForm.album_id"
               placeholder="选择相册"
               clearable
-              style="width: 200px"
+              style="width: 100%"
               @change="handleAlbumChange"
             >
               <el-option
@@ -314,14 +335,6 @@
                 :value="album.id"
               />
             </el-select>
-            <el-button
-              text
-              type="primary"
-              @click="refreshAlbumList"
-              style="margin-left: 10px"
-            >
-              <el-icon><Refresh /></el-icon> 刷新相册
-            </el-button>
           </el-form-item>
           <el-form-item label="过期时间">
             <el-date-picker
@@ -329,7 +342,7 @@
               type="datetime"
               placeholder="选择图片过期时间"
               value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 200px"
+              style="width: 100%"
             />
           </el-form-item>
         </el-form>
@@ -350,7 +363,7 @@
     </el-dialog>
 
     <!-- 相册管理对话框 -->
-    <el-dialog v-model="showAlbumDialog" title="相册管理" width="500px">
+    <el-dialog v-model="showAlbumDialog" title="相册管理" width="90%">
       <div v-loading="imageStore.loading.albums">
         <div class="album-list">
           <div
@@ -386,19 +399,12 @@
     <!-- 底部操作栏 -->
     <div class="bottom-action-bar">
       <el-button text @click="showAlbumDialog = true">
-        <el-icon><Folder /></el-icon> 相册管理 ({{
-          imageStore.albumList.length
-        }})
+        <el-icon><Folder /></el-icon> 相册 ({{ imageStore.albumList.length }})
       </el-button>
       <div class="bottom-stats">
-        <span>共 {{ imageStore.imagePagination.total }} 张图片</span>
+        <span>共 {{ imageStore.imagePagination.total }} 张</span>
         <el-divider direction="vertical" />
-        <span>已选择 {{ selectedImages.length }} 张</span>
-        <el-divider direction="vertical" />
-        <span>
-          第 {{ imageStore.imagePagination.current_page }} 页 / 共
-          {{ imageStore.imagePagination.last_page }} 页
-        </span>
+        <span>已选 {{ selectedImages.length }} 张</span>
       </div>
     </div>
   </div>
@@ -417,6 +423,8 @@ import {
   UploadFilled,
   Loading,
   Folder,
+  ArrowUp,
+  ArrowDown,
 } from "@element-plus/icons-vue";
 import { useImageStore } from "@/store";
 
@@ -432,7 +440,8 @@ const sortOrder = ref("newest");
 const selectedImages = ref([]);
 const uploadRef = ref();
 const deletingAlbum = ref(null);
-const uploading = ref(false); // 手动上传中状态
+const uploading = ref(false);
+const showFilter = ref(false); // 控制筛选器显示
 
 // 上传表单数据
 const uploadForm = reactive({
@@ -451,6 +460,28 @@ const canUpload = computed(() => {
     !imageStore.isStorageFull &&
     !uploading.value
   );
+});
+// 计算属性：修正存储相关逻辑
+const formatStorageSize = (sizeInKB) => {
+  // 后端返回为 KB，转换为 MB（1MB = 1024KB）
+  if (!sizeInKB) return "0.00 MB";
+  const sizeInMB = sizeInKB / 1024;
+  return `${sizeInMB.toFixed(2)} MB`;
+};
+
+// 剩余存储空间（MB）
+const remainingStorage = computed(() => {
+  const used = imageStore.userProfile?.size || 0;
+  const total = imageStore.userProfile?.capacity || 0;
+  return Math.max(0, (total - used) / 1024); // 转换为 MB 并确保非负
+});
+
+// 存储使用率（百分比）
+const storageUsagePercent = computed(() => {
+  const used = imageStore.userProfile?.size || 0;
+  const total = imageStore.userProfile?.capacity || 0;
+  if (total === 0) return 0;
+  return Math.round((used / total) * 100); // 基于 KB 计算百分比，避免误差
 });
 
 // 初始化
@@ -480,6 +511,7 @@ const fetchImageList = () => {
 const handleSearch = () => {
   imageStore.imagePagination.current_page = 1;
   fetchImageList();
+  showFilter.value = false; // 搜索后收起筛选器
 };
 
 // 分页
@@ -729,6 +761,7 @@ const handleUploadDialogClose = () => {
   });
 };
 </script>
+
 <style scoped>
 .picture-management {
   padding: 20px;
@@ -738,6 +771,7 @@ const handleUploadDialogClose = () => {
   background: #f5f7fa;
 }
 
+/* ... (保持原有的样式不变) ... */
 .user-profile-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12px;
@@ -832,7 +866,7 @@ const handleUploadDialogClose = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 12px;
   background: white;
@@ -852,6 +886,36 @@ const handleUploadDialogClose = () => {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+/* 新增：筛选器折叠按钮 */
+.filter-toggle {
+  background: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+.filter-icon {
+  transition: transform 0.3s ease;
+}
+
+/* 新增：展开的筛选器容器 */
+.expanded-filter {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .image-list {
@@ -1062,5 +1126,102 @@ const handleUploadDialogClose = () => {
 
 :deep(.el-checkbox-group) {
   width: 100%;
+}
+
+/*
+  新增的媒体查询，用于手机端适配
+  断点设置为 768px，这是一个常见的移动设备与桌面设备的分界点
+*/
+@media (max-width: 768px) {
+  .picture-management {
+    padding: 10px; /* 减小整体内边距 */
+  }
+
+  .user-profile-card {
+    padding: 16px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .profile-status {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .storage-info {
+    flex-direction: column; /* 垂直排列 */
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .stats {
+    justify-content: space-around; /* 均匀分布 */
+    gap: 10px;
+  }
+
+  .stat-number {
+    font-size: 20px;
+  }
+
+  .action-bar {
+    padding: 12px;
+  }
+
+  .action-left .el-button span {
+    display: none; /* 隐藏按钮文字 */
+  }
+
+  .action-left .el-button {
+    padding: 10px; /* 仅保留图标 */
+  }
+
+  .search-filter {
+    width: 100%; /* 占满一行 */
+    order: 3; /* 移到最下面 */
+  }
+
+  /* 图片网格布局调整为 2 列或自适应 */
+  .image-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .image-info {
+    padding: 8px;
+  }
+
+  .image-name {
+    font-size: 13px;
+  }
+
+  .image-meta {
+    font-size: 11px;
+  }
+
+  .image-meta span:nth-child(2) {
+    display: none; /* 隐藏分辨率信息 */
+  }
+
+  .image-hash {
+    display: none; /* 隐藏 MD5 信息 */
+  }
+
+  /* 底部状态栏简化 */
+  .bottom-stats {
+    font-size: 12px;
+  }
+
+  .bottom-stats span:nth-child(3) {
+    display: none; /* 隐藏页码信息 */
+  }
+
+  /* 对话框宽度调整 */
+  .el-dialog {
+    width: 90% !important; /* 覆盖 Element Plus 默认样式 */
+  }
 }
 </style>
