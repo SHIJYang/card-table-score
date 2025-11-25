@@ -1,6 +1,6 @@
 import { successResponse, paginationData } from './index'
 // 从store导入游戏注册表，保持一致性
-import { GAME_REGISTRY, GAME_CATEGORIES } from '@/store/modules/game'
+import { GAME_REGISTRY, GAME_CATEGORIES } from '@/store/modules/gamestore'
 
 // 基于注册表生成完整的模拟游戏数据
 const mockGames = GAME_REGISTRY.filter(g => g.enabled).map((game, index) => ({
@@ -26,12 +26,12 @@ const mockCategories = GAME_CATEGORIES.map(category => ({
 const generateGameHistory = () => {
   const history = []
   const now = Date.now()
-  
+
   for (let i = 0; i < 100; i++) {
     const game = mockGames[Math.floor(Math.random() * mockGames.length)]
     const randomDays = Math.floor(Math.random() * 90) // 过去90天内
     const playDate = new Date(now - randomDays * 24 * 60 * 60 * 1000)
-    
+
     history.push({
       id: i + 1,
       gameId: game.id,
@@ -44,7 +44,7 @@ const generateGameHistory = () => {
       createTime: playDate.toLocaleString(),
     })
   }
-  
+
   // 按时间倒序排序
   return history.sort((a, b) => new Date(b.playDate) - new Date(a.playDate))
 }
@@ -191,11 +191,11 @@ export function gameMock(mock) {
 
   // 获取游戏历史记录（支持高级筛选）
   mock.onGet('/game/history').reply((config) => {
-    const { 
-      page = 1, 
-      pageSize = 10, 
-      gameId, 
-      startDate, 
+    const {
+      page = 1,
+      pageSize = 10,
+      gameId,
+      startDate,
       endDate,
       minScore,
       maxScore,
@@ -305,7 +305,7 @@ export function gameMock(mock) {
   // 批量删除游戏记录
   mock.onPost('/game/history/batch-delete').reply((config) => {
     const { ids } = JSON.parse(config.data)
-    
+
     if (!Array.isArray(ids) || ids.length === 0) {
       return successResponse(null, '请选择要删除的记录')
     }

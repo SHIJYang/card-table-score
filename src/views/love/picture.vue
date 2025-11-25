@@ -1,8 +1,271 @@
 <template>
   <div class="picture-management">
-    <!-- 其他模板代码保持不变 -->
+    <!-- 顶部用户信息 -->
+    <div class="user-profile-card" v-if="imageStore.userProfile">
+      <div class="profile-header">
+        <el-avatar
+          :size="60"
+          :src="imageStore.userProfile?.avatar || '/default-avatar.png'"
+        />
+        <div class="profile-info">
+          <h3>{{ imageStore.userProfile?.name || "未设置昵称" }}</h3>
+          <p>@{{ imageStore.userProfile?.username }}</p>
+          <p class="email">{{ imageStore.userProfile?.email }}</p>
+        </div>
+        <el-tag type="success" class="profile-status">已认证</el-tag>
+      </div>
+      <div class="storage-info">
+        <div class="storage-progress">
+          <div class="progress-header">
+            <span>存储空间</span>
+            <span>{{ Math.round(imageStore.storageUsage) }}%</span>
+          </div>
+          <el-progress
+            :percentage="imageStore.storageUsage"
+            :status="imageStore.isStorageFull ? 'exception' : 'success'"
+            :show-text="false"
+            :stroke-width="8"
+          />
+          <div class="storage-details">
+            <span
+              >已使用:
+              {{ (imageStore.userProfile?.size || 0).toFixed(2) }} MB</span
+            >
+            <span
+              >总容量:
+              {{ (imageStore.userProfile?.capacity || 0).toFixed(2) }} MB</span
+            >
+            <span>剩余: {{ imageStore.remainingStorage.toFixed(2) }} MB</span>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <div class="stat-number">
+              {{ imageStore.userProfile?.image_num || 0 }}
+            </div>
+            <div class="stat-label">图片数量</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">
+              {{ imageStore.userProfile?.album_num || 0 }}
+            </div>
+            <div class="stat-label">相册数量</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ imageStore.albumList.length }}</div>
+            <div class="stat-label">相册列表</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- 上传对话框 -->
+    <!-- 加载状态 -->
+    <div
+      v-if="imageStore.loading.profile && !imageStore.userProfile"
+      class="loading-state"
+    >
+      <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- 操作区域 -->
+    <div class="action-bar">
+      <div class="action-left">
+        <el-button
+          type="primary"
+          @click="showUploadDialog = true"
+          :disabled="imageStore.isStorageFull"
+        >
+          <el-icon><Plus /></el-icon> 上传图片
+        </el-button>
+        <el-button @click="fetchData" :loading="imageStore.loading.images">
+          <el-icon><Refresh /></el-icon> 刷新
+        </el-button>
+        <el-button
+          type="danger"
+          @click="handleBatchDelete"
+          :disabled="selectedImages.length === 0"
+        >
+          <el-icon><Delete /></el-icon> 批量删除 ({{ selectedImages.length }})
+        </el-button>
+      </div>
+      <div class="search-filter">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索图片..."
+          clearable
+          style="width: 200px"
+          @clear="handleSearch"
+          @keyup.enter="handleSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-select
+          v-model="filterPermission"
+          placeholder="权限筛选"
+          @change="handleSearch"
+          clearable
+        >
+          <el-option label="公开图片" value="public" />
+          <el-option label="私有图片" value="private" />
+        </el-select>
+        <el-select
+          v-model="filterAlbum"
+          placeholder="相册筛选"
+          @change="handleSearch"
+          clearable
+        >
+          <el-option
+            v-for="album in imageStore.albumList"
+            :key="album.id"
+            :label="album.name"
+            :value="album.id"
+          />
+        </el-select>
+        <el-select
+          v-model="sortOrder"
+          placeholder="排序方式"
+          @change="handleSearch"
+          clearable
+        >
+          <el-option label="最新上传" value="newest" />
+          <el-option label="最早上传" value="earliest" />
+          <el-option label="文件最大" value="utmost" />
+          <el-option label="文件最小" value="least" />
+        </el-select>
+      </div>
+    </div>
+
+    <!-- 图片列表 -->
+    <div class="image-list">
+      <div
+        v-if="imageStore.imageList.length === 0 && !imageStore.loading.images"
+        class="empty-state"
+      >
+        <el-empty description="暂无图片" />
+        <el-button type="primary" @click="showUploadDialog = true"
+          >上传第一张图片</el-button
+        >
+      </div>
+      <div v-loading="imageStore.loading.images">
+        <el-checkbox-group v-model="selectedImages" class="image-grid">
+          <div
+            v-for="image in imageStore.imageList"
+            :key="image.key"
+            class="image-item"
+          >
+            <el-card class="image-card" :body-style="{ padding: '0px' }">
+              <div class="image-container">
+                <el-checkbox
+                  :value="image.key"
+                  :label="image.key"
+                  class="image-checkbox"
+                />
+                <el-image
+                  :src="image.links?.thumbnail_url || image.links?.url"
+                  :preview-src-list="[image.links?.url]"
+                  fit="cover"
+                  lazy
+                  class="image-preview"
+                  hide-on-click-modal
+                >
+                  <template #error>
+                    <div class="image-error">
+                      <el-icon><Picture /></el-icon>
+                      <span>加载失败</span>
+                    </div>
+                  </template>
+                  <template #placeholder>
+                    <div class="image-loading">
+                      <el-icon class="is-loading"><Loading /></el-icon>
+                      <span>加载中...</span>
+                    </div>
+                  </template>
+                </el-image>
+                <div class="image-actions">
+                  <el-button
+                    type="danger"
+                    size="small"
+                    circle
+                    @click="handleDeleteImage(image.key)"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                  <el-dropdown
+                    trigger="click"
+                    @command="(command) => handleCopyLink(command, image)"
+                  >
+                    <el-button size="small" circle>
+                      <el-icon><More /></el-icon>
+                    </el-button>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item command="url"
+                          >复制 URL</el-dropdown-item
+                        >
+                        <el-dropdown-item command="markdown"
+                          >复制 Markdown</el-dropdown-item
+                        >
+                        <el-dropdown-item command="bbcode"
+                          >复制 BBCode</el-dropdown-item
+                        >
+                        <el-dropdown-item command="markdown_with_link"
+                          >复制 Markdown(带链接)</el-dropdown-item
+                        >
+                        <el-dropdown-item command="html"
+                          >复制 HTML</el-dropdown-item
+                        >
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
+                </div>
+                <div class="image-overlay">
+                  <el-tag
+                    :type="image.permission === 1 ? 'success' : 'info'"
+                    size="small"
+                  >
+                    {{ image.permission === 1 ? "公开" : "私有" }}
+                  </el-tag>
+                </div>
+              </div>
+              <div class="image-info">
+                <div class="image-name" :title="image.origin_name">
+                  {{ image.origin_name }}
+                </div>
+                <div class="image-meta">
+                  <span>{{ (image.size / 1024).toFixed(2) }} MB</span>
+                  <span v-if="image.width && image.height"
+                    >{{ image.width }}×{{ image.height }}</span
+                  >
+                  <span>{{ formatDate(image.date) }}</span>
+                </div>
+                <div class="image-hash">
+                  <el-tooltip :content="image.md5" placement="top">
+                    <span class="hash">MD5: {{ shortenHash(image.md5) }}</span>
+                  </el-tooltip>
+                </div>
+              </div>
+            </el-card>
+          </div>
+        </el-checkbox-group>
+      </div>
+
+      <!-- 分页 -->
+      <div v-if="imageStore.imagePagination.last_page > 1" class="pagination">
+        <el-pagination
+          v-model:current-page="imageStore.imagePagination.current_page"
+          :page-size="imageStore.imagePagination.per_page"
+          :total="imageStore.imagePagination.total"
+          :page-sizes="[20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </div>
+
+    <!-- 上传对话框：手动上传模式 -->
     <el-dialog
       v-model="showUploadDialog"
       title="上传图片"
@@ -13,16 +276,10 @@
         ref="uploadRef"
         drag
         multiple
-        :action="uploadAction"
-        :headers="uploadHeaders"
-        :data="uploadData"
-        :before-upload="beforeUpload"
-        :on-success="handleUploadSuccess"
-        :on-error="handleUploadError"
-        :on-change="handleUploadChange"
+        :auto-upload="false"
+        :on-change="handleFileChange"
         :on-remove="handleUploadRemove"
         list-type="picture"
-        :auto-upload="false"
         accept="image/*"
       >
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
@@ -34,7 +291,7 @@
         </template>
       </el-upload>
 
-      <div class="upload-options">
+      <div class="upload-options" style="margin-top: 20px">
         <el-form :model="uploadForm" label-width="80px">
           <el-form-item label="上传权限">
             <el-radio-group v-model="uploadForm.permission">
@@ -42,7 +299,6 @@
               <el-radio :value="0">私有</el-radio>
             </el-radio-group>
           </el-form-item>
-
           <el-form-item label="选择相册">
             <el-select
               v-model="uploadForm.album_id"
@@ -64,11 +320,9 @@
               @click="refreshAlbumList"
               style="margin-left: 10px"
             >
-              <el-icon><Refresh /></el-icon>
-              刷新相册
+              <el-icon><Refresh /></el-icon> 刷新相册
             </el-button>
           </el-form-item>
-
           <el-form-item label="过期时间">
             <el-date-picker
               v-model="uploadForm.expired_at"
@@ -81,24 +335,77 @@
         </el-form>
       </div>
 
+      <!-- 手动上传按钮 -->
       <template #footer>
         <el-button @click="handleUploadDialogClose">取消</el-button>
         <el-button
           type="primary"
-          @click="handleUploadSubmit"
-          :loading="imageStore.loading.upload"
+          :loading="uploading"
+          :disabled="!canUpload"
+          @click="handleManualUpload"
         >
-          开始上传 ({{ fileCount }}个文件)
+          {{ uploading ? "上传中..." : "开始上传" }}
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 其他模板代码保持不变 -->
+    <!-- 相册管理对话框 -->
+    <el-dialog v-model="showAlbumDialog" title="相册管理" width="500px">
+      <div v-loading="imageStore.loading.albums">
+        <div class="album-list">
+          <div
+            v-for="album in imageStore.albumList"
+            :key="album.id"
+            class="album-item"
+          >
+            <div class="album-info">
+              <h4>{{ album.name }}</h4>
+              <p>{{ album.intro || "暂无描述" }}</p>
+              <span class="album-stats">{{ album.image_num }} 张图片</span>
+            </div>
+            <el-button
+              type="danger"
+              size="small"
+              @click="handleDeleteAlbum(album.id)"
+              :loading="deletingAlbum === album.id"
+            >
+              删除
+            </el-button>
+          </div>
+        </div>
+        <div v-if="imageStore.albumList.length === 0" class="empty-albums">
+          <el-empty description="暂无相册" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showAlbumDialog = false">关闭</el-button>
+        <el-button @click="refreshAlbumList">刷新列表</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-action-bar">
+      <el-button text @click="showAlbumDialog = true">
+        <el-icon><Folder /></el-icon> 相册管理 ({{
+          imageStore.albumList.length
+        }})
+      </el-button>
+      <div class="bottom-stats">
+        <span>共 {{ imageStore.imagePagination.total }} 张图片</span>
+        <el-divider direction="vertical" />
+        <span>已选择 {{ selectedImages.length }} 张</span>
+        <el-divider direction="vertical" />
+        <span>
+          第 {{ imageStore.imagePagination.current_page }} 页 / 共
+          {{ imageStore.imagePagination.last_page }} 页
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   Plus,
@@ -112,19 +419,10 @@ import {
   Folder,
 } from "@element-plus/icons-vue";
 import { useImageStore } from "@/store";
-import {
-  uploadImage,
-  getImageList,
-  deleteImage,
-  getAlbumList,
-  deleteAlbum,
-  getStrategyList,
-  getUserProfile,
-} from "@/api/picture";
 
 const imageStore = useImageStore();
 
-// 响应式数据
+// UI 状态
 const showUploadDialog = ref(false);
 const showAlbumDialog = ref(false);
 const searchKeyword = ref("");
@@ -134,206 +432,40 @@ const sortOrder = ref("newest");
 const selectedImages = ref([]);
 const uploadRef = ref();
 const deletingAlbum = ref(null);
-const fileCount = ref(0);
-const uploadFiles = ref([]); // 新增：直接跟踪上传文件列表
+const uploading = ref(false); // 手动上传中状态
 
-// 上传表单
+// 上传表单数据
 const uploadForm = reactive({
   permission: 1,
   album_id: null,
   expired_at: null,
 });
 
-// 计算属性
-const uploadAction = computed(() => {
-  return "/api/v1/upload";
+// 待上传文件队列（只存 raw file）
+const uploadFiles = ref([]);
+
+// 计算属性：是否可上传
+const canUpload = computed(() => {
+  return (
+    uploadFiles.value.length > 0 &&
+    !imageStore.isStorageFull &&
+    !uploading.value
+  );
 });
 
-const uploadHeaders = computed(() => {
-  const token = localStorage.getItem("token") || "";
-  return {
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-    "X-Requested-With": "XMLHttpRequest",
-  };
-});
-
-const uploadData = computed(() => {
-  return {
-    permission: uploadForm.permission,
-    album_id: uploadForm.album_id,
-    expired_at: uploadForm.expired_at,
-  };
-});
-
-// 修复：直接使用响应式变量跟踪文件数量
-const updateFileCount = () => {
-  // 方法1：使用 uploadRef
-  if (uploadRef.value) {
-    const files = uploadRef.value.uploadFiles || [];
-    fileCount.value = files.length;
-    uploadFiles.value = files; // 同步更新
-  }
-  // 方法2：使用 uploadFiles 响应式变量
-  else {
-    fileCount.value = uploadFiles.value.length;
-  }
-};
-
-// 生命周期
+// 初始化
 onMounted(() => {
   initData();
 });
 
-// 方法
 const initData = async () => {
-  try {
-    await fetchData();
-  } catch (error) {
-    console.error("初始化数据失败:", error);
-    ElMessage.error("初始化数据失败");
-  }
+  await Promise.all([imageStore.fetchProfile(), imageStore.fetchAlbums()]);
+  await fetchImageList();
 };
 
-const fetchData = async () => {
-  try {
-    await Promise.all([
-      fetchUserProfile(),
-      fetchImageList(getImageParams()),
-      fetchAlbumList(),
-    ]);
-  } catch (error) {
-    console.error("获取数据失败:", error);
-    ElMessage.error("获取数据失败");
-  }
-};
-
-// API 调用方法（保持不变）
-const fetchUserProfile = async () => {
-  imageStore.setLoading("profile", true);
-  imageStore.clearError();
-  try {
-    const response = await getUserProfile();
-    if (response?.status) {
-      imageStore.setUserProfile(response.data);
-    }
-    return response;
-  } catch (error) {
-    imageStore.setError(error.message);
-    throw error;
-  } finally {
-    imageStore.setLoading("profile", false);
-  }
-};
-
-const fetchImageList = async (params = {}) => {
-  imageStore.setLoading("images", true);
-  imageStore.clearError();
-  try {
-    const response = await getImageList(params);
-    if (response?.status) {
-      imageStore.setImageList(response.data.data || []);
-      imageStore.setImagePagination({
-        current_page: response.data.current_page || 1,
-        last_page: response.data.last_page || 1,
-        per_page: response.data.per_page || 20,
-        total: response.data.total || 0,
-      });
-    }
-    return response;
-  } catch (error) {
-    imageStore.setError(error.message);
-    throw error;
-  } finally {
-    imageStore.setLoading("images", false);
-  }
-};
-
-const fetchAlbumList = async (params = {}) => {
-  imageStore.setLoading("albums", true);
-  imageStore.clearError();
-  try {
-    const response = await getAlbumList(params);
-    if (response?.status) {
-      imageStore.setAlbumList(response.data.data || []);
-      imageStore.setAlbumPagination({
-        current_page: response.data.current_page || 1,
-        last_page: response.data.last_page || 1,
-        per_page: response.data.per_page || 20,
-        total: response.data.total || 0,
-      });
-    }
-    return response;
-  } catch (error) {
-    imageStore.setError(error.message);
-    throw error;
-  } finally {
-    imageStore.setLoading("albums", false);
-  }
-};
-
-const deleteImageFromStore = async (key) => {
-  imageStore.clearError();
-  try {
-    const response = await deleteImage(key);
-    if (response?.status) {
-      imageStore.removeImage(key);
-      await fetchUserProfile();
-    }
-    return response;
-  } catch (error) {
-    imageStore.setError(error.message);
-    throw error;
-  }
-};
-
-const deleteAlbumFromStore = async (id) => {
-  imageStore.clearError();
-  try {
-    const response = await deleteAlbum(id);
-    if (response?.status) {
-      imageStore.removeAlbum(id);
-    }
-    return response;
-  } catch (error) {
-    imageStore.setError(error.message);
-    throw error;
-  }
-};
-
-const batchDeleteImagesFromStore = async (keys) => {
-  const results = [];
-  for (const key of keys) {
-    try {
-      const result = await deleteImageFromStore(key);
-      results.push({ key, success: true, result });
-    } catch (error) {
-      results.push({ key, success: false, error: error.message });
-    }
-  }
-
-  if (
-    imageStore.imageList.length === 0 &&
-    imageStore.imagePagination.current_page > 1
-  ) {
-    imageStore.imagePagination.current_page -= 1;
-  }
-
-  return results;
-};
-
-const refreshAlbumList = async () => {
-  try {
-    await fetchAlbumList();
-    ElMessage.success("相册列表已刷新");
-  } catch (error) {
-    console.error("刷新相册列表失败:", error);
-    ElMessage.error("刷新相册列表失败");
-  }
-};
-
-const getImageParams = () => {
-  return {
+// 获取图片列表
+const fetchImageList = () => {
+  const params = {
     page: imageStore.imagePagination.current_page,
     per_page: imageStore.imagePagination.per_page,
     q: searchKeyword.value,
@@ -341,24 +473,28 @@ const getImageParams = () => {
     album_id: filterAlbum.value,
     order: sortOrder.value,
   };
+  return imageStore.fetchImages(params);
 };
 
+// 搜索/筛选
 const handleSearch = () => {
   imageStore.imagePagination.current_page = 1;
-  fetchImageList(getImageParams());
+  fetchImageList();
 };
 
+// 分页
 const handlePageChange = (page) => {
   imageStore.imagePagination.current_page = page;
-  fetchImageList(getImageParams());
+  fetchImageList();
 };
 
 const handleSizeChange = (size) => {
   imageStore.imagePagination.per_page = size;
   imageStore.imagePagination.current_page = 1;
-  fetchImageList(getImageParams());
+  fetchImageList();
 };
 
+// 删除单张图片
 const handleDeleteImage = async (key) => {
   try {
     await ElMessageBox.confirm(
@@ -371,24 +507,22 @@ const handleDeleteImage = async (key) => {
         confirmButtonClass: "el-button--danger",
       }
     );
-
-    await deleteImageFromStore(key);
+    await imageStore.removeImage(key);
     ElMessage.success("删除成功");
     selectedImages.value = selectedImages.value.filter((k) => k !== key);
   } catch (error) {
     if (error !== "cancel") {
-      console.error("删除失败:", error);
       ElMessage.error("删除失败");
     }
   }
 };
 
+// 批量删除
 const handleBatchDelete = async () => {
   if (selectedImages.value.length === 0) {
     ElMessage.warning("请选择要删除的图片");
     return;
   }
-
   try {
     await ElMessageBox.confirm(
       `确定要删除选中的 ${selectedImages.value.length} 张图片吗？此操作不可恢复！`,
@@ -400,28 +534,20 @@ const handleBatchDelete = async () => {
         confirmButtonClass: "el-button--danger",
       }
     );
-
-    const results = await batchDeleteImagesFromStore(selectedImages.value);
-    const successCount = results.filter((r) => r.success).length;
-    const failCount = results.filter((r) => !r.success).length;
-
-    if (successCount > 0) {
-      ElMessage.success(`成功删除 ${successCount} 张图片`);
+    for (const key of selectedImages.value) {
+      await imageStore.removeImage(key);
     }
-    if (failCount > 0) {
-      ElMessage.error(`${failCount} 张图片删除失败`);
-    }
-
+    ElMessage.success(`成功删除 ${selectedImages.value.length} 张图片`);
     selectedImages.value = [];
-    fetchImageList(getImageParams());
+    fetchImageList();
   } catch (error) {
     if (error !== "cancel") {
-      console.error("批量删除失败:", error);
       ElMessage.error("批量删除失败");
     }
   }
 };
 
+// 删除相册
 const handleDeleteAlbum = async (albumId) => {
   try {
     await ElMessageBox.confirm(
@@ -433,13 +559,11 @@ const handleDeleteAlbum = async (albumId) => {
         cancelButtonText: "取消",
       }
     );
-
     deletingAlbum.value = albumId;
-    await deleteAlbumFromStore(albumId);
+    await imageStore.removeAlbum(albumId);
     ElMessage.success("相册删除成功");
   } catch (error) {
     if (error !== "cancel") {
-      console.error("删除相册失败:", error);
       ElMessage.error("删除相册失败");
     }
   } finally {
@@ -447,6 +571,13 @@ const handleDeleteAlbum = async (albumId) => {
   }
 };
 
+// 刷新相册
+const refreshAlbumList = async () => {
+  await imageStore.fetchAlbums();
+  ElMessage.success("相册列表已刷新");
+};
+
+// 复制链接
 const handleCopyLink = (type, image) => {
   const linkMap = {
     url: image.links?.url,
@@ -455,7 +586,6 @@ const handleCopyLink = (type, image) => {
     markdown_with_link: image.links?.markdown_with_link,
     html: image.links?.html,
   };
-
   const link = linkMap[type];
   if (link) {
     navigator.clipboard
@@ -492,6 +622,7 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString("zh-CN");
 };
 
+// 相册选择时同步权限
 const handleAlbumChange = (albumId) => {
   if (albumId) {
     const selectedAlbum = imageStore.albumList.find(
@@ -503,113 +634,94 @@ const handleAlbumChange = (albumId) => {
   }
 };
 
-// 修复：上传相关方法
-const handleUploadChange = (file, fileList) => {
-  uploadFiles.value = fileList;
-  fileCount.value = fileList.length;
+// ========== 手动上传逻辑 ==========
+
+// 文件变化：收集 raw file
+const handleFileChange = (file, fileList) => {
+  // 清空并重新收集所有 ready 状态的 raw 文件
+  uploadFiles.value = fileList
+    .filter((f) => f.status === "ready")
+    .map((f) => f.raw);
 };
 
-const handleUploadRemove = (file, fileList) => {
-  uploadFiles.value = fileList;
-  fileCount.value = fileList.length;
+// 移除文件时更新队列
+const handleUploadRemove = (file) => {
+  uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== file.uid);
 };
 
-const beforeUpload = (rawFile) => {
-  const isImage = rawFile.type.startsWith("image/");
-  const isLt10M = rawFile.size / 1024 / 1024 < 10;
-  if (!isImage) {
-    ElMessage.error("只能上传图片文件!");
-    return false;
-  }
-  if (!isLt10M) {
-    ElMessage.error("图片大小不能超过 10MB!");
-    return false;
-  }
-  return true;
-};
-
-const handleUploadSuccess = (response, file) => {
-  if (response?.status) {
-    ElMessage.success(`${file.name} 上传成功`);
-    file.status = "success";
-  } else {
-    const msg = response?.message || "未知错误";
-    ElMessage.error(`${file.name} 上传失败: ${msg}`);
-    file.status = "fail";
-  }
-  checkAllUploadsCompleted();
-};
-
-const handleUploadError = (error, file) => {
-  console.error("上传失败:", file.name, error);
-  const msg = error?.message || "网络错误";
-  ElMessage.error(`${file.name} 上传失败: ${msg}`);
-  file.status = "fail";
-  checkAllUploadsCompleted();
-};
-
-const checkAllUploadsCompleted = () => {
-  const files = uploadFiles.value;
-  if (files.length === 0) return;
-
-  const allDone = files.every(
-    (file) => file.status === "success" || file.status === "fail"
-  );
-
-  if (allDone) {
-    setTimeout(() => {
-      showUploadDialog.value = false;
-      fetchData();
-      // 清空文件列表
-      if (uploadRef.value) {
-        uploadRef.value.clearFiles();
-      }
-      uploadFiles.value = [];
-      fileCount.value = 0;
-      Object.assign(uploadForm, {
-        permission: 1,
-        album_id: null,
-        expired_at: null,
-      });
-    }, 800);
-  }
-};
-
-const handleUploadSubmit = () => {
-  const files = uploadFiles.value;
-  if (files.length === 0) {
+// 手动上传按钮点击
+const handleManualUpload = async () => {
+  if (uploadFiles.value.length === 0) {
     ElMessage.warning("请选择要上传的图片");
     return;
   }
 
-  const pendingFiles = files.filter((f) => !f.status);
-  if (pendingFiles.length === 0) {
-    ElMessage.warning("没有待上传的文件");
-    return;
-  }
+  uploading.value = true;
+  let successCount = 0;
 
-  // 设置上传loading状态
-  imageStore.setLoading("upload", true);
+  try {
+    for (const rawFile of uploadFiles.value) {
+      // 前端校验
+      const isImage = rawFile.type.startsWith("image/");
+      const isLt10M = rawFile.size / 1024 / 1024 < 10;
+      if (!isImage) {
+        ElMessage.error(`${rawFile.name} 不是图片文件，已跳过`);
+        continue;
+      }
+      if (!isLt10M) {
+        ElMessage.error(`${rawFile.name} 超过 10MB，已跳过`);
+        continue;
+      }
 
-  // 手动触发上传
-  if (uploadRef.value) {
-    uploadRef.value.submit();
+      // 构建 FormData（与 store 期望一致）
+      const formData = new FormData();
+      formData.append("file", rawFile);
+      formData.append("permission", uploadForm.permission);
+      if (uploadForm.album_id) {
+        formData.append("album_id", uploadForm.album_id);
+      }
+      if (uploadForm.expired_at) {
+        formData.append("expired_at", uploadForm.expired_at);
+      }
+
+      try {
+        await imageStore.uploadImage(rawFile, {
+          permission: uploadForm.permission,
+          album_id: uploadForm.album_id,
+          expired_at: uploadForm.expired_at,
+        });
+        successCount++;
+      } catch (err) {
+        console.error("上传失败:", rawFile.name, err);
+        // 错误已在 store 中处理，此处不再重复提示
+      }
+    }
+
+    ElMessage.success(`成功上传 ${successCount} 张图片`);
+
+    if (successCount > 0) {
+      // 重置到第一页并刷新
+      imageStore.imagePagination.current_page = 1;
+      await fetchImageList();
+      await imageStore.fetchProfile(); // 更新存储用量
+    }
+  } finally {
+    uploading.value = false;
+    showUploadDialog.value = false;
+    uploadFiles.value = [];
+    Object.assign(uploadForm, {
+      permission: 1,
+      album_id: null,
+      expired_at: null,
+    });
   }
 };
 
+// 关闭上传对话框
 const handleUploadDialogClose = () => {
-  if (imageStore.loading.upload) {
-    ElMessage.info("上传进行中，请等待完成");
-    return;
-  }
-
-  // 清空文件列表
-  if (uploadRef.value) {
-    uploadRef.value.clearFiles();
-  }
-  uploadFiles.value = [];
-  fileCount.value = 0;
+  if (uploadRef.value) uploadRef.value.clearFiles();
   showUploadDialog.value = false;
+  uploadFiles.value = [];
   Object.assign(uploadForm, {
     permission: 1,
     album_id: null,
@@ -617,9 +729,7 @@ const handleUploadDialogClose = () => {
   });
 };
 </script>
-
 <style scoped>
-/* 样式部分保持不变 */
 .picture-management {
   padding: 20px;
   max-width: 1400px;

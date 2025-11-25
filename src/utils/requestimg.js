@@ -1,7 +1,7 @@
 
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-// 写死的 API Token
+
 const API_TOKEN = '1931|vXMmh0tkYYrShG1S8yRpfN1aA7gfBplLYkQAXSSc'
 
 // 创建 axios 实例
