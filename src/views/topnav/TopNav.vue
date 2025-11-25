@@ -90,27 +90,27 @@
     </el-sub-menu>
 
     <!-- 设置菜单 -->
-    <el-sub-menu index="">
+
+    <el-sub-menu index="settings">
       <template #title>
         <el-icon><Setting /></el-icon>
         <span>设置</span>
       </template>
-
       <el-menu-item index="/sets/picture">
         <el-icon><Setting /></el-icon>
         <span>图片设置</span>
       </el-menu-item>
       <el-menu-item index="/sets/habits">
         <el-icon><Setting /></el-icon>
-        <span>图片设置</span>
+        <span>设置</span>
       </el-menu-item>
       <el-menu-item index="/sets/GameHistory">
         <el-icon><Setting /></el-icon>
-        <span>图片设置</span>
+        <span>游戏记录</span>
       </el-menu-item>
       <el-menu-item index="/sets/Statistics">
         <el-icon><Setting /></el-icon>
-        <span>基础设置</span>
+        <span>数据统计</span>
       </el-menu-item>
     </el-sub-menu>
   </el-menu>
