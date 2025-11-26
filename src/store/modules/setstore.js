@@ -15,6 +15,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const animationEnabled = ref(localStorage.getItem('animationEnabled') !== 'false')
   const notificationEnabled = ref(localStorage.getItem('notificationEnabled') !== 'false')
   const fontSize = ref(localStorage.getItem('fontSize') || 'medium')
+const imgapi = ref(localStorage.getItem('imgapi') || '')
   const autoSave = ref(localStorage.getItem('autoSave') !== 'false')
 
   // ========== 计算属性 ==========
@@ -30,6 +31,7 @@ export const useSettingsStore = defineStore('settings', () => {
     animationEnabled: animationEnabled.value,
     notificationEnabled: notificationEnabled.value,
     fontSize: fontSize.value,
+    imgapi:imgapi.value,
     autoSave: autoSave.value,
   }))
 
@@ -47,21 +49,21 @@ export const useSettingsStore = defineStore('settings', () => {
     theme.value = theme.value === 'light' ? 'dark' : 'light'
     saveToStorage('theme', theme.value)
     document.documentElement.setAttribute('data-theme', theme.value)
-    ElMessage.success(`已切换到${theme.value === 'light' ? '浅色' : '深色'}主题`)
+    
   }
 
   function setTheme(newTheme) {
     theme.value = newTheme
     saveToStorage('theme', newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
-    ElMessage.success(`已切换到${newTheme === 'light' ? '浅色' : '深色'}主题`)
+    
   }
 
   function setLanguage(lang) {
     const newLang = typeof lang === 'string' ? lang : language.value
     language.value = newLang
     saveToStorage('language', newLang)
-    ElMessage.success('语言设置已更新')
+
   }
 
   function toggleSidebar() {
@@ -73,7 +75,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const val = typeof enabled === 'boolean' ? enabled : soundEnabled.value
     soundEnabled.value = val
     saveToStorage('soundEnabled', val)
-    ElMessage.success(`音效已${val ? '开启' : '关闭'}`)
+    
   }
 
   function toggleSound() {
@@ -84,7 +86,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const val = typeof enabled === 'boolean' ? enabled : musicEnabled.value
     musicEnabled.value = val
     saveToStorage('musicEnabled', val)
-    ElMessage.success(`音乐已${val ? '开启' : '关闭'}`)
+    
   }
 
   function toggleMusic() {
@@ -101,23 +103,27 @@ export const useSettingsStore = defineStore('settings', () => {
     const val = typeof enabled === 'boolean' ? enabled : animationEnabled.value
     animationEnabled.value = val
     saveToStorage('animationEnabled', val)
-    ElMessage.success(`动画效果已${val ? '开启' : '关闭'}`)
+   
   }
 
   function setNotificationEnabled(enabled) {
     const val = typeof enabled === 'boolean' ? enabled : notificationEnabled.value
     notificationEnabled.value = val
     saveToStorage('notificationEnabled', val)
-    ElMessage.success(`通知已${val ? '开启' : '关闭'}`)
+    
   }
 
   function setFontSize(size) {
     fontSize.value = size
     saveToStorage('fontSize', size)
     document.documentElement.setAttribute('data-font-size', size)
-    ElMessage.success('字体大小已更新')
-  }
 
+  }
+function setImgapi(api) {
+  imgapi.value = api
+  saveToStorage('imgapi', api)
+ 
+}
   function setAutoSave(enabled) {
     autoSave.value = enabled
     saveToStorage('autoSave', enabled)
@@ -133,6 +139,7 @@ export const useSettingsStore = defineStore('settings', () => {
     animationEnabled.value = true
     notificationEnabled.value = true
     fontSize.value = 'medium'
+    imgapi.value=''
     autoSave.value = true
 
     // 批量保存
@@ -145,6 +152,7 @@ export const useSettingsStore = defineStore('settings', () => {
       animationEnabled: 'true',
       notificationEnabled: 'true',
       fontSize: 'medium',
+      imgapi:'',
       autoSave: 'true',
     }).forEach(([k, v]) => localStorage.setItem(k, v))
 
@@ -176,13 +184,13 @@ export const useSettingsStore = defineStore('settings', () => {
     // 状态
     loading, theme, language, sidebarCollapsed, soundEnabled,
     musicEnabled, volume, animationEnabled, notificationEnabled,
-    fontSize, autoSave,
+    fontSize,imgapi, autoSave,
     // 计算属性
     isLoading, isDarkTheme, isZhCN, allSettings,
     // 方法
     setLoading, toggleTheme, setTheme, setLanguage, toggleSidebar,
     setSoundEnabled, toggleSound, setMusicEnabled, toggleMusic,
     setVolume, setAnimationEnabled, setNotificationEnabled,
-    setFontSize, setAutoSave, resetSettings, updateSettings,
+    setFontSize,setImgapi, setAutoSave, resetSettings, updateSettings,
   }
 })

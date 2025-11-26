@@ -18,6 +18,7 @@
     "animation": "动画效果",
     "notification": "通知",
     "fontSize": "字体大小",
+    "tpapi":"图片-token-api",
     "fontSizes": {
       "small": "小",
       "medium": "中",

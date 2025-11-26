@@ -21,8 +21,7 @@
             <span>{{ storageUsagePercent }}%</span>
           </div>
           <el-progress
-            :percentage="imageStore.storageUsage"
-            :status="imageStore.isStorageFull ? 'exception' : 'success'"
+            :percentage="storageUsagePercent"
             :show-text="false"
             :stroke-width="8"
           />
@@ -79,7 +78,7 @@
           上传
         </el-button>
         <el-button
-          @click="fetchData"
+          @click="refreshAlbumList"
           :loading="imageStore.loading.images"
           :icon="Refresh"
         >
@@ -180,13 +179,13 @@
               <div class="image-container">
                 <el-checkbox :value="image.key" class="image-checkbox" />
                 <el-image
-                  :src="image.links?.thumbnail_url || image.links?.url"
-                  :preview-src-list="[image.links?.url]"
-                  fit="cover"
-                  loading="lazy"
-                  class="image-preview"
-                  hide-on-click-modal="true"
-                >
+  :src="image.links?.thumbnail_url || image.links?.url"
+  :preview-src-list="[image.links?.url]"
+  fit="cover"
+  loading="lazy"
+  class="image-preview"
+  :hide-on-click-modal="true"
+>
                   <template #error>
                     <div class="image-error">
                       <el-icon><Picture /></el-icon>
@@ -469,7 +468,7 @@ const formatStorageSize = (sizeInKB) => {
 const remainingStorage = computed(() => {
   const used = imageStore.userProfile?.size || 0;
   const total = imageStore.userProfile?.capacity || 0;
-  return Math.max(0, (total - used) / 1024); // 转换为 MB 并确保非负
+  return Math.max(0, (total - used) ); // 转换为 MB 并确保非负
 });
 
 // 存储使用率（百分比）
@@ -1138,7 +1137,7 @@ const handleUploadDialogClose = () => {
   }
 
   .profile-header {
-    flex-direction: column;
+    
     align-items: flex-start;
     gap: 12px;
   }

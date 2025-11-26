@@ -4,45 +4,8 @@
     <main class="main-content">
       <!-- 英雄区域 -->
       <section class="hero-section">
-        <div class="hero-background">
-          <div class="hero-glow"></div>
-          <div class="floating-shapes">
-            <div class="shape shape-1"></div>
-            <div class="shape shape-2"></div>
-            <div class="shape shape-3"></div>
-          </div>
-        </div>
-
-        <div class="hero-container">
-          <div class="hero-content">
-            <div class="hero-badge">🎮 发现无限乐趣</div>
-            <h1 class="hero-title">
-              <span class="title-line">探索精彩</span>
-              <span class="title-line accent">游戏世界</span>
-            </h1>
-            <p class="hero-description">
-              沉浸式体验各类精品小游戏，从益智解谜到动作冒险，总有一款适合你
-            </p>
-
-            <div class="hero-stats">
-              <div class="stat">
-                <div class="stat-number">0</div>
-                <div class="stat-label">精品游戏</div>
-              </div>
-              <div class="stat">
-                <div class="stat-number">1</div>
-                <div class="stat-label">活跃玩家</div>
-              </div>
-              <div class="stat">
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">在线畅玩</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="hero-preview">
-            <div class="preview-card">
-              <CircularGallery
+        
+              <!-- <CircularGallery
                 :items="featuredGames"
                 :bend="0"
                 text-color="#afafaf"
@@ -50,16 +13,14 @@
                 :scroll-speed="5"
                 :scroll-ease="0.05"
                 class="canvas"
-              />
-            </div>
-          </div>
-        </div>
+              /> -->
+        
       </section>
       <!-- 游戏分类区域 -->
       <section class="categories-section">
         <div class="container">
           <div class="section-header">
-            <h2 class="section-title">游戏</h2>
+            
             <p class="section-subtitle">选择你想玩的游戏</p>
           </div>
 
@@ -79,7 +40,7 @@
                   class="explore-btn"
                   @click="handleExplore(category.link)"
                 >
-                  探索
+                  点击，去玩！
                 </el-button>
               </div>
             </div>
@@ -93,7 +54,7 @@
           <div class="cta-content">
             <h2 class="cta-title">准备好开始游戏了吗？</h2>
             <p class="cta-description">
-              加入数百万玩家，立即体验精彩的游戏世界
+              加入我们，立即体验精彩的游戏世界
             </p>
           </div>
         </div>
@@ -245,7 +206,7 @@ const handleExplore = (url: any) => {
 /* 英雄区域 */
 .hero-section {
   position: relative;
-  min-height: 90vh;
+  width: 100%;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -453,10 +414,10 @@ const handleExplore = (url: any) => {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  
   padding: 0 20px;
-  width: 98%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  width: 80%;
+  
 }
 
 .card-header {

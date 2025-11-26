@@ -62,11 +62,7 @@ const routes = [
         name: 'picture',
         component: () => import('../views/sets/picture.vue')
     },
-    {
-        path: '/sets/Statistics',
-        name: 'Statistics',
-        component: () => import('../views/sets/Statistics.vue')
-    }, {
+     {
         path: '/sets/GameHistory',
         name: 'GameHistory',
         component: () => import('../views/sets/GameHistory.vue')

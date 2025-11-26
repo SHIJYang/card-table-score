@@ -18,6 +18,7 @@
     "animation": "Animations",
     "notification": "Notifications",
     "fontSize": "Font Size",
+    "tpapi":"picture-token-api",
     "fontSizes": {
       "small": "Small",
       "medium": "Medium",

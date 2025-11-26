@@ -93,20 +93,14 @@
         />
       </el-form-item>
 
-      <!-- 字体大小选择 -->
-      <el-form-item :label="$t('settings.fontSize')">
-        <el-select
-          v-model="settings.fontSize"
-          @change="(value) => settingsStore.setFontSize(value)"
-          placeholder="请选择字体大小"
-        >
-          <el-option
-            v-for="(label, key) in fontSizeOptions"
-            :key="key"
-            :label="label"
-            :value="key"
-          />
-        </el-select>
+      
+      <el-form-item :label="$t('settings.tpapi')">
+         <el-input 
+    v-model="settings.imgapi" 
+    @change="(value) => settingsStore.setImgapi(value)"
+    style="width: 440px" 
+    placeholder="输入图片API地址" 
+  />
       </el-form-item>
 
       <!-- 重置按钮 -->
@@ -139,6 +133,7 @@ const {
   animationEnabled,
   notificationEnabled,
   fontSize,
+  imgapi,
   autoSave,
 } = storeToRefs(settingsStore);
 
@@ -153,6 +148,7 @@ const {
   setAnimationEnabled,
   setNotificationEnabled,
   setFontSize,
+  setimgapi,
   setAutoSave,
   resetSettings,
 } = settingsStore;
@@ -169,6 +165,7 @@ const settings = reactive({
   animationEnabled,
   notificationEnabled,
   fontSize,
+  imgapi,
   autoSave,
 });
 
@@ -217,11 +214,7 @@ const saveSettings = () => {
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
-  background-color: var(
-    --el-bg-color-page
-  ); /* 使用 Element Plus 的页面背景色变量 */
-  border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light); /* 使用 Element Plus 的浅色阴影变量 */
+
 }
 
 .settings-form {

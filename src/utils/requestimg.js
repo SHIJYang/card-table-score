@@ -1,22 +1,27 @@
-
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-
-const API_TOKEN = '1931|vXMmh0tkYYrShG1S8yRpfN1aA7gfBplLYkQAXSSc'
+import { useSettingsStore } from "@/store";
 
 // 创建 axios 实例
 const request = axios.create({
     baseURL: 'https://picui.cn/api/v1',
     timeout: 10000,
-    headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${API_TOKEN}`
-    }
 })
 
 // 请求拦截器
 request.interceptors.request.use(
     (config) => {
+        // 在拦截器中动态获取 store 值
+        const settingsStore = useSettingsStore();
+        const API_TOKEN = settingsStore.imgapi || '1931|vXMmh0tkYYrShG1S8yRpfN1aA7gfBplLYkQAXSSc';
+        
+        // 设置 Authorization 头
+        config.headers = {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${API_TOKEN}`,
+            ...config.headers
+        }
+
         // 添加时间戳防止缓存（仅对 GET 请求）
         if (config.method === 'get') {
             config.params = {

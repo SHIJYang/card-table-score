@@ -638,7 +638,7 @@ onUnmounted(() => {
 
 .game-container {
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 ;
   padding: 20px;
   min-height: calc(100vh - 60px);
 }

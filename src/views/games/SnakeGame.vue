@@ -360,9 +360,9 @@ onUnmounted(() => {
 
 <style scoped>
 .game-card {
-  margin: 0 auto;
-  width: 99%;
-  max-width: 1000px;
+ 
+  width: 100%;
+ 
 }
 
 .card-header {
