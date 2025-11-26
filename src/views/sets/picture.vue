@@ -124,7 +124,7 @@
     <div class="filter-toggle" @click="showFilter = !showFilter">
       <span>{{ showFilter ? "收起筛选" : "更多筛选" }}</span>
       <el-icon class="filter-icon">
-        {{ showFilter ? "ArrowUp" : "ArrowDown" }}
+        <component :is="showFilter ? ArrowUp : ArrowDown" />
       </el-icon>
     </div>
 

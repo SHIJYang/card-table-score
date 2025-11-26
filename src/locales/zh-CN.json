@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "title": "设置",
+    "theme": "主题",
+    "themes": {
+      "light": "浅色",
+      "dark": "深色"
+    },
+    "language": "语言",
+    "languages": {
+      "zhCN": "简体中文",
+      "enUS": "English (US)"
+    },
+    "autoSave": "自动保存",
+    "sound": "音效",
+    "music": "音乐",
+    "volume": "音量",
+    "animation": "动画效果",
+    "notification": "通知",
+    "fontSize": "字体大小",
+    "fontSizes": {
+      "small": "小",
+      "medium": "中",
+      "large": "大"
+    },
+    "reset": "重置设置"
+  }
+}

@@ -7,7 +7,7 @@
     </el-menu-item>
 
     <!-- 中间标题 -->
-    <view
+    <!-- <view
       style="
         flex: 1;
         display: flex;
@@ -28,7 +28,7 @@
         stroke-color="#67C23A"
         :stroke-width="1"
         :min-font-size="36"
-    /></view>
+    /></view> -->
 
     <!-- 游戏列表 -->
     <el-sub-menu index="games">

@@ -1,178 +1,239 @@
 <template>
   <div class="settings-page">
-    <div class="page-header">
-      <h1>⚙️ 偏好设置</h1>
-      <p class="page-desc">个性化您的使用体验</p>
-    </div>
+    <!-- 标题 -->
+    <h1>{{ $t("settings.title") }}</h1>
 
-    <el-card class="content-card">
-      <el-form label-width="120px" :model="settings" label-position="right">
-        <el-form-item label="主题">
-          <el-radio-group v-model="settings.theme" @change="handleThemeChange">
-            <el-radio label="light">浅色</el-radio>
-            <el-radio label="dark">深色</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <el-form-item label="语言">
-          <el-select v-model="settings.language" @change="handleLanguageChange">
-            <el-option label="简体中文" value="zh-CN" />
-            <el-option label="English" value="en-US" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="音效">
-          <el-switch
-            v-model="settings.soundEnabled"
-            @change="handleSoundEnabledChange"
+    <!-- 设置表单 -->
+    <el-form
+      :model="settings"
+      label-position="left"
+      label-width="120px"
+      @submit.prevent="saveSettings"
+      class="settings-form"
+    >
+      <!-- 主题选择 -->
+      <el-form-item :label="$t('settings.theme')">
+        <el-select
+          v-model="settings.theme"
+          @change="handleThemeChange"
+          placeholder="请选择主题"
+        >
+          <el-option
+            v-for="(label, key) in themeOptions"
+            :key="key"
+            :label="label"
+            :value="key"
           />
-        </el-form-item>
+        </el-select>
+      </el-form-item>
 
-        <el-form-item label="音乐">
-          <el-switch
-            v-model="settings.musicEnabled"
-            @change="handleMusicEnabledChange"
+      <!-- 语言选择 -->
+      <el-form-item :label="$t('settings.language')">
+        <el-select
+          v-model="settings.language"
+          @change="(value) => settingsStore.setLanguage(value)"
+          placeholder="请选择语言"
+        >
+          <el-option
+            v-for="(label, key) in languageOptions"
+            :key="key"
+            :label="label"
+            :value="key"
           />
-        </el-form-item>
+        </el-select>
+      </el-form-item>
 
-        <el-form-item label="音量">
-          <el-slider
-            v-model="settings.volume"
-            @change="handleVolumeChange"
-            :disabled="!settings.soundEnabled && !settings.musicEnabled"
+      <!-- 自动保存开关 -->
+      <el-form-item :label="$t('settings.autoSave')">
+        <el-switch
+          v-model="settings.autoSave"
+          @change="(value) => settingsStore.setAutoSave(value)"
+        />
+      </el-form-item>
+
+      <!-- 音效开关 -->
+      <el-form-item :label="$t('settings.sound')">
+        <el-switch
+          v-model="settings.soundEnabled"
+          @change="(value) => settingsStore.setSoundEnabled(value)"
+        />
+      </el-form-item>
+
+      <!-- 音乐开关 -->
+      <el-form-item :label="$t('settings.music')">
+        <el-switch
+          v-model="settings.musicEnabled"
+          @change="(value) => settingsStore.setMusicEnabled(value)"
+        />
+      </el-form-item>
+
+      <!-- 音量滑块 -->
+      <el-form-item :label="$t('settings.volume')">
+        <el-slider
+          v-model="settings.volume"
+          :min="0"
+          :max="100"
+          @change="(value) => settingsStore.setVolume(value)"
+        />
+      </el-form-item>
+
+      <!-- 动画开关 -->
+      <el-form-item :label="$t('settings.animation')">
+        <el-switch
+          v-model="settings.animationEnabled"
+          @change="(value) => settingsStore.setAnimationEnabled(value)"
+        />
+      </el-form-item>
+
+      <!-- 通知开关 -->
+      <el-form-item :label="$t('settings.notification')">
+        <el-switch
+          v-model="settings.notificationEnabled"
+          @change="(value) => settingsStore.setNotificationEnabled(value)"
+        />
+      </el-form-item>
+
+      <!-- 字体大小选择 -->
+      <el-form-item :label="$t('settings.fontSize')">
+        <el-select
+          v-model="settings.fontSize"
+          @change="(value) => settingsStore.setFontSize(value)"
+          placeholder="请选择字体大小"
+        >
+          <el-option
+            v-for="(label, key) in fontSizeOptions"
+            :key="key"
+            :label="label"
+            :value="key"
           />
-        </el-form-item>
+        </el-select>
+      </el-form-item>
 
-        <el-form-item label="动画效果">
-          <el-switch
-            v-model="settings.animationEnabled"
-            @change="handleAnimationEnabledChange"
-          />
-        </el-form-item>
-
-        <el-form-item label="通知">
-          <el-switch
-            v-model="settings.notificationEnabled"
-            @change="handleNotificationEnabledChange"
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <el-button @click="handleResetSettings"> 恢复默认设置 </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+      <!-- 重置按钮 -->
+      <el-form-item>
+        <el-button type="danger" @click="resetSettings">
+          {{ $t("settings.reset") }}
+        </el-button>
+      </el-form-item>
+    </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { ElMessage } from "element-plus";
+import { reactive, computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { storeToRefs } from "pinia";
 import { useSettingsStore } from "@/store";
 
-// Store
+const { t } = useI18n();
 const settingsStore = useSettingsStore();
 
-// 绑定表单数据
-const settings = ref({
-  theme: "light",
-  language: "zh-CN",
-  soundEnabled: true,
-  musicEnabled: true,
-  volume: 80,
-  animationEnabled: true,
-  notificationEnabled: true,
+// 使用 storeToRefs 获取响应式的 state 和 getters
+// 这些是从 Store 中解构出来的 refs，会随 Store 状态变化而变化
+const {
+  theme,
+  language,
+  soundEnabled,
+  musicEnabled,
+  volume,
+  animationEnabled,
+  notificationEnabled,
+  fontSize,
+  autoSave,
+} = storeToRefs(settingsStore);
+
+// 直接从 Store 实例获取 actions (这些是函数)
+// 注意：不要对 actions 使用 storeToRefs
+const {
+  setTheme,
+  setLanguage,
+  setSoundEnabled,
+  setMusicEnabled,
+  setVolume,
+  setAnimationEnabled,
+  setNotificationEnabled,
+  setFontSize,
+  setAutoSave,
+  resetSettings,
+} = settingsStore;
+
+// 创建一个本地的 reactive 对象，其属性代理到 Store 的 refs
+// 这样做可以让 el-form 的 v-model 直接绑定到 settings.xxx，
+// 同时保证了数据来源是 Store 并且是响应式的
+const settings = reactive({
+  theme,
+  language,
+  soundEnabled,
+  musicEnabled,
+  volume,
+  animationEnabled,
+  notificationEnabled,
+  fontSize,
+  autoSave,
 });
 
-// 从Store加载设置
-const loadSettings = () => {
-  settings.value = {
-    theme: settingsStore.theme,
-    language: settingsStore.language,
-    soundEnabled: settingsStore.soundEnabled,
-    musicEnabled: settingsStore.musicEnabled,
-    volume: settingsStore.volume,
-    animationEnabled: settingsStore.animationEnabled,
-    notificationEnabled: settingsStore.notificationEnabled,
-  };
+// 主题选项
+const themeOptions = computed(() => ({
+  light: t("settings.themes.light"),
+  dark: t("settings.themes.dark"),
+  // blue: t('settings.themes.blue'),
+  // green: t('settings.themes.green'),
+}));
+
+// 语言选项
+const languageOptions = computed(() => ({
+  "zh-CN": t("settings.languages.zhCN"),
+  "en-US": t("settings.languages.enUS"),
+}));
+
+// 字体大小选项
+const fontSizeOptions = computed(() => ({
+  small: t("settings.fontSizes.small"),
+  medium: t("settings.fontSizes.medium"),
+  large: t("settings.fontSizes.large"),
+}));
+
+// 处理主题更改的函数
+const handleThemeChange = (value) => {
+  console.log("Selected theme:", value);
+  // 直接调用 Store 中的 setTheme action
+  // 这个 action 会负责更新 Store 状态、保存到 localStorage 并应用主题
+  setTheme(value);
 };
 
-// 保存设置的通用方法
-const saveSetting = async (key, value) => {
-  try {
-    // 假设store的mutation/action名称与key对应
-    // 例如: setTheme, setLanguage, etc.
-    const actionName = `set${key.charAt(0).toUpperCase() + key.slice(1)}`;
-    if (typeof settingsStore[actionName] === "function") {
-      await settingsStore[actionName](value);
-    } else {
-      //  fallback，如果没有对应的action，则直接赋值（不推荐，最好在store中定义）
-      settingsStore[key] = value;
-      await settingsStore.saveSettings(); // 假设存在一个通用的保存方法
-    }
-    ElMessage.success(`设置已保存`);
-  } catch (error) {
-    ElMessage.error(`保存设置失败: ${error.message}`);
-    console.error(error);
-  }
+// 保存设置的函数 (可选，如果需要一个总的保存按钮)
+const saveSettings = () => {
+  console.log("Saving all settings (if triggered by form submit):", settings);
+  // 如果你希望点击某个“保存”按钮时执行额外逻辑，可以放在这里
+  // 但对于实时保存（如 @change），各个控件已经调用了对应的 Store actions
 };
 
-// 各个设置项的change事件处理器
-const handleThemeChange = (value) => saveSetting("theme", value);
-const handleLanguageChange = (value) => saveSetting("language", value);
-const handleSoundEnabledChange = (value) => saveSetting("soundEnabled", value);
-const handleMusicEnabledChange = (value) => saveSetting("musicEnabled", value);
-const handleVolumeChange = (value) => saveSetting("volume", value);
-const handleAnimationEnabledChange = (value) =>
-  saveSetting("animationEnabled", value);
-const handleNotificationEnabledChange = (value) =>
-  saveSetting("notificationEnabled", value);
-
-// 恢复默认设置
-const handleResetSettings = async () => {
-  await settingsStore.resetSettings();
-  loadSettings();
-  ElMessage.success("已恢复默认设置");
-};
-
-// 页面初始化
-onMounted(() => {
-  loadSettings();
-});
+// 重置设置的函数 (绑定到重置按钮)
+// 直接使用从 Store 解构出来的 resetSettings action
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .settings-page {
-  min-height: 100vh;
-  background: #f5f7fa;
-  padding: 30px;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: var(
+    --el-bg-color-page
+  ); /* 使用 Element Plus 的页面背景色变量 */
+  border-radius: 8px;
+  box-shadow: var(--el-box-shadow-light); /* 使用 Element Plus 的浅色阴影变量 */
+}
 
-  .page-header {
-    margin-bottom: 24px;
-    h1 {
-      font-size: 28px;
-      color: #303133;
-      margin: 0 0 8px 0;
-    }
-    .page-desc {
-      font-size: 16px;
-      color: #909399;
-      margin: 0;
-    }
-  }
+.settings-form {
+  margin-top: 20px;
+}
 
-  .content-card {
-    background: white;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
+.el-form-item {
+  margin-bottom: 20px;
+}
 
-  .el-form {
-    max-width: 600px;
-  }
-  .el-form-item {
-    margin-bottom: 20px;
-  }
+.el-select,
+.el-slider {
+  width: 100%;
 }
 </style>

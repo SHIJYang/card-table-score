@@ -59,8 +59,8 @@
       <section class="categories-section">
         <div class="container">
           <div class="section-header">
-            <h2 class="section-title">游戏分类</h2>
-            <p class="section-subtitle">选择你喜欢的游戏类型</p>
+            <h2 class="section-title">游戏</h2>
+            <p class="section-subtitle">选择你想玩的游戏</p>
           </div>
 
           <div class="categories-grid">
@@ -74,9 +74,13 @@
                 <span>{{ category.icon }}</span>
               </div>
               <h3 class="category-name">{{ category.name }}</h3>
-              <p class="category-count">{{ category.count }} 款游戏</p>
               <div class="category-hover">
-                <button class="explore-btn">探索</button>
+                <el-button
+                  class="explore-btn"
+                  @click="handleExplore(category.link)"
+                >
+                  探索
+                </el-button>
               </div>
             </div>
           </div>
@@ -179,47 +183,52 @@ const featuredGames = [
 const gameCategories = [
   {
     id: 1,
-    name: "益智解谜",
+    name: "计分",
     icon: "🧩",
-    count: 15,
     color: "#3B82F6",
+    link: "/score",
   },
   {
     id: 2,
-    name: "动作冒险",
+    name: "五子棋",
     icon: "🎯",
-    count: 12,
+    link: "/gomoku",
     color: "#EF4444",
   },
   {
     id: 3,
-    name: "休闲放松",
+    name: "商店",
     icon: "🌴",
-    count: 18,
+    link: "/shop",
     color: "#10B981",
   },
   {
     id: 4,
-    name: "策略对战",
+    name: "贪吃蛇",
     icon: "♟️",
-    count: 9,
+    link: "/snake",
     color: "#8B5CF6",
   },
   {
     id: 5,
-    name: "角色扮演",
+    name: "2048",
     icon: "🦸",
-    count: 7,
+    link: "/2048",
     color: "#F59E0B",
   },
   {
     id: 6,
-    name: "多人竞技",
+    name: "404",
     icon: "👥",
-    count: 11,
+    link: "/try",
     color: "#EC4899",
   },
 ];
+
+const handleExplore = (url: any) => {
+  //window.open(url, "_blank"); // 新窗口打开
+  window.location.href = url; //（当前页跳转）
+};
 </script>
 
 <style scoped>

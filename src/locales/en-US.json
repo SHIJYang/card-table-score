@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "language": "Language",
+    "languages": {
+      "zhCN": "简体中文",
+      "enUS": "English (US)"
+    },
+    "autoSave": "Auto Save",
+    "sound": "Sound Effects",
+    "music": "Music",
+    "volume": "Volume",
+    "animation": "Animations",
+    "notification": "Notifications",
+    "fontSize": "Font Size",
+    "fontSizes": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "reset": "Reset Settings"
+  }
+}
