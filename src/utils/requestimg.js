@@ -13,7 +13,7 @@ request.interceptors.request.use(
     (config) => {
         // 在拦截器中动态获取 store 值
         const settingsStore = useSettingsStore();
-        const API_TOKEN = settingsStore.imgapi || '1931|vXMmh0tkYYrShG1S8yRpfN1aA7gfBplLYkQAXSSc';
+        const API_TOKEN = settingsStore.imgapi || '';
         
         // 设置 Authorization 头
         config.headers = {
