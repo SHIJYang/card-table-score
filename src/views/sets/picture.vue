@@ -1,12 +1,10 @@
+<!-- picture.vue -->
 <template>
   <div class="picture-management">
     <!-- 顶部用户信息 -->
     <div class="user-profile-card" v-if="imageStore.userProfile">
       <div class="profile-header">
-        <el-avatar
-          :size="60"
-          :src="imageStore.userProfile?.avatar || '/default-avatar.png'"
-        />
+        <el-avatar :size="60" :src="imageStore.userProfile?.avatar || '/default-avatar.png'" />
         <div class="profile-info">
           <h3>{{ imageStore.userProfile?.name || "未设置昵称" }}</h3>
           <p>@{{ imageStore.userProfile?.username }}</p>
@@ -20,34 +18,20 @@
             <span>存储空间</span>
             <span>{{ storageUsagePercent }}%</span>
           </div>
-          <el-progress
-            :percentage="storageUsagePercent"
-            :show-text="false"
-            :stroke-width="8"
-          />
+          <el-progress :percentage="storageUsagePercent" :show-text="false" :stroke-width="8" />
           <div class="storage-details">
-            <span
-              >已使用:
-              {{ formatStorageSize(imageStore.userProfile?.size) }}</span
-            >
-            <span
-              >总容量:
-              {{ formatStorageSize(imageStore.userProfile?.capacity) }}</span
-            >
+            <span>已使用: {{ formatStorageSize(imageStore.userProfile?.size) }}</span>
+            <span>总容量: {{ formatStorageSize(imageStore.userProfile?.capacity) }}</span>
             <span>剩余: {{ formatStorageSize(remainingStorage) }}</span>
           </div>
         </div>
         <div class="stats">
           <div class="stat-item">
-            <div class="stat-number">
-              {{ imageStore.userProfile?.image_num || 0 }}
-            </div>
+            <div class="stat-number">{{ imageStore.userProfile?.image_num || 0 }}</div>
             <div class="stat-label">图片数量</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number">
-              {{ imageStore.userProfile?.album_num || 0 }}
-            </div>
+            <div class="stat-number">{{ imageStore.userProfile?.album_num || 0 }}</div>
             <div class="stat-label">相册数量</div>
           </div>
           <div class="stat-item">
@@ -59,37 +43,18 @@
     </div>
 
     <!-- 加载状态 -->
-    <div
-      v-if="imageStore.loading.profile && !imageStore.userProfile"
-      class="loading-state"
-    >
+    <div v-if="imageStore.loading.profile && !imageStore.userProfile" class="loading-state">
       <el-skeleton :rows="5" animated />
     </div>
 
     <!-- 操作区域 -->
     <div class="action-bar">
       <div class="action-left">
-        <el-button
-          type="primary"
-          @click="showUploadDialog = true"
-          :disabled="imageStore.isStorageFull"
-          :icon="Plus"
-        >
+        <el-button type="primary" @click="showUploadDialog = true" :disabled="imageStore.isStorageFull" :icon="Plus">
           上传
         </el-button>
-        <el-button
-          @click="refreshAlbumList"
-          :loading="imageStore.loading.images"
-          :icon="Refresh"
-        >
-          刷新
-        </el-button>
-        <el-button
-          type="danger"
-          @click="handleBatchDelete"
-          :disabled="selectedImages.length === 0"
-          :icon="Delete"
-        >
+        <el-button @click="refreshAlbumList" :loading="imageStore.loading.images" :icon="Refresh">刷新</el-button>
+        <el-button type="danger" @click="handleBatchDelete" :disabled="selectedImages.length === 0" :icon="Delete">
           删除 ({{ selectedImages.length }})
         </el-button>
       </div>
@@ -136,20 +101,9 @@
         clearable
         style="width: 100%; margin-bottom: 10px"
       >
-        <el-option
-          v-for="album in imageStore.albumList"
-          :key="album.id"
-          :label="album.name"
-          :value="album.id"
-        />
+        <el-option v-for="album in imageStore.albumList" :key="album.id" :label="album.name" :value="album.id" />
       </el-select>
-      <el-select
-        v-model="sortOrder"
-        placeholder="排序方式"
-        @change="handleSearch"
-        clearable
-        style="width: 100%"
-      >
+      <el-select v-model="sortOrder" placeholder="排序方式" @change="handleSearch" clearable style="width: 100%">
         <el-option label="最新上传" value="newest" />
         <el-option label="最早上传" value="earliest" />
         <el-option label="文件最大" value="utmost" />
@@ -159,33 +113,24 @@
 
     <!-- 图片列表 -->
     <div class="image-list">
-      <div
-        v-if="imageStore.imageList.length === 0 && !imageStore.loading.images"
-        class="empty-state"
-      >
+      <div v-if="imageStore.imageList.length === 0 && !imageStore.loading.images" class="empty-state">
         <el-empty description="暂无图片" />
-        <el-button type="primary" @click="showUploadDialog = true"
-          >上传第一张图片</el-button
-        >
+        <el-button type="primary" @click="showUploadDialog = true">上传第一张图片</el-button>
       </div>
       <div v-loading="imageStore.loading.images">
         <el-checkbox-group v-model="selectedImages" class="image-grid">
-          <div
-            v-for="image in imageStore.imageList"
-            :key="image.key"
-            class="image-item"
-          >
+          <div v-for="image in imageStore.imageList" :key="image.key" class="image-item">
             <el-card class="image-card" :body-style="{ padding: '0px' }">
               <div class="image-container">
                 <el-checkbox :value="image.key" class="image-checkbox" />
                 <el-image
-  :src="image.links?.thumbnail_url || image.links?.url"
-  :preview-src-list="[image.links?.url]"
-  fit="cover"
-  loading="lazy"
-  class="image-preview"
-  :hide-on-click-modal="true"
->
+                  :src="image.links?.thumbnail_url || image.links?.url"
+                  :preview-src-list="[image.links?.url]"
+                  fit="cover"
+                  loading="lazy"
+                  class="image-preview"
+                  :hide-on-click-modal="true"
+                >
                   <template #error>
                     <div class="image-error">
                       <el-icon><Picture /></el-icon>
@@ -200,60 +145,35 @@
                   </template>
                 </el-image>
                 <div class="image-actions">
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    @click="handleDeleteImage(image.key)"
-                  >
+                  <el-button type="danger" size="small" circle @click="handleDeleteImage(image.key)">
                     <el-icon><Delete /></el-icon>
                   </el-button>
-                  <el-dropdown
-                    trigger="click"
-                    @command="(command) => handleCopyLink(command, image)"
-                  >
+                  <el-dropdown trigger="click" @command="(command) => handleCopyLink(command, image)">
                     <el-button size="small" circle>
                       <el-icon><More /></el-icon>
                     </el-button>
                     <template #dropdown>
                       <el-dropdown-menu>
-                        <el-dropdown-item command="url"
-                          >复制 URL</el-dropdown-item
-                        >
-                        <el-dropdown-item command="markdown"
-                          >复制 Markdown</el-dropdown-item
-                        >
-                        <el-dropdown-item command="bbcode"
-                          >复制 BBCode</el-dropdown-item
-                        >
-                        <el-dropdown-item command="markdown_with_link"
-                          >复制 Markdown(带链接)</el-dropdown-item
-                        >
-                        <el-dropdown-item command="html"
-                          >复制 HTML</el-dropdown-item
-                        >
+                        <el-dropdown-item command="url">复制 URL</el-dropdown-item>
+                        <el-dropdown-item command="markdown">复制 Markdown</el-dropdown-item>
+                        <el-dropdown-item command="bbcode">复制 BBCode</el-dropdown-item>
+                        <el-dropdown-item command="markdown_with_link">复制 Markdown(带链接)</el-dropdown-item>
+                        <el-dropdown-item command="html">复制 HTML</el-dropdown-item>
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
                 </div>
                 <div class="image-overlay">
-                  <el-tag
-                    :type="image.permission === 1 ? 'success' : 'info'"
-                    size="small"
-                  >
+                  <el-tag :type="image.permission === 1 ? 'success' : 'info'" size="small">
                     {{ image.permission === 1 ? "公开" : "私有" }}
                   </el-tag>
                 </div>
               </div>
               <div class="image-info">
-                <div class="image-name" :title="image.origin_name">
-                  {{ image.origin_name }}
-                </div>
+                <div class="image-name" :title="image.origin_name">{{ image.origin_name }}</div>
                 <div class="image-meta">
                   <span>{{ (image.size / 1024).toFixed(2) }} MB</span>
-                  <span v-if="image.width && image.height"
-                    >{{ image.width }}×{{ image.height }}</span
-                  >
+                  <span v-if="image.width && image.height">{{ image.width }}×{{ image.height }}</span>
                   <span>{{ formatDate(image.date) }}</span>
                 </div>
                 <div class="image-hash">
@@ -273,21 +193,14 @@
           v-model:current-page="imageStore.imagePagination.current_page"
           :page-size="imageStore.imagePagination.per_page"
           :total="imageStore.imagePagination.total"
-          :page-sizes="[10, 20, 50]"
           layout="total, prev, pager, next"
-          @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
       </div>
     </div>
 
-    <!-- 上传对话框：手动上传模式 -->
-    <el-dialog
-      v-model="showUploadDialog"
-      title="上传图片"
-      width="90%"
-      :before-close="handleUploadDialogClose"
-    >
+    <!-- 上传对话框 -->
+    <el-dialog v-model="showUploadDialog" title="上传图片" width="90%" :before-close="handleUploadDialogClose">
       <el-upload
         ref="uploadRef"
         drag
@@ -301,12 +214,9 @@
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">将图片拖到此处，或<em>点击上传</em></div>
         <template #tip>
-          <div class="el-upload__tip">
-            支持 jpg、png、gif、webp 格式，单文件不超过 10MB
-          </div>
+          <div class="el-upload__tip">支持 jpg、png、gif、webp 格式，单文件不超过 10MB</div>
         </template>
       </el-upload>
-
       <div class="upload-options" style="margin-top: 20px">
         <el-form :model="uploadForm" label-width="80px">
           <el-form-item label="上传权限">
@@ -316,19 +226,8 @@
             </el-radio-group>
           </el-form-item>
           <el-form-item label="选择相册">
-            <el-select
-              v-model="uploadForm.album_id"
-              placeholder="选择相册"
-              clearable
-              style="width: 100%"
-              @change="handleAlbumChange"
-            >
-              <el-option
-                v-for="album in imageStore.albumList"
-                :key="album.id"
-                :label="album.name"
-                :value="album.id"
-              />
+            <el-select v-model="uploadForm.album_id" placeholder="选择相册" clearable style="width: 100%">
+              <el-option v-for="album in imageStore.albumList" :key="album.id" :label="album.name" :value="album.id" />
             </el-select>
           </el-form-item>
           <el-form-item label="过期时间">
@@ -342,16 +241,9 @@
           </el-form-item>
         </el-form>
       </div>
-
-      <!-- 手动上传按钮 -->
       <template #footer>
         <el-button @click="handleUploadDialogClose">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="uploading"
-          :disabled="!canUpload"
-          @click="handleManualUpload"
-        >
+        <el-button type="primary" :loading="uploading" :disabled="!canUpload" @click="handleManualUpload">
           {{ uploading ? "上传中..." : "开始上传" }}
         </el-button>
       </template>
@@ -361,11 +253,7 @@
     <el-dialog v-model="showAlbumDialog" title="相册管理" width="90%">
       <div v-loading="imageStore.loading.albums">
         <div class="album-list">
-          <div
-            v-for="album in imageStore.albumList"
-            :key="album.id"
-            class="album-item"
-          >
+          <div v-for="album in imageStore.albumList" :key="album.id" class="album-item">
             <div class="album-info">
               <h4>{{ album.name }}</h4>
               <p>{{ album.intro || "暂无描述" }}</p>
@@ -404,376 +292,208 @@
     </div>
   </div>
 </template>
-
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, computed, nextTick } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
-  Plus,
-  Refresh,
-  Search,
-  Delete,
-  More,
-  Picture,
-  UploadFilled,
-  Loading,
-  Folder,
-  ArrowUp,
-  ArrowDown,
+  Plus, Refresh, Search, Delete, More, Picture,
+  UploadFilled, Loading, Folder, ArrowUp, ArrowDown
 } from "@element-plus/icons-vue";
 import { useImageStore } from "@/store";
 
 const imageStore = useImageStore();
 
-// UI 状态
+// ====== 组件本地状态（必须定义）======
+const selectedImages = ref([]);
 const showUploadDialog = ref(false);
+const uploading = ref(false);
 const showAlbumDialog = ref(false);
+
 const searchKeyword = ref("");
 const filterPermission = ref("");
 const filterAlbum = ref("");
-const sortOrder = ref("newest");
-const selectedImages = ref([]);
-const uploadRef = ref();
-const deletingAlbum = ref(null);
-const uploading = ref(false);
-const showFilter = ref(false); // 控制筛选器显示
+const sortOrder = ref("");
+const showFilter = ref(false);
 
-// 上传表单数据
 const uploadForm = reactive({
   permission: 1,
   album_id: null,
   expired_at: null,
 });
+const uploadRef = ref(null);
 
-// 待上传文件队列（只存 raw file）
-const uploadFiles = ref([]);
-
-// 计算属性：是否可上传
-const canUpload = computed(() => {
-  return (
-    uploadFiles.value.length > 0 &&
-    !imageStore.isStorageFull &&
-    !uploading.value
-  );
-});
-// 计算属性：修正存储相关逻辑
-const formatStorageSize = (sizeInKB) => {
-  // 后端返回为 KB，转换为 MB（1MB = 1024KB）
-  if (!sizeInKB) return "0.00 MB";
-  const sizeInMB = sizeInKB / 1024;
-  return `${sizeInMB.toFixed(2)} MB`;
-};
-
-// 剩余存储空间（MB）
-const remainingStorage = computed(() => {
-  const used = imageStore.userProfile?.size || 0;
-  const total = imageStore.userProfile?.capacity || 0;
-  return Math.max(0, (total - used) ); // 转换为 MB 并确保非负
-});
-
-// 存储使用率（百分比）
+// ====== 计算属性 ======
 const storageUsagePercent = computed(() => {
-  const used = imageStore.userProfile?.size || 0;
-  const total = imageStore.userProfile?.capacity || 0;
-  if (total === 0) return 0;
-  return Math.round((used / total) * 100); // 基于 KB 计算百分比，避免误差
+  const size = imageStore.userProfile?.size || 0;
+  const cap = imageStore.userProfile?.capacity || 1;
+  return Math.min(100, Math.round((size / cap) * 100));
 });
 
-// 初始化
-onMounted(() => {
-  initData();
+const remainingStorage = computed(() => {
+  return (imageStore.userProfile?.capacity || 0) - (imageStore.userProfile?.size || 0);
 });
 
-const initData = async () => {
-  await Promise.all([imageStore.fetchProfile(), imageStore.fetchAlbums()]);
-  await fetchImageList();
+const canUpload = computed(() => {
+  return uploadRef.value?.uploadFiles?.length > 0 && !uploading.value && !imageStore.isStorageFull;
+});
+
+// ====== 方法（仅调用已有 store 方法）======
+
+// 刷新相册（用已有 fetchAlbums）
+const refreshAlbumList = () => {
+  imageStore.fetchAlbums(1, 999); // 假设一页拉完所有相册
 };
 
-// 获取图片列表
-const fetchImageList = () => {
-  const params = {
-    page: imageStore.imagePagination.current_page,
-    per_page: imageStore.imagePagination.per_page,
-    q: searchKeyword.value,
-    permission: filterPermission.value,
-    album_id: filterAlbum.value,
-    order: sortOrder.value,
-  };
-  return imageStore.fetchImages(params);
-};
-
-// 搜索/筛选
-const handleSearch = () => {
-  imageStore.imagePagination.current_page = 1;
-  fetchImageList();
-  showFilter.value = false; // 搜索后收起筛选器
-};
-
-// 分页
-const handlePageChange = (page) => {
-  imageStore.imagePagination.current_page = page;
-  fetchImageList();
-};
-
-const handleSizeChange = (size) => {
-  imageStore.imagePagination.per_page = size;
-  imageStore.imagePagination.current_page = 1;
-  fetchImageList();
-};
-
-// 删除单张图片
-const handleDeleteImage = async (key) => {
-  try {
-    await ElMessageBox.confirm(
-      "确定要删除这张图片吗？此操作不可恢复！",
-      "警告",
-      {
-        type: "warning",
-        confirmButtonText: "确定删除",
-        cancelButtonText: "取消",
-        confirmButtonClass: "el-button--danger",
-      }
-    );
-    await imageStore.removeImage(key);
-    ElMessage.success("删除成功");
-    selectedImages.value = selectedImages.value.filter((k) => k !== key);
-  } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error("删除失败");
-    }
-  }
-};
-
-// 批量删除
+// 批量删除：循环调用 removeImage
 const handleBatchDelete = async () => {
-  if (selectedImages.value.length === 0) {
-    ElMessage.warning("请选择要删除的图片");
-    return;
-  }
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedImages.value.length} 张图片吗？此操作不可恢复！`,
-      "批量删除",
-      {
-        type: "warning",
-        confirmButtonText: "确定删除",
-        cancelButtonText: "取消",
-        confirmButtonClass: "el-button--danger",
+  if (selectedImages.value.length === 0) return;
+
+  ElMessageBox.confirm(
+    `确定删除选中的 ${selectedImages.value.length} 张图片？`,
+    "批量删除",
+    { type: "warning" }
+  )
+    .then(async () => {
+      uploading.value = true; // 复用 loading 状态
+      try {
+        for (const key of [...selectedImages.value]) {
+          await imageStore.removeImage(key);
+          // 成功后从选中移除（避免重复删）
+          const idx = selectedImages.value.indexOf(key);
+          if (idx > -1) selectedImages.value.splice(idx, 1);
+        }
+        ElMessage.success("批量删除成功");
+      } catch (err) {
+        ElMessage.error("部分图片删除失败");
+      } finally {
+        uploading.value = false;
       }
-    );
-    for (const key of selectedImages.value) {
-      await imageStore.removeImage(key);
-    }
-    ElMessage.success(`成功删除 ${selectedImages.value.length} 张图片`);
-    selectedImages.value = [];
-    fetchImageList();
-  } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error("批量删除失败");
-    }
-  }
+    })
+    .catch(() => {});
+};
+
+// 删除单图
+const handleDeleteImage = (key) => {
+  ElMessageBox.confirm("确定删除这张图片？", "删除", { type: "warning" })
+    .then(() => imageStore.removeImage(key))
+    .catch(() => {});
 };
 
 // 删除相册
-const handleDeleteAlbum = async (albumId) => {
-  try {
-    await ElMessageBox.confirm(
-      "确定要删除这个相册吗？相册内的图片不会被删除。",
-      "删除相册",
-      {
-        type: "warning",
-        confirmButtonText: "确定删除",
-        cancelButtonText: "取消",
-      }
-    );
-    deletingAlbum.value = albumId;
-    await imageStore.removeAlbum(albumId);
-    ElMessage.success("相册删除成功");
-  } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error("删除相册失败");
-    }
-  } finally {
-    deletingAlbum.value = null;
+const handleDeleteAlbum = (id) => {
+  ElMessageBox.confirm("删除相册将删除其中所有图片，确定？", "删除相册", { type: "error" })
+    .then(() => imageStore.removeAlbum(id))
+    .catch(() => {});
+};
+
+// 复制链接（纯前端）
+const handleCopyLink = (command, image) => {
+  const url = image.links?.url || "";
+  const name = image.origin_name || "image";
+  let text = url;
+  switch (command) {
+    case "markdown": text = `![${name}](${url})`; break;
+    case "markdown_with_link": text = `[![${name}](${url})](${url})`; break;
+    case "bbcode": text = `[img]${url}[/img]`; break;
+    case "html": text = `<img src="${url}" alt="${name}" />`; break;
   }
+  navigator.clipboard?.writeText(text).then(() => ElMessage.success("已复制"));
 };
 
-// 刷新相册
-const refreshAlbumList = async () => {
-  await imageStore.fetchAlbums();
-  ElMessage.success("相册列表已刷新");
-};
-
-// 复制链接
-const handleCopyLink = (type, image) => {
-  const linkMap = {
-    url: image.links?.url,
-    markdown: image.links?.markdown,
-    bbcode: image.links?.bbcode,
-    markdown_with_link: image.links?.markdown_with_link,
-    html: image.links?.html,
-  };
-  const link = linkMap[type];
-  if (link) {
-    navigator.clipboard
-      .writeText(link)
-      .then(() => {
-        ElMessage.success(`已复制${getLinkTypeName(type)}到剪贴板`);
-      })
-      .catch(() => {
-        ElMessage.error("复制失败，请手动复制");
-      });
-  } else {
-    ElMessage.error("该链接类型不可用");
-  }
-};
-
-const getLinkTypeName = (type) => {
-  const names = {
-    url: "URL",
-    markdown: "Markdown",
-    bbcode: "BBCode",
-    markdown_with_link: "Markdown(带链接)",
-    html: "HTML",
-  };
-  return names[type] || "链接";
-};
-
-const shortenHash = (hash) => {
-  if (!hash) return "";
-  return hash.substring(0, 8) + "..." + hash.substring(hash.length - 8);
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  return new Date(dateString).toLocaleDateString("zh-CN");
-};
-
-// 相册选择时同步权限
-const handleAlbumChange = (albumId) => {
-  if (albumId) {
-    const selectedAlbum = imageStore.albumList.find(
-      (album) => album.id === albumId
-    );
-    if (selectedAlbum && selectedAlbum.permission !== undefined) {
-      uploadForm.permission = selectedAlbum.permission;
-    }
-  }
-};
-
-// ========== 手动上传逻辑 ==========
-
-// 文件变化：收集 raw file
-const handleFileChange = (file, fileList) => {
-  // 清空并重新收集所有 ready 状态的 raw 文件
-  uploadFiles.value = fileList
-    .filter((f) => f.status === "ready")
-    .map((f) => f.raw);
-};
-
-// 移除文件时更新队列
-const handleUploadRemove = (file) => {
-  uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== file.uid);
-};
-
-// 手动上传按钮点击
-const handleManualUpload = async () => {
-  if (uploadFiles.value.length === 0) {
-    ElMessage.warning("请选择要上传的图片");
-    return;
-  }
-
-  uploading.value = true;
-  let successCount = 0;
-
-  try {
-    for (const rawFile of uploadFiles.value) {
-      // 前端校验
-      const isImage = rawFile.type.startsWith("image/");
-      const isLt10M = rawFile.size / 1024 / 1024 < 10;
-      if (!isImage) {
-        ElMessage.error(`${rawFile.name} 不是图片文件，已跳过`);
-        continue;
-      }
-      if (!isLt10M) {
-        ElMessage.error(`${rawFile.name} 超过 10MB，已跳过`);
-        continue;
-      }
-
-      // 构建 FormData（与 store 期望一致）
-      const formData = new FormData();
-      formData.append("file", rawFile);
-      formData.append("permission", uploadForm.permission);
-      if (uploadForm.album_id) {
-        formData.append("album_id", uploadForm.album_id);
-      }
-      if (uploadForm.expired_at) {
-        formData.append("expired_at", uploadForm.expired_at);
-      }
-
-      try {
-        await imageStore.uploadImage(rawFile, {
-          permission: uploadForm.permission,
-          album_id: uploadForm.album_id,
-          expired_at: uploadForm.expired_at,
-        });
-        successCount++;
-      } catch (err) {
-        console.error("上传失败:", rawFile.name, err);
-        // 错误已在 store 中处理，此处不再重复提示
-      }
-    }
-
-    ElMessage.success(`成功上传 ${successCount} 张图片`);
-
-    if (successCount > 0) {
-      // 重置到第一页并刷新
-      imageStore.imagePagination.current_page = 1;
-      await fetchImageList();
-      await imageStore.fetchProfile(); // 更新存储用量
-    }
-  } finally {
-    uploading.value = false;
-    showUploadDialog.value = false;
-    uploadFiles.value = [];
-    Object.assign(uploadForm, {
-      permission: 1,
-      album_id: null,
-      expired_at: null,
-    });
-  }
-};
-
-// 关闭上传对话框
-const handleUploadDialogClose = () => {
-  if (uploadRef.value) uploadRef.value.clearFiles();
-  showUploadDialog.value = false;
-  uploadFiles.value = [];
-  Object.assign(uploadForm, {
-    permission: 1,
-    album_id: null,
-    expired_at: null,
+// 搜索 & 分页
+const handleSearch = () => {
+  imageStore.fetchImages({
+    keyword: searchKeyword.value || undefined,
+    permission: filterPermission.value || undefined,
+    album_id: filterAlbum.value || undefined,
+    sort: sortOrder.value || undefined,
+    page: 1
   });
 };
-</script>
 
+const handlePageChange = (page) => {
+  imageStore.fetchImages({
+    keyword: searchKeyword.value || undefined,
+    permission: filterPermission.value || undefined,
+    album_id: filterAlbum.value || undefined,
+    sort: sortOrder.value || undefined,
+    page
+  });
+};
+
+// 上传处理：循环调用 uploadImage
+const handleManualUpload = async () => {
+  const files = uploadRef.value?.uploadFiles || [];
+  if (files.length === 0 || uploading.value || imageStore.isStorageFull) return;
+
+  uploading.value = true;
+  try {
+    for (const fileObj of files) {
+      const file = fileObj.raw; // Element Plus 的 File 对象在 raw 中
+      await imageStore.uploadImage(file, {
+        permission: uploadForm.permission,
+        album_id: uploadForm.album_id,
+        expired_at: uploadForm.expired_at
+      });
+    }
+    ElMessage.success("全部上传成功");
+    showUploadDialog.value = false;
+    uploadRef.value.clearFiles();
+    Object.assign(uploadForm, { permission: 1, album_id: null, expired_at: null });
+  } catch (err) {
+    ElMessage.error("上传过程中出错，请重试");
+  } finally {
+    uploading.value = false;
+  }
+};
+
+const handleUploadDialogClose = () => {
+  if (uploading.value) return ElMessage.warning("正在上传");
+  showUploadDialog.value = false;
+  nextTick(() => uploadRef.value?.clearFiles());
+};
+
+// 工具函数（内联）
+const formatStorageSize = (bytes) => {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+const formatDate = (timestamp) => {
+  if (!timestamp) return "";
+  return new Date(timestamp * 1000).toLocaleString();
+};
+
+const shortenHash = (hash) => hash ? hash.substring(0, 8) + "..." : "";
+
+// 初始化
+onMounted(() => {
+  imageStore.fetchProfile();
+  imageStore.fetchAlbums(1, 999);
+  imageStore.fetchImages({ page: 1 });
+});
+</script>
 <style scoped>
 .picture-management {
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: var(--el-bg-color-page); /* 使用 Element Plus 页面背景变量 */
 }
 
-/* ... (保持原有的样式不变) ... */
+/* 用户信息卡片：使用柔和卡片样式，不强制渐变 */
 .user-profile-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--el-bg-color);
   border-radius: 12px;
   padding: 24px;
-  color: white;
+  color: var(--el-text-color-primary);
   margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--el-box-shadow-light);
+  border: 1px solid var(--el-border-color-light);
 }
 
 .profile-header {
@@ -781,26 +501,24 @@ const handleUploadDialogClose = () => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .profile-header .el-avatar {
-  border: 3px solid rgba(255, 255, 255, 0.2);
-}
-
-.profile-info {
-  flex: 1;
-  margin-left: 16px;
+  border: 3px solid var(--el-border-color-light);
 }
 
 .profile-info h3 {
   margin: 0 0 4px 0;
   font-size: 18px;
   font-weight: 600;
+  color: var(--el-text-color-primary);
 }
 
 .profile-info p {
   margin: 2px 0;
-  opacity: 0.9;
+  color: var(--el-text-color-secondary);
 }
 
 .email {
@@ -808,7 +526,7 @@ const handleUploadDialogClose = () => {
 }
 
 .profile-status {
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .storage-info {
@@ -816,10 +534,12 @@ const handleUploadDialogClose = () => {
   justify-content: space-between;
   align-items: flex-end;
   gap: 40px;
+  flex-wrap: wrap;
 }
 
 .storage-progress {
   flex: 1;
+  min-width: 200px;
 }
 
 .progress-header {
@@ -827,6 +547,7 @@ const handleUploadDialogClose = () => {
   justify-content: space-between;
   margin-bottom: 8px;
   font-size: 14px;
+  color: var(--el-text-color-regular);
 }
 
 .storage-details {
@@ -834,12 +555,13 @@ const handleUploadDialogClose = () => {
   justify-content: space-between;
   margin-top: 8px;
   font-size: 12px;
-  opacity: 0.9;
+  color: var(--el-text-color-secondary);
 }
 
 .stats {
   display: flex;
   gap: 40px;
+  flex-wrap: wrap;
 }
 
 .stat-item {
@@ -850,13 +572,15 @@ const handleUploadDialogClose = () => {
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 4px;
+  color: var(--el-text-color-primary);
 }
 
 .stat-label {
   font-size: 12px;
-  opacity: 0.9;
+  color: var(--el-text-color-secondary);
 }
 
+/* 操作栏 */
 .action-bar {
   display: flex;
   justify-content: space-between;
@@ -864,18 +588,14 @@ const handleUploadDialogClose = () => {
   margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 12px;
-  background: white;
+  background: var(--el-bg-color);
   padding: 16px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--el-box-shadow-light);
+  border: 1px solid var(--el-border-color-light);
 }
 
-.action-left {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
+.action-left,
 .search-filter {
   display: flex;
   gap: 12px;
@@ -883,42 +603,47 @@ const handleUploadDialogClose = () => {
   flex-wrap: wrap;
 }
 
-/* 新增：筛选器折叠按钮 */
+/* 筛选器折叠 */
 .filter-toggle {
-  background: white;
+  background: var(--el-bg-color);
   padding: 10px 16px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--el-box-shadow-light);
   margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
   font-size: 14px;
-  color: #333;
-}
-.filter-icon {
-  transition: transform 0.3s ease;
+  color: var(--el-text-color-primary);
+  border: 1px solid var(--el-border-color-light);
+  transition: background-color 0.2s;
 }
 
-/* 新增：展开的筛选器容器 */
+.filter-toggle:hover {
+  background: var(--el-fill-color-light);
+}
+
 .expanded-filter {
-  background: white;
+  background: var(--el-bg-color);
   padding: 16px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--el-box-shadow-light);
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border: 1px solid var(--el-border-color-light);
 }
 
+/* 图片列表 */
 .image-list {
-  background: white;
+  background: var(--el-bg-color);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--el-box-shadow-light);
   margin-bottom: 80px;
+  border: 1px solid var(--el-border-color-light);
 }
 
 .empty-state {
@@ -939,24 +664,25 @@ const handleUploadDialogClose = () => {
 
 .image-card {
   transition: all 0.3s ease;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--el-border-color-light);
 }
 
 .image-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--el-box-shadow);
 }
 
 .image-container {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  background: #fafafa;
+  background: var(--el-fill-color-light);
 }
 
 .image-preview {
   width: 100%;
   height: 100%;
+  object-fit: cover;
   cursor: pointer;
 }
 
@@ -967,7 +693,7 @@ const handleUploadDialogClose = () => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #999;
+  color: var(--el-text-color-placeholder);
   font-size: 14px;
 }
 
@@ -1011,13 +737,14 @@ const handleUploadDialogClose = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
+  color: var(--el-text-color-primary);
 }
 
 .image-meta {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #666;
+  color: var(--el-text-color-secondary);
   margin-bottom: 4px;
   flex-wrap: wrap;
   gap: 4px;
@@ -1025,7 +752,7 @@ const handleUploadDialogClose = () => {
 
 .image-hash {
   font-size: 11px;
-  color: #999;
+  color: var(--el-text-color-secondary);
 }
 
 .hash {
@@ -1042,7 +769,7 @@ const handleUploadDialogClose = () => {
 .upload-options {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--el-border-color-light);
 }
 
 .album-list {
@@ -1055,7 +782,7 @@ const handleUploadDialogClose = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--el-border-color-light);
   border-radius: 6px;
   margin-bottom: 8px;
 }
@@ -1063,17 +790,18 @@ const handleUploadDialogClose = () => {
 .album-info h4 {
   margin: 0 0 4px 0;
   font-size: 14px;
+  color: var(--el-text-color-primary);
 }
 
 .album-info p {
   margin: 0 0 4px 0;
-  color: #666;
+  color: var(--el-text-color-secondary);
   font-size: 12px;
 }
 
 .album-stats {
   font-size: 11px;
-  color: #999;
+  color: var(--el-text-color-placeholder);
 }
 
 .empty-albums {
@@ -1085,13 +813,13 @@ const handleUploadDialogClose = () => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--el-bg-color);
   padding: 12px 20px;
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--el-border-color-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1000;
 }
 
@@ -1099,37 +827,35 @@ const handleUploadDialogClose = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #666;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
 .loading-state {
-  background: white;
+  background: var(--el-bg-color);
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 20px;
+  border: 1px solid var(--el-border-color-light);
 }
 
 :deep(.el-upload-dragger) {
   width: 100%;
-  border: 2px dashed #dcdfe6;
+  border: 2px dashed var(--el-border-color-light);
 }
 
 :deep(.el-upload-dragger:hover) {
-  border-color: #409eff;
+  border-color: var(--el-color-primary);
 }
 
 :deep(.el-checkbox-group) {
   width: 100%;
 }
 
-/*
-  新增的媒体查询，用于手机端适配
-  断点设置为 768px，这是一个常见的移动设备与桌面设备的分界点
-*/
+/* 响应式 */
 @media (max-width: 768px) {
   .picture-management {
-    padding: 10px; /* 减小整体内边距 */
+    padding: 10px;
   }
 
   .user-profile-card {
@@ -1137,29 +863,19 @@ const handleUploadDialogClose = () => {
   }
 
   .profile-header {
-    
+    flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-  }
-
-  .profile-status {
-    margin-left: 0;
-    margin-top: 8px;
   }
 
   .storage-info {
-    flex-direction: column; /* 垂直排列 */
-    gap: 20px;
+    flex-direction: column;
     align-items: stretch;
+    gap: 20px;
   }
 
   .stats {
-    justify-content: space-around; /* 均匀分布 */
-    gap: 10px;
-  }
-
-  .stat-number {
-    font-size: 20px;
+    justify-content: space-around;
+    width: 100%;
   }
 
   .action-bar {
@@ -1167,56 +883,34 @@ const handleUploadDialogClose = () => {
   }
 
   .action-left .el-button span {
-    display: none; /* 隐藏按钮文字 */
+    display: none;
   }
 
   .action-left .el-button {
-    padding: 10px; /* 仅保留图标 */
+    padding: 8px;
   }
 
   .search-filter {
-    width: 100%; /* 占满一行 */
-    order: 3; /* 移到最下面 */
+    width: 100%;
+    order: 3;
   }
 
-  /* 图片网格布局调整为 2 列或自适应 */
   .image-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
   }
 
-  .image-info {
-    padding: 8px;
-  }
-
-  .image-name {
-    font-size: 13px;
-  }
-
-  .image-meta {
-    font-size: 11px;
-  }
-
-  .image-meta span:nth-child(2) {
-    display: none; /* 隐藏分辨率信息 */
-  }
-
+  .image-meta span:nth-child(2),
   .image-hash {
-    display: none; /* 隐藏 MD5 信息 */
-  }
-
-  /* 底部状态栏简化 */
-  .bottom-stats {
-    font-size: 12px;
+    display: none;
   }
 
   .bottom-stats span:nth-child(3) {
-    display: none; /* 隐藏页码信息 */
+    display: none;
   }
 
-  /* 对话框宽度调整 */
-  .el-dialog {
-    width: 90% !important; /* 覆盖 Element Plus 默认样式 */
+  :deep(.el-dialog) {
+    width: 95% !important;
   }
 }
 </style>

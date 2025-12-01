@@ -143,13 +143,13 @@ const whiteStones = computed(() => {
 // 开始新游戏
 const startNewGame = () => {
   resetBoard();
-  ElMessage.info("新游戏开始！黑子先行");
+  //ElMessage.info("新游戏开始！黑子先行");
 };
 
 // 重置游戏
 const resetGame = () => {
   resetBoard();
-  ElMessage.info("游戏已重置");
+  //ElMessage.info("游戏已重置");
 };
 
 // 重置棋盘

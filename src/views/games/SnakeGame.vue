@@ -60,9 +60,9 @@
                 >
                   <el-icon><ArrowLeft /></el-icon>
                 </el-button>
-                <el-button circle @click="pauseGame" v-if="isPlaying">
+                <el-button circle @click="pauseGame">
                   <el-icon
-                    ><VideoPause v-if="isPaused" /><VideoPlay v-else
+                    ><VideoPause v-if="isPaused"  /><VideoPlay v-else
                   /></el-icon>
                 </el-button>
                 <el-button
@@ -233,8 +233,8 @@ const generateFood = () => {
   let attempts = 0;
   do {
     newFood = {
-      x: Math.floor(Math.random() * gridCols),
-      y: Math.floor(Math.random() * gridRows),
+      x: Math.floor(Math.random() * gridCols) + 1,
+      y: Math.floor(Math.random() * gridRows) + 1,
     };
     attempts++;
     if (attempts > 400) return;

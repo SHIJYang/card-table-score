@@ -6,24 +6,21 @@
       "light": "Light",
       "dark": "Dark"
     },
+    "selectTheme": "Select theme",
     "language": "Language",
     "languages": {
-      "zhCN": "简体中文",
-      "enUS": "English (US)"
+      "zh-CN": "简体中文",
+      "en-US": "English (US)"
     },
+    "selectLanguage": "Select language",
     "autoSave": "Auto Save",
     "sound": "Sound Effects",
-    "music": "Music",
+    "music": "Background Music",
     "volume": "Volume",
     "animation": "Animations",
     "notification": "Notifications",
-    "fontSize": "Font Size",
-    "tpapi":"picture-token-api",
-    "fontSizes": {
-      "small": "Small",
-      "medium": "Medium",
-      "large": "Large"
-    },
+    "tpapi": "Picture Token API",
+    "enterApiUrl": "Enter image API URL",
     "reset": "Reset Settings"
   }
 }

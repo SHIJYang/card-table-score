@@ -1,27 +1,42 @@
-// settings.js (重构版)
+// setstore.js (优化整合版)
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { ElMessage } from 'element-plus'
 
 export const useSettingsStore = defineStore('settings', () => {
+  // ========== 常量 ==========
+  const THEME_OPTIONS = {
+    light: '亮色',
+    dark: '暗色',
+    // blue: '蓝色',
+    // green: '绿色'
+  }
+
+  const LANGUAGE_OPTIONS = {
+    'zh-CN': '简体中文',
+    'en-US': 'English'
+  }
+
+  const FONT_SIZE_OPTIONS = {
+    small: '小',
+    medium: '中',
+    large: '大'
+  }
+
   // ========== 状态 ==========
-  const loading = ref(false)
   const theme = ref(localStorage.getItem('theme') || 'light')
   const language = ref(localStorage.getItem('language') || 'zh-CN')
-  const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
   const soundEnabled = ref(localStorage.getItem('soundEnabled') !== 'false')
   const musicEnabled = ref(localStorage.getItem('musicEnabled') !== 'false')
   const volume = ref(Number(localStorage.getItem('volume')) || 50)
   const animationEnabled = ref(localStorage.getItem('animationEnabled') !== 'false')
   const notificationEnabled = ref(localStorage.getItem('notificationEnabled') !== 'false')
   const fontSize = ref(localStorage.getItem('fontSize') || 'medium')
-const imgapi = ref(localStorage.getItem('imgapi') || '')
+  const imgapi = ref(localStorage.getItem('imgapi') || '')
   const autoSave = ref(localStorage.getItem('autoSave') !== 'false')
 
   // ========== 计算属性 ==========
-  const isLoading = computed(() => loading.value)
   const isDarkTheme = computed(() => theme.value === 'dark')
-  const isZhCN = computed(() => language.value === 'zh-CN')
   const allSettings = computed(() => ({
     theme: theme.value,
     language: language.value,
@@ -31,9 +46,13 @@ const imgapi = ref(localStorage.getItem('imgapi') || '')
     animationEnabled: animationEnabled.value,
     notificationEnabled: notificationEnabled.value,
     fontSize: fontSize.value,
-    imgapi:imgapi.value,
-    autoSave: autoSave.value,
+    imgapi: imgapi.value,
+    autoSave: autoSave.value
   }))
+
+  const themeOptions = computed(() => THEME_OPTIONS)
+  const languageOptions = computed(() => LANGUAGE_OPTIONS)
+  const fontSizeOptions = computed(() => FONT_SIZE_OPTIONS)
 
   // ========== 辅助函数 ==========
   function saveToStorage(key, value) {
@@ -41,89 +60,54 @@ const imgapi = ref(localStorage.getItem('imgapi') || '')
   }
 
   // ========== Actions ==========
-  function setLoading(val) {
-    loading.value = val
-  }
-
-  function toggleTheme() {
-    theme.value = theme.value === 'light' ? 'dark' : 'light'
-    saveToStorage('theme', theme.value)
-    document.documentElement.setAttribute('data-theme', theme.value)
-    
-  }
-
   function setTheme(newTheme) {
     theme.value = newTheme
     saveToStorage('theme', newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
-    
   }
 
   function setLanguage(lang) {
-    const newLang = typeof lang === 'string' ? lang : language.value
-    language.value = newLang
-    saveToStorage('language', newLang)
-
-  }
-
-  function toggleSidebar() {
-    sidebarCollapsed.value = !sidebarCollapsed.value
-    saveToStorage('sidebarCollapsed', sidebarCollapsed.value)
+    language.value = lang
+    saveToStorage('language', lang)
   }
 
   function setSoundEnabled(enabled) {
-    const val = typeof enabled === 'boolean' ? enabled : soundEnabled.value
-    soundEnabled.value = val
-    saveToStorage('soundEnabled', val)
-    
-  }
-
-  function toggleSound() {
-    setSoundEnabled(!soundEnabled.value)
+    soundEnabled.value = enabled
+    saveToStorage('soundEnabled', enabled)
   }
 
   function setMusicEnabled(enabled) {
-    const val = typeof enabled === 'boolean' ? enabled : musicEnabled.value
-    musicEnabled.value = val
-    saveToStorage('musicEnabled', val)
-    
-  }
-
-  function toggleMusic() {
-    setMusicEnabled(!musicEnabled.value)
+    musicEnabled.value = enabled
+    saveToStorage('musicEnabled', enabled)
   }
 
   function setVolume(vol) {
-    const newVol = Math.max(0, Math.min(100, typeof vol === 'number' ? vol : volume.value))
-    volume.value = newVol
-    saveToStorage('volume', newVol)
+    const clamped = Math.max(0, Math.min(100, vol))
+    volume.value = clamped
+    saveToStorage('volume', clamped)
   }
 
   function setAnimationEnabled(enabled) {
-    const val = typeof enabled === 'boolean' ? enabled : animationEnabled.value
-    animationEnabled.value = val
-    saveToStorage('animationEnabled', val)
-   
+    animationEnabled.value = enabled
+    saveToStorage('animationEnabled', enabled)
   }
 
   function setNotificationEnabled(enabled) {
-    const val = typeof enabled === 'boolean' ? enabled : notificationEnabled.value
-    notificationEnabled.value = val
-    saveToStorage('notificationEnabled', val)
-    
+    notificationEnabled.value = enabled
+    saveToStorage('notificationEnabled', enabled)
   }
 
   function setFontSize(size) {
     fontSize.value = size
     saveToStorage('fontSize', size)
     document.documentElement.setAttribute('data-font-size', size)
-
   }
-function setImgapi(api) {
-  imgapi.value = api
-  saveToStorage('imgapi', api)
- 
-}
+
+  function setImgapi(api) {
+    imgapi.value = api
+    saveToStorage('imgapi', api)
+  }
+
   function setAutoSave(enabled) {
     autoSave.value = enabled
     saveToStorage('autoSave', enabled)
@@ -131,66 +115,50 @@ function setImgapi(api) {
   }
 
   function resetSettings() {
-    theme.value = 'light'
-    language.value = 'zh-CN'
-    soundEnabled.value = true
-    musicEnabled.value = true
-    volume.value = 50
-    animationEnabled.value = true
-    notificationEnabled.value = true
-    fontSize.value = 'medium'
-    imgapi.value=''
-    autoSave.value = true
-
-    // 批量保存
-    Object.entries({
-      theme: 'light',
-      language: 'zh-CN',
-      soundEnabled: 'true',
-      musicEnabled: 'true',
-      volume: '50',
-      animationEnabled: 'true',
-      notificationEnabled: 'true',
-      fontSize: 'medium',
-      imgapi:'',
-      autoSave: 'true',
-    }).forEach(([k, v]) => localStorage.setItem(k, v))
-
-    document.documentElement.setAttribute('data-theme', 'light')
-    document.documentElement.setAttribute('data-font-size', 'medium')
+    setTheme('light')
+    setLanguage('zh-CN')
+    setSoundEnabled(true)
+    setMusicEnabled(true)
+    setVolume(50)
+    setAnimationEnabled(true)
+    setNotificationEnabled(true)
+    setFontSize('medium')
+    setImgapi('')
+    setAutoSave(true)
     ElMessage.success('设置已重置为默认值')
   }
 
-  function updateSettings(settings) {
-    Object.keys(settings).forEach(key => {
-      if (key in stateRefs) {
-        stateRefs[key].value = settings[key]
-        saveToStorage(key, settings[key])
-      }
-    })
-    if (settings.theme) document.documentElement.setAttribute('data-theme', settings.theme)
-    if (settings.fontSize) document.documentElement.setAttribute('data-font-size', settings.fontSize)
-    ElMessage.success('设置已保存')
-  }
-
-  // 用于 updateSettings 的引用映射（可选优化）
-  const stateRefs = {
-    theme, language, soundEnabled, musicEnabled, volume,
-    animationEnabled, notificationEnabled, fontSize, autoSave
-  }
-
-  // ========== 返回 ==========
   return {
     // 状态
-    loading, theme, language, sidebarCollapsed, soundEnabled,
-    musicEnabled, volume, animationEnabled, notificationEnabled,
-    fontSize,imgapi, autoSave,
+    theme,
+    language,
+    soundEnabled,
+    musicEnabled,
+    volume,
+    animationEnabled,
+    notificationEnabled,
+    fontSize,
+    imgapi,
+    autoSave,
+
     // 计算属性
-    isLoading, isDarkTheme, isZhCN, allSettings,
+    isDarkTheme,
+    allSettings,
+    themeOptions,
+    languageOptions,
+    fontSizeOptions,
+
     // 方法
-    setLoading, toggleTheme, setTheme, setLanguage, toggleSidebar,
-    setSoundEnabled, toggleSound, setMusicEnabled, toggleMusic,
-    setVolume, setAnimationEnabled, setNotificationEnabled,
-    setFontSize,setImgapi, setAutoSave, resetSettings, updateSettings,
+    setTheme,
+    setLanguage,
+    setSoundEnabled,
+    setMusicEnabled,
+    setVolume,
+    setAnimationEnabled,
+    setNotificationEnabled,
+    setFontSize,
+    setImgapi,
+    setAutoSave,
+    resetSettings
   }
 })
