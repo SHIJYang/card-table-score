@@ -1,4 +1,18 @@
 {
+  "nav": {
+    "home": "首页",
+    "games": "游戏",
+    "settings": "设置",
+    "score": "分数系统",
+    "gomoku": "五子棋",
+    "shop": "商店",
+    "snake": "贪吃蛇",
+    "2048": "2048",
+    "try": "试玩",
+    "pictureSettings": "图片设置",
+    "habits": "设置",
+    "gameHistory": "游戏记录"
+  },
   "settings": {
     "title": "设置",
     "theme": "主题",

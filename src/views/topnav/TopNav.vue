@@ -3,97 +3,76 @@
     <!-- Logo/Home -->
     <el-menu-item index="/">
       <el-icon :size="24">🏠</el-icon>
-      <span style="margin-left: 8px; font-weight: 600">首页</span>
+      <span style="margin-left: 8px; font-weight: 600">{{ $t('nav.home') }}</span>
     </el-menu-item>
-
-    <!-- 中间标题 -->
-    <!-- <view
-      style="
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-width: 140px;
-      "
-    >
-      <TextPressure
-        text="SHIJY GAME"
-        :flex="true"
-        :alpha="true"
-        :stroke="true"
-        :width="true"
-        :weight="true"
-        :italic="true"
-        text-color="#409EFF"
-        stroke-color="#67C23A"
-        :stroke-width="1"
-        :min-font-size="36"
-    /></view> -->
 
     <!-- 游戏列表 -->
     <el-sub-menu index="games">
       <template #title>
         <el-icon><IconMenu /></el-icon>
-        <span>游戏</span>
+        <span>{{ $t('nav.games') }}</span>
       </template>
       <el-menu-item index="/score">
         <el-icon>📊</el-icon>
-        <span>分数系统</span>
+        <span>{{ $t('nav.score') }}</span>
       </el-menu-item>
       <el-menu-item index="/gomoku">
         <el-icon>⚫</el-icon>
-        <span>五子棋</span>
+        <span>{{ $t('nav.gomoku') }}</span>
       </el-menu-item>
       <el-menu-item index="/shop">
         <el-icon>🛒</el-icon>
-        <span>商店</span>
+        <span>{{ $t('nav.shop') }}</span>
       </el-menu-item>
       <el-menu-item index="/snake">
         <el-icon>🐍</el-icon>
-        <span>贪吃蛇</span>
+        <span>{{ $t('nav.snake') }}</span>
       </el-menu-item>
       <el-menu-item index="/2048">
         <el-icon>🎮</el-icon>
-        <span>2048</span>
+        <span>{{ $t('nav.2048') }}</span>
       </el-menu-item>
       <el-menu-item index="/try">
         <el-icon>🎯</el-icon>
-        <span>试玩</span>
+        <span>{{ $t('nav.try') }}</span>
       </el-menu-item>
     </el-sub-menu>
 
     <!-- 设置菜单 -->
-
     <el-sub-menu index="settings">
       <template #title>
         <el-icon><Setting /></el-icon>
+        <span>{{ $t('nav.settings') }}</span>
       </template>
       <el-menu-item index="/sets/picture">
         <el-icon><Setting /></el-icon>
-        <span>图片设置</span>
+        <span>{{ $t('nav.pictureSettings') }}</span>
       </el-menu-item>
       <el-menu-item index="/sets/habits">
         <el-icon><Setting /></el-icon>
-        <span>设置</span>
+        <span>{{ $t('nav.habits') }}</span>
       </el-menu-item>
       <el-menu-item index="/sets/GameHistory">
         <el-icon><Setting /></el-icon>
-        <span>游戏记录</span>
+        <span>{{ $t('nav.gameHistory') }}</span>
       </el-menu-item>
-      
     </el-sub-menu>
   </el-menu>
 </template>
 
 <script lang="ts" setup>
-import { Document, Menu as IconMenu, Setting } from "@element-plus/icons-vue";
-import { ref } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { Menu as IconMenu, Setting } from "@element-plus/icons-vue";
+// 不再需要 Document（未使用）
+import { useI18n } from 'vue-i18n'
 
-import TextPressure from "../../components/gsap/TextPressure.vue";
+const { t } = useI18n()
 
-const route = useRoute();
-const router = useRouter();
+// 当前未使用
+// import { useRouter, useRoute } from "vue-router";
+// const route = useRoute();
+// const router = useRouter();
 </script>
 
-<style scoped></style>
+<style scoped>
+/* 若无特殊样式，可留空 */
+</style>

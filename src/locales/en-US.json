@@ -1,4 +1,18 @@
 {
+  "nav": {
+    "home": "Home",
+    "games": "Games",
+    "settings": "Settings",
+    "score": "Score System",
+    "gomoku": "Gomoku",
+    "shop": "Shop",
+    "snake": "Snake",
+    "2048": "2048",
+    "try": "Try It",
+    "pictureSettings": "Picture Settings",
+    "habits": "Preferences",
+    "gameHistory": "Game History"
+  },
   "settings": {
     "title": "Settings",
     "theme": "Theme",
