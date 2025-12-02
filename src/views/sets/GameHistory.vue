@@ -113,17 +113,11 @@
       >
         <el-table-column type="index" label="#" width="60" />
 
-        <el-table-column label="游戏名称" min-width="150" v-if="!historyFilter.selectedGame">
+        <el-table-column label="游戏名称" min-width="120" v-if="!historyFilter.selectedGame">
           <template #default="{ row }">
-            <div class="game-cell">
-              <el-image
-                :src="row.gameIcon"
-                style="width: 40px; height: 40px; border-radius: 4px"
-                fit="cover"
-                lazy
-              />
+            
               <span class="game-name">{{ row.gameName }}</span>
-            </div>
+            
           </template>
         </el-table-column>
 
@@ -141,25 +135,16 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="ranking" label="排名" width="100">
-          <template #default="{ row }">
-            <el-tag v-if="row.ranking === 1" type="danger" effect="dark">🥇 第1名</el-tag>
-            <el-tag v-else-if="row.ranking === 2" type="warning" effect="dark">🥈 第2名</el-tag>
-            <el-tag v-else-if="row.ranking === 3" type="success" effect="dark">🥉 第3名</el-tag>
-            <span v-else>第{{ row.ranking }}名</span>
-          </template>
-        </el-table-column>
-
         <el-table-column prop="playDate" label="游戏时间" width="180" sortable>
           <template #default="{ row }">
             {{ formatDate(row.playDate) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button size="small" type="primary" link @click="handleViewDetail(row)">
-              查看详情
+              详情
             </el-button>
             <el-button size="small" type="danger" link @click="handleDeleteRecord(row)">
               删除
@@ -173,8 +158,8 @@
         v-model:current-page="historyPagination.page"
         v-model:page-size="historyPagination.pageSize"
         :total="gameStore.gameHistoryTotal"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
+        
+        layout="prev, pager, next"
         @size-change="handleHistorySizeChange"
         @current-change="handleHistoryPageChange"
         style="margin-top: 20px; justify-content: center"

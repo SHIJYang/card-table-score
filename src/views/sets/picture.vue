@@ -151,11 +151,11 @@
                 <el-checkbox :value="image.key" class="image-checkbox" />
                 <el-image
                   :src="image.links?.thumbnail_url || image.links?.url"
-                  :preview-src-list="[image.links?.url]"
+                  
                   fit="cover"
-                  loading="lazy"
+                  
                   class="image-preview"
-                  :hide-on-click-modal="true"
+                  
                 >
                   <template #error>
                     <div class="image-error">
