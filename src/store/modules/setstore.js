@@ -5,11 +5,11 @@ import { ElMessage } from 'element-plus'
 
 export const useSettingsStore = defineStore('settings', () => {
   // ========== 常量 ==========
+  // 在常量部分更新主题选项
   const THEME_OPTIONS = {
-    light: '亮色',
-    dark: '暗色',
-    // blue: '蓝色',
-    // green: '绿色'
+      light: '亮色',
+      dark: '暗色',
+      custom: '自定义' // 添加我们的自定义主题
   }
 
   const LANGUAGE_OPTIONS = {

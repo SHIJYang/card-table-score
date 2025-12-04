@@ -16,6 +16,7 @@ import { applyTheme, themes } from './theme/index.js'
 const settingsStore = useSettingsStore()
 const { locale } = useI18n()
 
+// 语言切换
 watch(
   () => settingsStore.language,
   (newLang) => {
@@ -25,36 +26,23 @@ watch(
   { immediate: true }
 )
 
+// 主题切换 - 只保留一个主题监听，并移除Element Plus的暗黑模式切换
 watch(
   () => settingsStore.theme,
   (themeName) => {
+    // 只应用自定义主题，不再处理Element Plus的暗黑模式
     const theme = themes[themeName] || themes.light
-    applyTheme(theme) // 👈 直接应用主题对象
-  },
-  { immediate: true } // 挂载时立即执行一次
-)
-watch(
-  () => settingsStore.theme,
-  (themeName) => {
-    // 1. 应用自定义主题
-    applyTheme(themes[themeName] || themes.light)
-    
-    // 2. 同步 Element Plus 暗色
-    if (themeName === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    applyTheme(theme)
   },
   { immediate: true }
 )
 </script>
 
 <style>
+/* 全局样式保持不变 */
 #app {
   min-height: 100vh;
   width: 100vw;
-  /* 使用系统默认中文字体栈，无需加载外部字体 */
   font-family:
     -apple-system,
     BlinkMacSystemFont,
@@ -88,20 +76,14 @@ watch(
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bgSecondary-color);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
+  background: var(--border-color);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #909399;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  background: var(--textSecondary-color);
 }
 </style>
