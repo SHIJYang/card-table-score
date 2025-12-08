@@ -1,8 +1,6 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: inherit; /* 使用Element Plus的字体设置 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -16,14 +14,11 @@ code {
   min-height: 100vh;
 }
 
-.ant-card {
-  margin-bottom: 16px;
-}
-
+/* 保留应用特定的样式，但使用Element Plus的颜色变量 */
 .player-row {
   margin-bottom: 8px;
   padding: 8px;
-  background-color: #f5f5f5;
+  background-color: var(--el-bg-color-light);
   border-radius: 4px;
   display: flex;
   justify-content: space-between;
@@ -43,9 +38,9 @@ code {
 }
 
 .positive-score {
-  color: #52c41a;
+  color: var(--el-color-success);
 }
 
 .negative-score {
-  color: #f5222d;
-} 
+   color: var(--el-color-danger);
+  } 

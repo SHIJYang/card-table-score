@@ -226,16 +226,36 @@ export function setTheme(themeName) {
 export function applyTheme(theme) {
     const root = document.documentElement
     
-    // 设置颜色变量
+    // 清除之前的所有主题变量
+    Object.keys(root.style).forEach(key => {
+        if (key.startsWith('--')) {
+            root.style.removeProperty(key)
+        }
+    })
+    
+    // 设置颜色变量 - 为了兼容性，确保变量名称正确
     Object.entries(theme.colors).forEach(([key, value]) => {
-        root.style.setProperty(`--${key}-color`, value)
-        // 同时设置原始CSS变量，用于Element Plus组件
-        root.style.setProperty(`--${key}`, value)
+        // 对于特殊变量如headerBg，确保直接设置，不添加-color后缀
+        if (key === 'headerBg' || key === 'footerBg') {
+            root.style.setProperty(`--${key}`, value)
+        } else {
+            // 其他颜色变量同时设置带-color后缀和不带后缀的版本
+            root.style.setProperty(`--${key}-color`, value)
+            root.style.setProperty(`--${key}`, value)
+        }
     })
     
     // 设置其他变量
     Object.entries(theme.variables).forEach(([key, value]) => {
         root.style.setProperty(`--${key}`, value)
+    })
+    
+    // 确保Element Plus的CSS变量正确设置
+    // 重新应用所有el-前缀的变量，确保优先级
+    Object.entries(theme.colors).forEach(([key, value]) => {
+        if (key.startsWith('el-')) {
+            root.style.setProperty(`--${key}`, value)
+        }
     })
     
     // 设置data-theme属性

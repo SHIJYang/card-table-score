@@ -58,6 +58,11 @@ const routes = [
         component: () => import('../examples/QuickStart.vue')
     },
     {
+        path: '/our/tree',
+        name: 'Tree',
+        component: () => import('../views/our/tree.vue')
+    },
+    {
         path: '/sets/picture',
         name: 'picture',
         component: () => import('../views/sets/picture.vue')

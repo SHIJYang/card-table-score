@@ -1,101 +1,29 @@
-/* 自定义Element Plus组件样式 */
+/* 自定义Element Plus颜色主题 */
+/* 只保留必要的全局样式，其余使用Element Plus默认样式 */
 
-/* 按钮样式 */
-.el-button {
-  border-radius: var(--borderRadius);
-  transition: all var(--transitionDuration) ease;
+:root {
+  /* 确保CSS变量优先级正确，但不覆盖Element Plus组件的具体样式 */
 }
 
-.el-button:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--boxShadowHover);
+/* 全局容器样式 */
+body {
+  font-family: inherit;
 }
 
-/* 输入框样式 */
-.el-input__wrapper {
-  border-radius: var(--borderRadius);
-  border-color: var(--border-color);
-}
-
-.el-input__wrapper:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
-}
-
-.el-input__wrapper.is-focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
-}
-
-/* 卡片样式 */
-.el-card {
-  border-radius: var(--borderRadius);
-  box-shadow: var(--boxShadow);
-  border: none;
-}
-
-/* 对话框样式 */
-.el-dialog {
-  border-radius: var(--borderRadius);
-}
-
-.el-dialog__header {
-  background-color: var(--bgSecondary-color);
-  margin: -20px -20px 0;
+/* 只保留应用特定的自定义样式，避免覆盖Element Plus组件样式 */
+.app-container {
   padding: 20px;
-  border-top-left-radius: var(--borderRadius);
-  border-top-right-radius: var(--borderRadius);
 }
 
-/* 表格样式 */
-.el-table {
-  border-radius: var(--borderRadius);
-  overflow: hidden;
+/* 确保自定义颜色变量正确应用 */
+[data-theme="light"] {
+  /* 浅色主题颜色已通过theme/index.js设置 */
 }
 
-.el-table__header-wrapper th {
-  background-color: var(--bgSecondary-color);
+[data-theme="dark"] {
+  /* 深色主题颜色已通过theme/index.js设置 */
 }
 
-.el-table__row:hover > td {
-  background-color: rgba(64, 158, 255, 0.05);
-}
-
-/* 菜单样式 */
-.el-menu {
-  background-color: var(--bgPrimary-color);
-  border-right: 1px solid var(--border-color);
-}
-
-.el-menu-item {
-  transition: all var(--transitionDuration) ease;
-}
-
-.el-menu-item:hover {
-  background-color: rgba(64, 158, 255, 0.1);
-}
-
-.el-menu-item.is-active {
-  background-color: rgba(64, 158, 255, 0.15);
-  color: var(--primary-color);
-}
-
-/* 分页样式 */
-.el-pagination {
-  padding: 20px 0;
-}
-
-.el-pager li {
-  border-radius: 4px;
-  transition: all var(--transitionDuration) ease;
-}
-
-.el-pager li:hover:not(.is-disabled) {
-  color: var(--primary-color);
-  transform: scale(1.05);
-}
-
-.el-pager li.is-active {
-  background-color: var(--primary-color);
-  color: white;
+[data-theme="custom"] {
+  /* 自定义主题颜色已通过theme/index.js设置 */
 }

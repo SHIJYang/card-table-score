@@ -1,9 +1,10 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
-// 移除Element Plus的默认样式和暗黑模式
-// import 'element-plus/dist/index.css'
-// import 'element-plus/theme-chalk/dark/css-vars.css'
+// 重新引入Element Plus的默认样式
+import 'element-plus/dist/index.css'
+// 保留暗黑模式支持
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import router from './router'
 import App from './App.vue'
 import request from './utils/request'
