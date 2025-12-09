@@ -1,7 +1,8 @@
 <template>
   <div class="christmas-container">
     <div ref="canvasContainer" class="canvas-container" @mousedown="onMouseDown" @mouseup="onMouseUp" @mousemove="onMouseMove"></div>
-    <video ref="videoElement" class="hidden-video" playsinline muted></video>
+    
+    <video ref="videoElement" class="webcam-display" playsinline muted></video>
 
     <div class="ui-layer">
       
@@ -51,12 +52,9 @@
             🖼️ 抓取照片
           </el-button>
         </div>
-        <template>
-  
-  </template>
       </div>
 
-<transition name="fade">
+      <transition name="fade">
         <div class="guide-panel" v-if="isGestureMode && isModelReady">
           <div class="guide-item">✊ 握拳：合拢</div>
           <div class="guide-item">🖐️ 张开：散开</div>
@@ -285,7 +283,7 @@ function onMouseMove(event) {
 }
 
 // ------------------------------------
-// --- MEDIA PIPE / 手势交互 (增强健壮性)
+// --- MEDIA PIPE / 手势交互 
 // ------------------------------------
 
 // 切换手势模式
@@ -296,7 +294,6 @@ async function toggleGestureControl(val) {
         statusText.value = "正在下载 AI 模型..."
         try {
           await initMediaPipe()
-          // initMediaPipe 成功后会调用 startWebcam，startWebcam 成功后会设置 isModelReady = true 并开始 predictWebcam
           statusText.value = "模型加载成功，尝试启动摄像头..."
         } catch (e) {
           console.error("模型加载或初始化失败:", e)
@@ -319,7 +316,7 @@ async function toggleGestureControl(val) {
 
 // 手势预测循环
 function predictWebcam() {
-    if (!isGestureMode.value) return; // 如果手势模式关闭，则停止预测
+    if (!isGestureMode.value) return; 
 
     let startTimeMs = performance.now()
     if (videoElement.value && videoElement.value.readyState === videoElement.value.HAVE_ENOUGH_DATA) {
@@ -371,17 +368,14 @@ function stopWebcam() {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
-    if (handLandmarker) {
-        handLandmarker.close();
-        handLandmarker = null;
-    }
-    
-    // ⚠️ 核心修改：停止时将 <video> 元素隐藏
+    // 停止时将 <video> 元素隐藏
     if (videoElement.value) {
         videoElement.value.style.display = 'none';
         videoElement.value.srcObject = null;
     }
     isModelReady.value = false;
+    // 注意：这里我们不关闭 handLandmarker，因为它可能被重复使用
+    // if (handLandmarker) { handLandmarker.close(); handLandmarker = null; } 
 }
 
 
@@ -390,29 +384,27 @@ async function startWebcam() {
     if (!navigator.mediaDevices || !handLandmarker) return;
 
     try {
-        // 尝试获取媒体流
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        const localStream = await navigator.mediaDevices.getUserMedia({ 
             video: true 
         });
-        
+        stream = localStream; // 保存 stream 引用以便停止
+
         // 1. 将视频流分配给 <video> 元素
         videoElement.value.srcObject = stream;
         
-        // 2. ⚠️ 核心修改：将 <video> 元素设置为可见
+        // 2. 核心：将 <video> 元素设置为可见
         videoElement.value.style.display = 'block'; 
         
-   
+        // 确保视频加载并开始播放
         await new Promise((resolve, reject) => {
             const video = videoElement.value;
             if (!video) return reject(new Error("Video element is null."));
             
             video.onloadeddata = () => {
-              video.play();
-              resolve();
+              video.play().then(resolve).catch(err => reject(new Error("Video playback failed: " + err)));
             };
             if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-                 video.play();
-                 resolve();
+                 video.play().then(resolve).catch(err => reject(new Error("Video playback failed: " + err)));
             }
             setTimeout(() => reject(new Error("Video data loading timeout.")), 5000); 
         });
@@ -424,7 +416,9 @@ async function startWebcam() {
 
     } catch (err) {
         console.error('无法启动摄像头:', err);
-  
+        ElMessage.error(`无法访问摄像头：${err.message || '请确保设备连接且已授权。'}`);
+        // 如果失败，自动关闭手势模式
+        isGestureMode.value = false;
     }
 }
 
@@ -547,8 +541,8 @@ function initThree() {
   composer.addPass(new RenderPass(scene, camera))
   composer.addPass(new EffectPass(camera, 
     new BloomEffect({ 
-      intensity: 2.0, // 增强强度
-      luminanceThreshold: 0.1, // 降低阈值，让粒子发光
+      intensity: 2.0, 
+      luminanceThreshold: 0.1, 
       mipmapBlur: true 
     }), 
     new SMAAEffect()
@@ -573,10 +567,10 @@ function createEnvironment() {
   // 粒子材质：使用更亮的颜色和 AdditiveBlending 增强发光
   const particleMaterial = new THREE.PointsMaterial({ 
     size: 0.08, 
-    color: '#FFFFE0', // 接近白色
+    color: '#FFFFE0', 
     transparent: true, 
     opacity: 0.8,
-    blending: THREE.AdditiveBlending, // 叠加混合，实现柔和发光
+    blending: THREE.AdditiveBlending, 
     depthWrite: false 
   });
   
@@ -616,133 +610,109 @@ function createTreeElements() {
 <style scoped>
 
 /* ================================================= */
-
 /* 整体布局和 Three.js 容器 */
-
 /* ================================================= */
 
 .christmas-container {
-
   position: relative;
-
   width: 100vw; height: 100vh;
-
   overflow: hidden;
-
   background-color: #03030A;
-
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
   color: #fff;
-
 }
 
 .canvas-container { width: 100%; height: 100%; }
 
-.hidden-video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-
-.ui-layer {
-
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-
+/* 
+  ================================================= 
+  📸 核心修改: 摄像头显示样式 
+  ================================================= 
+*/
+.webcam-display {
+    /* 默认隐藏，等待 JS 切换为 display: block */
+    display: none; 
+    
+    /* 定位到右上角 */
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    
+    /* 尺寸和外观 */
+    width: 200px; 
+    height: 150px;
+    border-radius: 12px;
+    border: 3px solid #0B5345; /* 圣诞绿边框 */
+    /* 镜像翻转，让用户看到自己像照镜子一样 */
+    transform: scaleX(-1); 
+    box-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 20px #0B5345;
+    z-index: 100; 
+    object-fit: cover; 
 }
 
 
+.ui-layer {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+}
+
 
 /* ================================================= */
-
 /* 状态栏 (Status Bar) */
-
 /* ================================================= */
 
 @keyframes pulse {
-
     0% { box-shadow: 0 0 5px rgba(247, 220, 111, 0.5); }
-
     50% { box-shadow: 0 0 15px rgba(247, 220, 111, 0.8), 0 0 20px rgba(247, 220, 111, 0.2); }
-
     100% { box-shadow: 0 0 5px rgba(247, 220, 111, 0.5); }
-
 }
 
 .status-bar {
-
   position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-
   display: flex; gap: 10px; z-index: 10;
-
 }
 
 .status-item {
-
   background: rgba(11, 83, 69, 0.7);
-
   color: #F7DC6F;
-
   padding: 8px 20px; border-radius: 20px;
-
   backdrop-filter: blur(8px);
-
   border: 1px solid rgba(247, 220, 111, 0.3);
-
   font-size: 14px; display: flex; align-items: center; gap: 8px;
-
   box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-
   animation: pulse 4s infinite ease-in-out;
-
 }
 
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; transition: 0.3s; }
 
 .status-dot.active {
-
     background: #00ff00;
-
     box-shadow: 0 0 8px #00ff00, 0 0 15px rgba(0, 255, 0, 0.5);
-
 }
 
 
-
 /* ================================================= */
-
-/* 控制面板 (Control Panel) - 修复布局和美化 */
-
+/* 控制面板 (Control Panel) */
 /* ================================================= */
 
 .control-panel {
-
   position: absolute;
-
   left: 20px;
-
   top: 50px;
-
- 
-
-
-
+  background: rgba(0, 0, 0, 0.3); /* 添加背景使其更清晰 */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(15px);
-
   border-radius: 12px;
-
- 
-
-  padding: 10px;
-
+  padding: 15px;
   pointer-events: auto;
-
   color: #fff;
-
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-
 }
 
 .gesture-switch-row { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
 
 .hint-text { font-size: 11px; color: #999; margin-top: 5px; font-style: italic; }
 
+.panel-section { margin-bottom: 10px; }
 
 
 .btn-group { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -752,59 +722,23 @@ function createTreeElements() {
 .btn-group .el-button:hover { transform: translateY(-2px); }
 
 .grab-btn {
-
     width: 100%;
-
     border-radius: 8px;
-
     transition: all 0.3s;
-
-    margin-bottom: 0px !important; /* 确保底部间距正常 */
-
+    margin-bottom: 0px !important; 
 }
 
 .grab-btn:hover { box-shadow: 0 0 15px rgba(146, 43, 33, 0.8); }
 
 
-
-
-
-.upload-inside-section .el-button {
-
-    box-shadow: 0 0 5px #F7DC6F, 0 0 10px rgba(247, 220, 111, 0.5);
-
-    transition: all 0.3s;
-
-    font-weight: bold;
-
-}
-
-.upload-inside-section .el-button:hover {
-
-    box-shadow: 0 0 10px #F7DC6F, 0 0 20px rgba(247, 220, 111, 0.8);
-
-}
-
-
-
-
-
 .guide-panel {
-
   position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-
   background: rgba(0,0,0,0.5);
-
   border: 1px solid rgba(255, 255, 255, 0.1);
-
   padding: 15px 30px; border-radius: 30px;
-
   display: flex; gap: 30px; pointer-events: none;
-
   backdrop-filter: blur(5px);
-
   z-index: 10;
-
 }
 
 .guide-item { color: #fff; font-size: 14px; font-weight: 500; }
@@ -812,5 +746,4 @@ function createTreeElements() {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
 
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-
 </style>
