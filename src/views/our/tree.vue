@@ -2,7 +2,7 @@
   <div class="christmas-container">
     <div ref="canvasContainer" class="canvas-container" @mousedown="onMouseDown" @mouseup="onMouseUp" @mousemove="onMouseMove"></div>
     
-    <video ref="videoElement" class="webcam-display" playsinline muted></video>
+    
 
     <div class="ui-layer">
       
@@ -34,8 +34,8 @@
         <el-divider style="margin: 5px 0; border-color: rgba(255,255,255,0.1);" />
 
         <div class="panel-section">
-          
-          <div class="btn-group">
+          <video ref="videoElement" class="webcam-display" playsinline muted></video>
+          <div class="btn-group" ref="!videoElement">
             <el-button color="#0B5345" :plain="viewState !== 'closed'" @click="manualTransition('closed')">
               🎄 合拢
             </el-button>
@@ -513,9 +513,9 @@ function transitionTo(newState) {
       statusText.value = "照片展示"
       if (!activePhoto) activePhoto = photos[Math.floor(Math.random() * photos.length)]
       
-      gsap.to(activePhoto.position, { x: 0, y: 0, z: 8, duration: 1 })
+      gsap.to(activePhoto.position, { x: 0, y: 0, z: 3, duration: 1 }) // 减小z值将图片移动到用户面前
       gsap.to(activePhoto.rotation, { x: 0, y: -treeGroup.rotation.y, z: 0, duration: 1 }) 
-      gsap.to(activePhoto.scale, { x: 6, y: 6, z: 6, duration: 1 }) // 增大缩放使图片占屏幕约1/3
+      gsap.to(activePhoto.scale, { x: 8, y: 8, z: 8, duration: 1 }) // 增大缩放值，确保图片占屏幕约1/3大小
     } else {
       statusText.value = "请先从 Store 加载照片"
       viewState.value = 'open'
