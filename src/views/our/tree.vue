@@ -165,11 +165,20 @@ function addPhotoToScene(imgData) {
         return
     }
     
-    const finalUrl = originalUrl.replace(PROXY_DOMAIN, PROXY_PATH)
-
+   let finalUrl = originalUrl
+   if (import.meta.env.DEV) { 
+        // ❌ 修正：replace 必须传入两个参数
+        finalUrl = originalUrl.replace(PROXY_DOMAIN, PROXY_PATH) 
+        console.log(`[DEV MODE] 使用代理 URL: ${finalUrl}`)
+    } else {
+        // ✅ 生产环境 (或未配置代理时): 直接使用完整的 HTTPS URL
+        // 注意：这要求 PROXY_DOMAIN 必须已配置 CORS 头部
+        finalUrl = originalUrl
+        console.log(`[PROD MODE] 使用完整 URL: ${finalUrl}`)
+    }
     const width = imgData.width || 1024
     const height = imgData.height || 768
-
+    console.log(finalUrl)
     textureLoader.load(finalUrl, 
         (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace
