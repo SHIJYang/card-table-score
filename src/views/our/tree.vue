@@ -182,7 +182,7 @@ function addPhotoToScene(imgData) {
         texture.colorSpace = THREE.SRGBColorSpace;
 
         const aspect = width / height;
-        const baseSize = 1.5;
+        const baseSize = 0.75; // 减小初始图片大小
         const geo = new THREE.PlaneGeometry(baseSize * aspect, baseSize);
         const mat = new THREE.MeshBasicMaterial({
           map: texture,
@@ -515,7 +515,7 @@ function transitionTo(newState) {
       
       gsap.to(activePhoto.position, { x: 0, y: 0, z: 8, duration: 1 })
       gsap.to(activePhoto.rotation, { x: 0, y: -treeGroup.rotation.y, z: 0, duration: 1 }) 
-      gsap.to(activePhoto.scale, { x: 3, y: 3, z: 3, duration: 1 })
+      gsap.to(activePhoto.scale, { x: 6, y: 6, z: 6, duration: 1 }) // 增大缩放使图片占屏幕约1/3
     } else {
       statusText.value = "请先从 Store 加载照片"
       viewState.value = 'open'
