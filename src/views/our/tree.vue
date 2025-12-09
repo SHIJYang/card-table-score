@@ -173,8 +173,8 @@ function addPhotoToScene(imgData) {
     
     console.log('加载图片:', finalUrl);
 
-    const width = imgData.width || 1024;
-    const height = imgData.height || 768;
+    const width = (imgData.width || 1024)/2;
+    const height = (imgData.height || 768)/2;
 
     textureLoader.load(
       finalUrl,
