@@ -16,13 +16,13 @@ export default defineConfig({
     cors: true,
     proxy: {
      
-      '/picui/': {
+      '/picui-proxy/': {
         // 目标服务器（图片托管的域名）
         target: 'https://free.picui.cn',
         
         changeOrigin: true, 
        
-        rewrite: (path) => path.replace(/^\/picui/, '')
+        rewrite: (path) => path.replace(/^\/picui-proxy/, '')
         // 推荐在开发环境中禁用 SSL 证书检查，但请谨慎使用
         // secure: false 
       }

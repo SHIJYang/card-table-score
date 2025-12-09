@@ -1,0 +1,19 @@
+{
+  "rewrites": [
+    {
+      "source": "/picui-proxy/:path*",
+      "destination": "https://free.picui.cn/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/picui-proxy/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}

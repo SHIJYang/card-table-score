@@ -159,69 +159,70 @@ function clearPhotosFromScene() {
 }
 
 function addPhotoToScene(imgData) {
-    const originalUrl = imgData.links?.url || imgData.links?.thumbnail_url
-    if (!originalUrl) {
-        console.warn('图片数据中缺少有效的 URL:', imgData)
-        return
-    }
+  const originalUrl = imgData.links?.url || imgData.links?.thumbnail_url;
+  if (!originalUrl) {
+    console.warn('图片数据中缺少有效的 URL:', imgData);
+    return;
+  }
+
+  
+  try {
+    const url = new URL(originalUrl);
+    // 统一使用 /picui-proxy/ 路径，同时兼容本地开发和vercel线上环境
+    const finalUrl = `/picui-proxy${url.pathname}${url.search}`;
     
-   let finalUrl = originalUrl
-   if (import.meta.env.DEV) { 
-        // ❌ 修正：replace 必须传入两个参数
-        finalUrl = originalUrl.replace(PROXY_DOMAIN, PROXY_PATH) 
-        console.log(`[DEV MODE] 使用代理 URL: ${finalUrl}`)
-    } else {
-        // ✅ 生产环境 (或未配置代理时): 直接使用完整的 HTTPS URL
-        // 注意：这要求 PROXY_DOMAIN 必须已配置 CORS 头部
-        finalUrl = originalUrl
-        console.log(`[PROD MODE] 使用完整 URL: ${finalUrl}`)
-    }
-    const width = imgData.width || 1024
-    const height = imgData.height || 768
-    console.log(finalUrl)
-    textureLoader.load(finalUrl, 
-        (texture) => {
-            texture.colorSpace = THREE.SRGBColorSpace
-            
-            const aspect = width / height
-            const baseSize = 1.5
-            const geo = new THREE.PlaneGeometry(baseSize * aspect, baseSize)
-            const mat = new THREE.MeshBasicMaterial({ 
-                map: texture, 
-                side: THREE.DoubleSide,
-                transparent: true,
-            })
-            
-            const mesh = new THREE.Mesh(geo, mat)
-            
-            const r = Math.random() * 2 + 1 
-            const theta = Math.random() * Math.PI * 2 
-            const y = (Math.random() - 0.5) * 6 
-            
-            mesh.userData = {
-                isPhoto: true,
-                treePos: new THREE.Vector3(Math.cos(theta)*r, y, Math.sin(theta)*r),
-                treeRot: new THREE.Euler(0, -theta, 0),
-                scatterPos: new THREE.Vector3((Math.random()-0.5)*12, (Math.random()-0.5)*10, (Math.random()-0.5)*5),
-                scatterRot: new THREE.Euler(Math.random(), Math.random(), 0),
-                originalScale: new THREE.Vector3(1, 1, 1)
-            }
-            
-            const initialPos = viewState.value === 'closed' ? mesh.userData.treePos : mesh.userData.scatterPos
-            const initialRot = viewState.value === 'closed' ? mesh.userData.treeRot : mesh.userData.scatterRot
-            mesh.position.copy(initialPos)
-            mesh.rotation.copy(initialRot)
-            
-            treeGroup.add(mesh)
-            photos.push(mesh)
-            statusText.value = `已加载 ${photos.length} 张照片`
-        },
-        undefined,
-        (err) => {
-            console.error('加载图片纹理失败，CORS/代理问题:', finalUrl, err)
-            ElMessage.error(`加载图片失败: ${imgData.origin_name || '未知文件'}`)
-        }
-    )
+    console.log('加载图片:', finalUrl);
+
+    const width = imgData.width || 1024;
+    const height = imgData.height || 768;
+
+    textureLoader.load(
+      finalUrl,
+      (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const aspect = width / height;
+        const baseSize = 1.5;
+        const geo = new THREE.PlaneGeometry(baseSize * aspect, baseSize);
+        const mat = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+
+        const mesh = new THREE.Mesh(geo, mat);
+
+        const r = Math.random() * 2 + 1;
+        const theta = Math.random() * Math.PI * 2;
+        const y = (Math.random() - 0.5) * 6;
+
+        mesh.userData = {
+          isPhoto: true,
+          treePos: new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r),
+          treeRot: new THREE.Euler(0, -theta, 0),
+          scatterPos: new THREE.Vector3((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 5),
+          scatterRot: new THREE.Euler(Math.random(), Math.random(), 0),
+          originalScale: new THREE.Vector3(1, 1, 1),
+        };
+
+        const initialPos = viewState.value === 'closed' ? mesh.userData.treePos : mesh.userData.scatterPos;
+        const initialRot = viewState.value === 'closed' ? mesh.userData.treeRot : mesh.userData.scatterRot;
+        mesh.position.copy(initialPos);
+        mesh.rotation.copy(initialRot);
+
+        treeGroup.add(mesh);
+        photos.push(mesh);
+        statusText.value = `已加载 ${photos.length} 张照片`;
+      },
+      undefined,
+      (err) => {
+        console.error('加载图片纹理失败，CORS/代理问题:', finalUrl, err);
+        ElMessage.error(`加载图片失败: ${imgData.origin_name || '未知文件'}`);
+      }
+    );
+  } catch (e) {
+    console.error('解析图片 URL 失败:', originalUrl, e);
+  }
 }
 
 async function loadImagesFromStore() {
