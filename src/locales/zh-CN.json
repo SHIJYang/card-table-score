@@ -20,7 +20,8 @@
     "theme": "主题",
     "themes": {
       "light": "浅色",
-      "dark": "深色"
+      "dark": "深色",
+      "custom": "自定义"
     },
     "selectTheme": "请选择主题",
     "language": "语言",

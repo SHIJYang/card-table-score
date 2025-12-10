@@ -15,6 +15,7 @@ import {
   watch,
   useTemplateRef,
 } from "vue";
+import { getCurrentTheme } from '@/theme/index.js';
 
 interface Spark {
   x: number;
@@ -31,16 +32,26 @@ interface Props {
   duration?: number;
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
   extraScale?: number;
+  sparkOpacity?: number;
 }
 
+// 获取当前主题
+const currentTheme = ref(getCurrentTheme());
+
+// 主题变化监听器
+const handleThemeChange = () => {
+  currentTheme.value = getCurrentTheme();
+};
+
 const props = withDefaults(defineProps<Props>(), {
-  sparkColor: "#fff",
-  sparkSize: 10,
+  sparkColor: computed(() => currentTheme.value.colors.decoration?.gold?.light || "#f0f0f0"),
+  sparkSize: 8, // 减小粒子大小
   sparkRadius: 15,
-  sparkCount: 8,
-  duration: 400,
+  sparkCount: 6, // 减少粒子数量
+  duration: 500, // 延长持续时间，使效果更柔和
   easing: "ease-out",
-  extraScale: 1.0,
+  extraScale: 0.8, // 减小缩放
+  sparkOpacity: 0.6, // 降低透明度
 });
 
 const containerRef = useTemplateRef<HTMLDivElement>("containerRef");
@@ -113,8 +124,39 @@ const draw = (timestamp: number) => {
     const x2 = spark.x + (distance + lineLength) * Math.cos(spark.angle);
     const y2 = spark.y + (distance + lineLength) * Math.sin(spark.angle);
 
-    ctx.strokeStyle = props.sparkColor;
-    ctx.lineWidth = 2;
+    // 设置渐变色，使粒子从中心到边缘逐渐消失
+    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+    // 起始点透明度较高，结束点透明度为0
+    const currentOpacity = props.sparkOpacity * (1 - eased);
+    
+    // 处理不同颜色格式
+    let rgbColor = props.sparkColor;
+    if (rgbColor.startsWith('#')) {
+      // 十六进制颜色转换为RGB
+      const hex = rgbColor.replace('#', '');
+      const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.substring(0, 2), 16);
+      const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.substring(2, 4), 16);
+      const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.substring(4, 6), 16);
+      rgbColor = `rgba(${r}, ${g}, ${b}`;
+    } else if (rgbColor.startsWith('rgb(')) {
+      // RGB转换为RGBA
+      rgbColor = rgbColor.replace('rgb(', 'rgba(');
+    }
+    
+    // 确保颜色格式为rgba
+    if (!rgbColor.includes('rgba(')) {
+      rgbColor = rgbColor.replace(')', ', 1)');
+    }
+    
+    // 设置渐变颜色
+    const startColor = rgbColor.replace(/[\d.]+\)$/, `${currentOpacity})`);
+    const endColor = rgbColor.replace(/[\d.]+\)$/, '0)');
+    
+    gradient.addColorStop(0, startColor);
+    gradient.addColorStop(1, endColor);
+    
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 1; // 减小线条宽度
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
@@ -162,6 +204,9 @@ onMounted(() => {
   resizeCanvas();
 
   animationId.value = requestAnimationFrame(draw);
+  
+  // 监听主题变化
+  window.addEventListener('themeChanged', handleThemeChange);
 });
 
 onUnmounted(() => {
@@ -173,6 +218,9 @@ onUnmounted(() => {
   if (animationId.value) {
     cancelAnimationFrame(animationId.value);
   }
+  
+  // 移除主题变化监听
+  window.removeEventListener('themeChanged', handleThemeChange);
 });
 
 watch(
@@ -184,6 +232,7 @@ watch(
     () => props.duration,
     easeFunc,
     () => props.extraScale,
+    () => props.sparkOpacity,
   ],
   () => {
     if (animationId.value) {

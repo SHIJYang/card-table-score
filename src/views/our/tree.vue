@@ -29,12 +29,22 @@
             />
           </div>
           <div class="hint-text" v-if="!isGestureMode">未开启手势时可使用鼠标拖拽旋转</div>
+          
+          <!-- 手势识别状态显示 -->
+          <div class="gesture-status" v-if="isGestureMode && isModelReady">
+            <div class="gesture-indicator" :class="currentGesture">
+              {{ gestureText }}
+            </div>
+          </div>
         </div>
 
         <el-divider style="margin: 5px 0; border-color: rgba(255,255,255,0.1);" />
 
         <div class="panel-section">
-          <video ref="videoElement" class="webcam-display" playsinline muted></video>
+          <div class="webcam-container">
+            <video ref="videoElement" class="webcam-display" playsinline muted></video>
+            <canvas ref="gestureCanvas" class="gesture-canvas"></canvas>
+          </div>
           <div class="btn-group" ref="!videoElement">
             <el-button color="#0B5345" :plain="viewState !== 'closed'" @click="manualTransition('closed')">
               🎄 合拢
@@ -67,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as THREE from 'three'
 import { gsap } from 'gsap'
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, SMAAEffect } from 'postprocessing'
@@ -75,6 +85,7 @@ import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { useImageStore } from '@/store' 
 import { ElMessage } from 'element-plus'
+import { getCurrentTheme, initTheme, applyTheme } from '@/theme/index.js';
 
 // --- Pinia Store ---
 const imageStore = useImageStore()
@@ -94,6 +105,12 @@ let activePhoto = null
 let animationId = null
 const canvasContainer = ref(null)
 
+// 光照变量
+let ambientLight, mainLight, goldSpot, redSpot, blueSpot;
+
+// --- 主题相关 --- 
+let currentTheme = getCurrentTheme();
+
 // --- MediaPipe 核心 ---
 const videoElement = ref(null)
 let handLandmarker = null
@@ -108,28 +125,33 @@ const PROXY_DOMAIN = 'https://free.picui.cn'
 const PROXY_PATH = '/picui'
 let textureLoader = null 
 
+// 手势识别变量
+let gestureCanvas = null;
+let gestureCtx = null;
+let currentGesture = ref('none');
+let gestureText = ref('等待手势...');
+
 // --- 生命周期 ---
 onMounted(async () => {
-  try {
-    textureLoader = new THREE.TextureLoader()
-    textureLoader.setCrossOrigin('anonymous') 
+  textureLoader = new THREE.TextureLoader()
+  textureLoader.setCrossOrigin('anonymous') 
 
-    initThree()
-    createEnvironment()
-    createTreeElements()
-    animate() // 先启动主要动画循环
-    
-    // 确保treeGroup和star已经创建完成后再调用animateDecorations
-    if (treeGroup && star) {
-      animateDecorations() // 启动装饰元素闪烁动画
-    }
-    
-    await loadImagesFromStore()
-    
-    window.addEventListener('resize', onWindowResize)
-  } catch (error) {
-    console.error('Mounted hook error:', error)
-    ElMessage.error('初始化场景时出现错误')
+  initThree()
+  createEnvironment()
+  createTreeElements()
+  animate()
+  
+  await loadImagesFromStore()
+  
+  window.addEventListener('resize', onWindowResize)
+  
+  // 监听主题变化
+  window.addEventListener('themeChanged', handleThemeChange);
+  
+  // 初始化手势Canvas
+  gestureCanvas = document.querySelector('.gesture-canvas');
+  if (gestureCanvas) {
+    gestureCtx = gestureCanvas.getContext('2d');
   }
 })
 
@@ -139,6 +161,7 @@ onUnmounted(() => {
   if (renderer) renderer.dispose()
   if (handLandmarker) handLandmarker.close()
   window.removeEventListener('resize', onWindowResize)
+  window.removeEventListener('themeChanged', handleThemeChange);
   scene.traverse((object) => {
     if (object.geometry) object.geometry.dispose();
     if (object.material) {
@@ -345,6 +368,9 @@ function predictWebcam() {
         // MediaPipe 检测
         const results = handLandmarker.detectForVideo(videoElement.value, startTimeMs)
         
+        // 绘制手势关键点
+        drawGestureLandmarks(results);
+        
         if (results.landmarks && results.landmarks.length > 0) {
           analyzeGesture(results.landmarks[0])
         }
@@ -354,7 +380,67 @@ function predictWebcam() {
     requestAnimationFrame(predictWebcam);
 }
 
-// 分析手势逻辑 (保持不变)
+// 绘制手势关键点
+function drawGestureLandmarks(results) {
+  if (!gestureCanvas || !gestureCtx || !videoElement.value) return;
+  
+  // 设置Canvas大小与视频一致
+  gestureCanvas.width = videoElement.value.videoWidth;
+  gestureCanvas.height = videoElement.value.videoHeight;
+  
+  // 清空画布
+  gestureCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
+  
+  // 绘制手势关键点
+  if (results.landmarks && results.landmarks.length > 0) {
+    const landmarks = results.landmarks[0];
+    
+    // 连接点的索引（手的结构）
+    const connections = [
+      [0, 1], [1, 2], [2, 3], [3, 4],  // 拇指
+      [0, 5], [5, 6], [6, 7], [7, 8],  // 食指
+      [0, 9], [9, 10], [10, 11], [11, 12],  // 中指
+      [0, 13], [13, 14], [14, 15], [15, 16],  // 无名指
+      [0, 17], [17, 18], [18, 19], [19, 20],  // 小指
+      [5, 9], [9, 13], [13, 17], [17, 0]  // 手掌
+    ];
+    
+    // 绘制连接线
+    gestureCtx.strokeStyle = '#00ff00';
+    gestureCtx.lineWidth = 2;
+    
+    connections.forEach(connection => {
+      const [startIdx, endIdx] = connection;
+      const startLandmark = landmarks[startIdx];
+      const endLandmark = landmarks[endIdx];
+      
+      // 转换坐标到Canvas
+      const startX = startLandmark.x * gestureCanvas.width;
+      const startY = startLandmark.y * gestureCanvas.height;
+      const endX = endLandmark.x * gestureCanvas.width;
+      const endY = endLandmark.y * gestureCanvas.height;
+      
+      gestureCtx.beginPath();
+      gestureCtx.moveTo(startX, startY);
+      gestureCtx.lineTo(endX, endY);
+      gestureCtx.stroke();
+    });
+    
+    // 绘制关键点
+    gestureCtx.fillStyle = '#00ff00';
+    
+    landmarks.forEach(landmark => {
+      const x = landmark.x * gestureCanvas.width;
+      const y = landmark.y * gestureCanvas.height;
+      
+      gestureCtx.beginPath();
+      gestureCtx.arc(x, y, 4, 0, Math.PI * 2);
+      gestureCtx.fill();
+    });
+  }
+}
+
+// 分析手势逻辑并添加视觉反馈
 function analyzeGesture(lm) {
     const tips = [8, 12, 16, 20] 
     const thumbTip = 4
@@ -367,18 +453,32 @@ function analyzeGesture(lm) {
     const d = Math.sqrt(Math.pow(lm[thumbTip].x - lm[indexTip].x, 2) + Math.pow(lm[thumbTip].y - lm[indexTip].y, 2))
     const isPinch = d < 0.04
 
+    // 更新手势状态和文本
     if (isFist) {
+        currentGesture.value = 'fist';
+        gestureText.value = '👊 合拢';
         transitionTo('closed')
     } else if (isPinch) {
+        currentGesture.value = 'pinch';
+        gestureText.value = '🤏 抓取';
         transitionTo('photo')
     } else if (isAllOpen) {
+        currentGesture.value = 'open';
+        gestureText.value = '🖐️ 散开';
         transitionTo('open')
+    } else {
+        currentGesture.value = 'neutral';
+        gestureText.value = '✋ 请做出手势';
     }
 
     if (viewState.value === 'open' && !activePhoto) {
         const handX = lm[base].x 
         const rotateSpeed = (handX - 0.5) * 0.05 
         treeGroup.rotation.y -= rotateSpeed 
+        
+        // 更新旋转状态显示
+        currentGesture.value = 'rotate';
+        gestureText.value = `🔄 旋转: ${(rotateSpeed * 1000).toFixed(1)}°/s`;
     }
 }
 
@@ -478,10 +578,118 @@ function animate() {
   animationId = requestAnimationFrame(animate)
 
   if (viewState.value === 'open' && !activePhoto) {
-    // 轻微的浮动动画
+    // 为每个装饰元素添加更自然的动画效果
     treeGroup.children.forEach((child, i) => {
-      child.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002
+      // 保存原始位置和旋转（如果不存在则创建）
+      if (!child.userData.originalPosition) {
+        child.userData.originalPosition = child.position.clone();
+        child.userData.originalRotation = child.rotation.clone();
+      }
+      
+      // 时间变量，用于创建同步但有差异的动画
+      const time = Date.now() * 0.001;
+      const offset = i * 0.5; // 每个元素的偏移量，避免同步
+      
+      // 上下浮动动画
+      const floatY = Math.sin(time + offset) * 0.01;
+      
+      // 左右摇摆动画
+      const swingX = Math.sin(time * 0.8 + offset) * 0.005;
+      
+      // 轻微的旋转动画
+      const rotateY = Math.sin(time * 0.5 + offset) * 0.005;
+      
+      // 应用动画
+      child.position.y = child.userData.originalPosition.y + floatY;
+      child.position.x = child.userData.originalPosition.x + swingX;
+      child.rotation.y = child.userData.originalRotation.y + rotateY;
+      
+      // 对于树顶星，添加更明显的旋转效果
+      if (i === treeGroup.children.length - 1) {
+        child.rotation.x = child.userData.originalRotation.x + Math.sin(time * 1.5) * 0.05;
+        child.rotation.z = child.userData.originalRotation.z + Math.cos(time * 1.2) * 0.05;
+      }
     })
+  }
+
+  // 动态光照效果
+  const time = Date.now() * 0.001;
+  
+  // 主光源位置缓慢移动
+  if (mainLight) {
+    const radius = 15;
+    mainLight.position.x = Math.sin(time * 0.2) * radius;
+    mainLight.position.z = Math.cos(time * 0.2) * radius;
+    mainLight.position.y = 10 + Math.sin(time * 0.1) * 3;
+  }
+  
+  // 金色点光源强度和位置变化
+  if (goldSpot) {
+    goldSpot.intensity = 5 + Math.sin(time * 1.5) * 2;
+    goldSpot.position.x = -5 + Math.sin(time * 0.8) * 3;
+    goldSpot.position.z = 5 + Math.cos(time * 0.8) * 3;
+  }
+  
+  // 红色点光源强度和位置变化
+  if (redSpot) {
+    redSpot.intensity = 5 + Math.sin(time * 1.2 + Math.PI) * 2;
+    redSpot.position.x = 5 + Math.cos(time * 0.6) * 3;
+    redSpot.position.z = 5 + Math.sin(time * 0.6) * 3;
+  }
+  
+  // 蓝色点光源强度和位置变化
+  if (blueSpot) {
+    blueSpot.intensity = 3 + Math.sin(time * 1.0 + Math.PI * 0.5) * 1.5;
+    blueSpot.position.x = Math.sin(time * 0.7) * 4;
+    blueSpot.position.z = Math.cos(time * 0.7) * 4;
+  }
+  
+  // 环境光强度变化
+  if (ambientLight) {
+    ambientLight.intensity = 0.2 + Math.sin(time * 0.3) * 0.1;
+  }
+
+  // 粒子流动动画
+  if (particlesSystem && particlePositions && particleVelocities) {
+    const boxSize = 60;
+    
+    // 更新粒子位置
+    for (let i = 0; i < particlePositions.length; i += 3) {
+      // 应用速度
+      particlePositions[i] += particleVelocities[i];
+      particlePositions[i + 1] += particleVelocities[i + 1];
+      particlePositions[i + 2] += particleVelocities[i + 2];
+      
+      // 边界检查，当粒子超出边界时反弹
+      for (let j = 0; j < 3; j++) {
+        if (Math.abs(particlePositions[i + j]) > boxSize * 0.5) {
+          particleVelocities[i + j] *= -0.5; // 反弹并减速
+          particlePositions[i + j] = Math.sign(particlePositions[i + j]) * boxSize * 0.5;
+        }
+      }
+      
+      // 添加轻微的波动效果
+      particlePositions[i + 1] += Math.sin(time * 2 + i * 0.01) * 0.005;
+    }
+    
+    // 更新颜色（缓慢变化）
+    if (particleColors) {
+      for (let i = 0; i < particleColors.length; i += 3) {
+        const baseHue = 0.15; // 金色的基础色相
+        const hueVariation = Math.sin(time * 0.5 + i * 0.001) * 0.1;
+        const color = new THREE.Color().setHSL(baseHue + hueVariation, 0.8, 0.7);
+        
+        particleColors[i] = color.r;
+        particleColors[i + 1] = color.g;
+        particleColors[i + 2] = color.b;
+      }
+    }
+    
+    // 更新缓冲区
+    particlesSystem.geometry.attributes.position.needsUpdate = true;
+    if (particlesSystem.geometry.attributes.color) {
+      particlesSystem.geometry.attributes.color.needsUpdate = true;
+    }
   }
 
   composer.render()
@@ -491,9 +699,10 @@ function transitionTo(newState) {
   if (viewState.value === newState && newState !== 'photo') return
 
   if (viewState.value === 'photo' && newState !== 'photo' && activePhoto) {
-    gsap.to(activePhoto.position, { ...activePhoto.userData.scatterPos, duration: 1 })
-    gsap.to(activePhoto.rotation, { ...activePhoto.userData.scatterRot, duration: 1 })
-    gsap.to(activePhoto.scale, { x: 1, y: 1, z: 1, duration: 1 })
+    // 从照片模式退出，使用更柔和的缓动
+    gsap.to(activePhoto.position, { ...activePhoto.userData.scatterPos, duration: 1.2, ease: "back.out(1.2)" })
+    gsap.to(activePhoto.rotation, { ...activePhoto.userData.scatterRot, duration: 1.2, ease: "power2.out" })
+    gsap.to(activePhoto.scale, { x: 1, y: 1, z: 1, duration: 1, ease: "power2.out" })
     activePhoto = null
   }
 
@@ -501,20 +710,66 @@ function transitionTo(newState) {
 
   if (newState === 'closed') {
     statusText.value = "合拢态"
-    treeGroup.children.forEach(child => {
+    treeGroup.children.forEach((child, index) => {
       if (child.userData.treePos) {
-        gsap.to(child.position, { ...child.userData.treePos, duration: 1.5, ease: "power2.inOut" })
-        gsap.to(child.rotation, { ...child.userData.treeRot, duration: 1.5 })
+        // 为每个元素添加微小的延迟，创造更自然的合拢效果
+        const delay = index * 0.005;
+        gsap.to(child.position, { 
+          ...child.userData.treePos, 
+          duration: 1.8, 
+          ease: "elastic.out(1, 0.5)",
+          delay: delay
+        })
+        gsap.to(child.rotation, { 
+          ...child.userData.treeRot, 
+          duration: 1.5, 
+          ease: "power2.inOut",
+          delay: delay
+        })
+        // 添加轻微的缩放动画
+        gsap.to(child.scale, { 
+          x: child.scale.x * 0.95, 
+          y: child.scale.y * 0.95, 
+          z: child.scale.z * 0.95, 
+          duration: 0.8, 
+          ease: "power2.out",
+          delay: delay,
+          yoyo: true,
+          repeat: 1
+        })
       }
     })
-    gsap.to(treeGroup.rotation, { x: 0, y: 0, duration: 1.5 })
+    gsap.to(treeGroup.rotation, { x: 0, y: 0, duration: 1.5, ease: "power2.out" })
 
   } else if (newState === 'open') {
     statusText.value = "散开态"
-    treeGroup.children.forEach(child => {
+    treeGroup.children.forEach((child, index) => {
       if (child.userData.scatterPos) {
-        gsap.to(child.position, { ...child.userData.scatterPos, duration: 2, ease: "power3.out" })
-        gsap.to(child.rotation, { ...child.userData.scatterRot, duration: 2 })
+        // 为每个元素添加微小的延迟，创造更自然的散开效果
+        const delay = index * 0.002;
+        gsap.to(child.position, { 
+          ...child.userData.scatterPos, 
+          duration: 2.5, 
+          ease: "elastic.out(1, 0.3)",
+          delay: delay
+        })
+        gsap.to(child.rotation, { 
+          ...child.userData.scatterRot, 
+          duration: 2, 
+          ease: "power3.out",
+          delay: delay
+        })
+        // 添加轻微的缩放动画
+        gsap.to(child.scale, { 
+          x: child.scale.x * 1.05, 
+          y: child.scale.y * 1.05, 
+          z: child.scale.z * 1.05, 
+          duration: 1, 
+          ease: "bounce.out",
+          delay: delay + 0.5,
+          yoyo: true,
+          repeat: 1
+        })
       }
     })
 
@@ -523,9 +778,35 @@ function transitionTo(newState) {
       statusText.value = "照片展示"
       if (!activePhoto) activePhoto = photos[Math.floor(Math.random() * photos.length)]
       
-      gsap.to(activePhoto.position, { x: 0, y: 0, z: 3, duration: 1 }) // 减小z值将图片移动到用户面前
-      gsap.to(activePhoto.rotation, { x: 0, y: -treeGroup.rotation.y, z: 0, duration: 1 }) 
-      gsap.to(activePhoto.scale, { x: 8, y: 8, z: 8, duration: 1 }) // 增大缩放值，确保图片占屏幕约1/3大小
+      // 照片展示动画，使用更吸引人的缓动效果
+      gsap.to(activePhoto.position, { 
+        x: 0, 
+        y: 0, 
+        z: 3, 
+        duration: 1.2, 
+        ease: "back.out(1.3)" 
+      })
+      gsap.to(activePhoto.rotation, { 
+        x: 0, 
+        y: -treeGroup.rotation.y, 
+        z: 0, 
+        duration: 1, 
+        ease: "power2.out" 
+      })
+      gsap.to(activePhoto.scale, { 
+        x: 8, 
+        y: 8, 
+        z: 8, 
+        duration: 1, 
+        ease: "back.out(1.2)" 
+      })
+      
+      // 其他照片淡出效果
+      treeGroup.children.forEach(child => {
+        if (child !== activePhoto && child.userData.isPhoto) {
+          gsap.to(child.material, { opacity: 0.1, duration: 0.5, ease: "power2.out" })
+        }
+      })
     } else {
       statusText.value = "请先从 Store 加载照片"
       viewState.value = 'open'
@@ -542,8 +823,8 @@ function initThree() {
   scene.background = new THREE.Color('#050510')
   scene.fog = new THREE.FogExp2('#050510', 0.02)
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(0, 0, 20)
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" })
+  camera.position.set(0, 0, 12)
+  renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -551,18 +832,19 @@ function initThree() {
   canvasContainer.value.appendChild(renderer.domElement)
   
   // 灯光
-  scene.add(new THREE.AmbientLight(0xffffff, 0.2))
-  const mainLight = new THREE.DirectionalLight(0xfff0dd, 1.5); mainLight.position.set(5, 10, 7); scene.add(mainLight)
-  const goldSpot = new THREE.PointLight('#F7DC6F', 5, 20); goldSpot.position.set(-5, 2, 5); scene.add(goldSpot)
-  const redSpot = new THREE.PointLight('#922B21', 5, 20); redSpot.position.set(5, -2, 5); scene.add(redSpot)
+  ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight)
+  mainLight = new THREE.DirectionalLight(0xfff0dd, 1.5); mainLight.position.set(5, 10, 7); scene.add(mainLight)
+  goldSpot = new THREE.PointLight('#F7DC6F', 5, 20); goldSpot.position.set(-5, 2, 5); scene.add(goldSpot)
+  redSpot = new THREE.PointLight('#922B21', 5, 20); redSpot.position.set(5, -2, 5); scene.add(redSpot)
+  blueSpot = new THREE.PointLight('#3498DB', 3, 20); blueSpot.position.set(0, -5, -5); scene.add(blueSpot)
 
   // 后处理 (调整 Bloom 强度和阈值)
   composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
   composer.addPass(new EffectPass(camera, 
     new BloomEffect({ 
-      intensity: 3.5, 
-      luminanceThreshold: 0.08, 
+      intensity: 2.0, 
+      luminanceThreshold: 0.1, 
       mipmapBlur: true 
     }), 
     new SMAAEffect()
@@ -570,180 +852,131 @@ function initThree() {
 }
 
 // 粒子位置和材质调整，实现空间填充和发光特效
+let particlesSystem = null;
+let particlePositions = null;
+let particleColors = null;
+let particleVelocities = null;
+
 function createEnvironment() {
   const particleCount = 4000; 
   const boxSize = 60; 
 
   const geo = new THREE.BufferGeometry()
-  const arr = new Float32Array(particleCount * 3)
-
-  // 粒子位置：均匀分布在以原点为中心的立方体空间内
-  for(let i=0; i<particleCount * 3; i++) {
-    arr[i] = (Math.random() - 0.5) * boxSize
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const velocities = new Float32Array(particleCount * 3);
+  
+  // 获取主题颜色
+  const { decoration } = currentTheme.colors;
+  const goldColor = new THREE.Color(decoration?.gold?.light || '#FFFFE0');
+  const greenColor = new THREE.Color(decoration?.green?.light || '#2ECC71');
+  const blueColor = new THREE.Color(decoration?.blue?.light || '#3498DB');
+  
+  // 粒子位置、颜色和速度：均匀分布在以原点为中心的立方体空间内
+  for(let i=0; i<particleCount; i++) {
+    const i3 = i * 3;
+    
+    // 位置
+    positions[i3] = (Math.random() - 0.5) * boxSize;
+    positions[i3 + 1] = (Math.random() - 0.5) * boxSize;
+    positions[i3 + 2] = (Math.random() - 0.5) * boxSize;
+    
+    // 速度：缓慢的随机速度
+    velocities[i3] = (Math.random() - 0.5) * 0.01;
+    velocities[i3 + 1] = (Math.random() - 0.5) * 0.01;
+    velocities[i3 + 2] = (Math.random() - 0.5) * 0.01;
+    
+    // 颜色：随机选择金色、绿色或蓝色
+    const colorChoice = Math.random();
+    let color;
+    if (colorChoice < 0.5) {
+      color = goldColor.clone();
+    } else if (colorChoice < 0.75) {
+      color = greenColor.clone();
+    } else {
+      color = blueColor.clone();
+    }
+    
+    // 轻微的颜色变化
+    color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.2);
+    
+    colors[i3] = color.r;
+    colors[i3 + 1] = color.g;
+    colors[i3 + 2] = color.b;
   }
   
-  geo.setAttribute('position', new THREE.BufferAttribute(arr, 3))
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   
   // 粒子材质：使用更亮的颜色和 AdditiveBlending 增强发光
   const particleMaterial = new THREE.PointsMaterial({ 
-    size: 0.05, 
-    color: '#FFFFFF', 
+    size: 0.08, 
+    vertexColors: true, // 使用顶点颜色
     transparent: true, 
-    opacity: 0.9,
+    opacity: 0.8,
     blending: THREE.AdditiveBlending, 
     depthWrite: false 
   });
   
-  scene.add(new THREE.Points(geo, particleMaterial));
+  particlesSystem = new THREE.Points(geo, particleMaterial);
+  scene.add(particlesSystem);
+  
+  // 保存引用以便在动画中使用
+  particlePositions = positions;
+  particleColors = colors;
+  particleVelocities = velocities;
 }
-
-import { getCurrentTheme } from '@/theme/index.js';
-
-// 声明star变量为全局变量
-let star;
 
 function createTreeElements() {
   scene.add(treeGroup)
-  const geometries = [
-    new THREE.SphereGeometry(0.15, 32, 32), // 增加分段数使球体更光滑
-    new THREE.BoxGeometry(0.2, 0.2, 0.2), 
-    new THREE.CylinderGeometry(0.02, 0.02, 0.4, 12) // 增加分段数
-  ]
+  const geometries = [new THREE.SphereGeometry(0.15, 16, 16), new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8)]
   
-  // 获取当前主题的装饰元素颜色
-  const theme = getCurrentTheme();
-  const decorationColors = theme.colors.decoration || {
-    gold: { light: '#E6BE8A', medium: '#FFD700', dark: '#D4AF37' },
-    red: { light: '#E74C3C', medium: '#C0392B', dark: '#922B21' },
-    blue: { light: '#3498DB', medium: '#2874A6', dark: '#1B4F72' },
-    green: { light: '#58D68D', medium: '#2ECC71', dark: '#1ABC9C' }
-  };
+  // 获取当前主题的装饰颜色
+  const { decoration } = currentTheme.colors;
   
-  // 增加更多精致的材质和颜色选择
   const materials = [
-    // 绿色系 - 树叶材质
-    {
-        type: '树叶',
-        items: [
-            new THREE.MeshStandardMaterial({ color: decorationColors.green.dark, roughness: 0.6, metalness: 0.1 }),
-            new THREE.MeshStandardMaterial({ color: decorationColors.green.medium, roughness: 0.6, metalness: 0.1 }),
-            new THREE.MeshStandardMaterial({ color: decorationColors.green.light, roughness: 0.6, metalness: 0.1 })
-        ]
-    },
-    // 金色/黄色系 - 装饰材质
-    {
-        type: '金色装饰',
-        items: [
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.gold.dark,
-                roughness: 0.4,
-                metalness: 0.6,
-                emissive: decorationColors.gold.dark,
-                emissiveIntensity: 0.15,
-                transparent: false
-            }),
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.gold.medium,
-                roughness: 0.4,
-                metalness: 0.6,
-                emissive: decorationColors.gold.medium,
-                emissiveIntensity: 0.15,
-                transparent: false
-            }),
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.gold.light,
-                roughness: 0.4,
-                metalness: 0.6,
-                emissive: decorationColors.gold.light,
-                emissiveIntensity: 0.15,
-                transparent: false
-            })
-        ]
-    },
-    // 红色系 - 装饰材质
-    {
-        type: '红色装饰',
-        items: [
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.red.medium,
-                roughness: 0.5,
-                metalness: 0.3,
-                emissive: decorationColors.red.medium,
-                emissiveIntensity: 0.15
-            }),
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.red.light,
-                roughness: 0.5,
-                metalness: 0.3,
-                emissive: decorationColors.red.light,
-                emissiveIntensity: 0.15
-            }),
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.red.dark,
-                roughness: 0.5,
-                metalness: 0.3,
-                emissive: decorationColors.red.dark,
-                emissiveIntensity: 0.15
-            })
-        ]
-    },
-    // 蓝色系 - 装饰材质
-    {
-        type: '蓝色装饰',
-        items: [
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.blue.light,
-                roughness: 0.5,
-                metalness: 0.3,
-                emissive: decorationColors.blue.light,
-                emissiveIntensity: 0.15
-            }),
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.blue.medium,
-                roughness: 0.5,
-                metalness: 0.3,
-                emissive: decorationColors.blue.medium,
-                emissiveIntensity: 0.15
-            }),
-            new THREE.MeshStandardMaterial({ 
-                color: decorationColors.blue.dark,
-                roughness: 0.5,
-                metalness: 0.3,
-                emissive: decorationColors.blue.dark,
-                emissiveIntensity: 0.15
-            })
-        ]
-    }
-];
-
-// 可以根据需要继续添加更多颜色或类型...
-  // 为不同类型的材质分配权重，增加金色/黄色系和其他彩色材质的出现概率
-  // 权重数组：[绿色系权重, 金色/黄色系权重, 红色系权重, 蓝色系权重]
-  const materialWeights = [0.3, 0.3, 0.2, 0.2]; // 调整权重使颜色分布更均匀
+    // 树叶材质 - 使用绿色
+    new THREE.MeshStandardMaterial({ 
+      color: decoration?.green?.medium || '#0B5345', 
+      roughness: 0.8, 
+      metalness: 0.1 
+    }),
+    // 金色装饰
+    new THREE.MeshStandardMaterial({ 
+      color: decoration?.gold?.medium || '#F7DC6F', 
+      roughness: 0.8, 
+      metalness: 0.2, 
+      emissive: decoration?.gold?.light || '#F7DC6F', 
+      emissiveIntensity: 0.1, 
+      transparent: true, 
+      opacity: 0.9 
+    }),
+    // 红色装饰
+    new THREE.MeshStandardMaterial({ 
+      color: decoration?.red?.medium || '#922B21', 
+      roughness: 0.8, 
+      metalness: 0.1, 
+      emissive: decoration?.red?.light || '#E74C3C', 
+      emissiveIntensity: 0.1, 
+      transparent: true, 
+      opacity: 0.9 
+    }),
+    // 蓝色装饰
+    new THREE.MeshStandardMaterial({ 
+      color: decoration?.blue?.medium || '#2874A6', 
+      roughness: 0.8, 
+      metalness: 0.1, 
+      emissive: decoration?.blue?.light || '#3498DB', 
+      emissiveIntensity: 0.1, 
+      transparent: true, 
+      opacity: 0.9 
+    })
+  ]
   
   for (let i = 0; i < 300; i++) {
     const progress = i / 300, angle = i * 0.5
     const r = (1 - progress) * 3.5
-    
-    // 根据权重随机选择材质类型
-    const random = Math.random();
-    let materialIndex;
-    
-    if (random < materialWeights[0]) {
-      // 绿色系 (0-2)
-      materialIndex = Math.floor(Math.random() * 3);
-    } else if (random < materialWeights[0] + materialWeights[1]) {
-      // 金色/黄色系 (3-4)
-      materialIndex = 3 + Math.floor(Math.random() * 2);
-    } else if (random < materialWeights[0] + materialWeights[1] + materialWeights[2]) {
-      // 红色系 (5-6)
-      materialIndex = 5 + Math.floor(Math.random() * 2);
-    } else {
-      // 蓝色系 (7)
-      materialIndex = 7;
-    }
-    
-    const mesh = new THREE.Mesh(geometries[Math.floor(Math.random()*3)], materials[materialIndex])
+    const mesh = new THREE.Mesh(geometries[Math.floor(Math.random()*3)], materials[Math.floor(Math.random()*3)])
     mesh.userData = {
       treePos: new THREE.Vector3(Math.cos(angle)*r, (progress*8)-4, Math.sin(angle)*r),
       treeRot: new THREE.Euler(Math.random(), Math.random(), Math.random()),
@@ -754,197 +987,45 @@ function createTreeElements() {
     const s = 0.5 + Math.random(); mesh.scale.set(s,s,s)
     treeGroup.add(mesh)
   }
+  
   // 树顶星
-  star = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), new THREE.MeshStandardMaterial({ color: '#F7DC6F', emissive: '#F7DC6F', emissiveIntensity: 0.3 }))
+  const star = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.4, 0), 
+    new THREE.MeshStandardMaterial({ 
+      color: decoration?.gold?.light || '#F7DC6F', 
+      emissive: decoration?.gold?.light || '#F7DC6F', 
+      emissiveIntensity: 1 
+    })
+  )
   star.position.set(0, 4.5, 0)
-  star.userData = { treePos: new THREE.Vector3(0,4.5,0), scatterPos: new THREE.Vector3(0,5,0), treeRot: new THREE.Euler(0,0,0), scatterRot: new THREE.Euler(Math.PI,0,0) }
+  star.userData = { 
+    treePos: new THREE.Vector3(0,4.5,0), 
+    scatterPos: new THREE.Vector3(0,5,0), 
+    treeRot: new THREE.Euler(0,0,0), 
+    scatterRot: new THREE.Euler(Math.PI,0,0) 
+  }
   treeGroup.add(star)
 }
 
-// 增强装饰元素的动画效果 - 优化闪烁动画处理
-  function animateDecorations() {
-    try {
-      if (!treeGroup || !treeGroup.children || !Array.isArray(treeGroup.children)) {
-        console.warn('Tree group not initialized properly');
-        return;
-      }
-      
-      treeGroup.children.forEach((child, index) => {
-        try {
-          // 安全检查：确保 child 和 material 对象存在
-          if (child && child.material && typeof child.material === 'object') {
-            // 根据材质类型设置不同的动画参数
-            let baseIntensity = child.material.emissiveIntensity || 0;
-            let duration = 0.5 + Math.random();
-            let repeatDelay = 1 + Math.random() * 3;
-            
-            // 为不同颜色系设置不同的动画强度
-            if (typeof baseIntensity === 'number' && baseIntensity > 0.1) {
-              // 检测材质类型（基于emissive颜色或metalness值）
-              const isGolden = child.material.metalness > 0.9;
-              const isColorful = child.material.emissiveIntensity > 0.5 && !isGolden;
-              
-              // 为金色系元素设置柔和的闪烁效果
-              if (isGolden) {
-                baseIntensity = Math.max(baseIntensity, 0.3); // 降低金色系基础发光强度
-                duration = 0.3 + Math.random() * 0.5; // 保持闪烁频率
-                repeatDelay = 0.5 + Math.random() * 2; // 保持延迟
-              } 
-              // 为彩色系元素设置更柔和的闪烁效果
-              else if (isColorful) {
-                baseIntensity = Math.max(baseIntensity, 0.2);
-                duration = 0.6 + Math.random() * 0.8;
-                repeatDelay = 1 + Math.random() * 2.5;
-              }
-              
-              // 为每个发光物体创建随机闪烁动画
-              const flicker = () => {
-                try {
-                  // 安全检查：确保动画参数合理
-                  if (baseIntensity > 0 && child && child.material) {
-                    gsap.to(child.material, {
-                      emissiveIntensity: [
-                        baseIntensity,
-                        baseIntensity * (0.7 + Math.random() * 0.6), // 更大的强度变化范围
-                        baseIntensity
-                      ],
-                      duration: duration,
-                      repeat: -1,
-                      repeatDelay: repeatDelay,
-                      ease: isGolden ? 'power3.inOut' : 'power2.inOut', // 金色使用更明显的缓动
-                      onUpdate: () => {
-                        // 防止材质被销毁导致的错误
-                        if (!child || !child.material) return;
-                        // 确保emissiveIntensity不会变成无效值
-                        if (isNaN(child.material.emissiveIntensity)) {
-                          child.material.emissiveIntensity = baseIntensity;
-                        }
-                      }
-                    });
-                  }
-                } catch (err) {
-                  console.error('Animation error in flicker function:', err);
-                }
-              };
-              
-              // 延迟启动，使闪烁不同步
-              setTimeout(flicker, index * 30); // 缩短延迟，让闪烁更快开始
-            }
-            
-          }
-        } catch (err) {
-          console.error('Error animating child:', err);
-        }
-      });
-      
-      // 为树顶星创建脉冲式闪烁 - 增强效果
-      if (star && star.material && typeof star.material.emissiveIntensity === 'number') {
-        const starPulse = () => {
-          try {
-            // 降低树顶星的脉冲效果强度
-            gsap.to(star.material, {
-              emissiveIntensity: [0.3, 0.8, 0.3], // 降低强度范围
-              duration: 1.5, // 保持脉冲速度
-              repeat: -1,
-              ease: 'power3.inOut',
-              onUpdate: () => {
-                // 安全检查
-                if (!star || !star.material) return;
-                if (isNaN(star.material.emissiveIntensity)) {
-                  star.material.emissiveIntensity = 0.3;
-                }
-              }
-            });
-          } catch (err) {
-            console.error('Animation error in starPulse function:', err);
-          }
-        };
-        
-        starPulse();
-      }
-    } catch (error) {
-      console.error('Error in animateDecorations:', error);
-    }
+// 处理主题变化
+function handleThemeChange() {
+  currentTheme = getCurrentTheme();
+  // 重新创建树元素以应用新主题颜色
+  // 先移除旧的树元素
+  while (treeGroup.children.length > 0) {
+    treeGroup.remove(treeGroup.children[0]);
   }
-
-  // 监听主题变化，更新装饰元素颜色
-  function setupThemeListener() {
-    // 存储当前主题名称，用于检测变化
-    let currentThemeName = getCurrentTheme().name;
-    
-    // 创建一个定时器来检查主题变化
-    setInterval(() => {
-      const newTheme = getCurrentTheme();
-      if (newTheme.name !== currentThemeName) {
-        // 主题发生变化，更新装饰元素颜色
-        updateDecorationColors(newTheme);
-        currentThemeName = newTheme.name;
-      }
-    }, 1000); // 每秒检查一次
+  // 重新创建树元素
+  createTreeElements();
+  // 重新创建环境粒子
+  // 先移除旧的粒子
+  const particles = scene.children.find(child => child instanceof THREE.Points);
+  if (particles) {
+    scene.remove(particles);
   }
-
-  // 更新装饰元素的颜色
-  function updateDecorationColors(theme) {
-    const decorationColors = theme.colors.decoration || {
-      gold: { light: '#E6BE8A', medium: '#FFD700', dark: '#D4AF37' },
-      red: { light: '#E74C3C', medium: '#C0392B', dark: '#922B21' },
-      blue: { light: '#3498DB', medium: '#2874A6', dark: '#1B4F72' },
-      green: { light: '#58D68D', medium: '#2ECC71', dark: '#1ABC9C' }
-    };
-    
-    // 更新所有装饰元素的材质颜色
-    treeGroup.traverse((child) => {
-      if (child.isMesh && child.material) {
-        // 根据材质特性判断类型并更新颜色
-        if (child.material.metalness > 0.6 && child.material.emissiveIntensity > 0.2) {
-          // 金色装饰
-          const goldShades = [decorationColors.gold.dark, decorationColors.gold.medium, decorationColors.gold.light];
-          const color = goldShades[Math.floor(Math.random() * goldShades.length)];
-          child.material.color.set(color);
-          child.material.emissive.set(color);
-        } else if (child.material.emissiveIntensity > 0.2 && 
-                  (child.material.color.r > 0.7 || 
-                   child.material.color.b > 0.7)) {
-          // 彩色装饰 - 红色或蓝色
-          if (child.material.color.r > child.material.color.b) {
-            // 红色系
-            const redShades = [decorationColors.red.dark, decorationColors.red.medium, decorationColors.red.light];
-            const color = redShades[Math.floor(Math.random() * redShades.length)];
-            child.material.color.set(color);
-            child.material.emissive.set(color);
-          } else {
-            // 蓝色系
-            const blueShades = [decorationColors.blue.dark, decorationColors.blue.medium, decorationColors.blue.light];
-            const color = blueShades[Math.floor(Math.random() * blueShades.length)];
-            child.material.color.set(color);
-            child.material.emissive.set(color);
-          }
-        } else if (child.material.color.g > 0.5 && child.material.metalness < 0.5) {
-          // 树叶材质（绿色）
-          const greenShades = [decorationColors.green.dark, decorationColors.green.medium, decorationColors.green.light];
-          const color = greenShades[Math.floor(Math.random() * greenShades.length)];
-          child.material.color.set(color);
-        }
-        
-        // 特殊处理树顶星
-        if (child === star) {
-          // 根据主题调整树顶星的颜色
-          let starColor = '#F7DC6F'; // 默认金色
-          if (theme.name === 'dark') {
-            starColor = '#FFEB3B'; // 暗主题使用更亮的黄色
-          } else if (theme.name === 'custom') {
-            starColor = theme.colors.warning || '#F7DC6F'; // 自定义主题使用warning色
-          }
-          child.material.color.set(starColor);
-          child.material.emissive.set(starColor);
-        }
-      }
-    });
-  }
-
-  // 初始化主题监听
-  setupThemeListener();
-
+  // 重新创建粒子
+  createEnvironment();
+}
 </script>
 
 <style scoped>
@@ -969,25 +1050,77 @@ function createTreeElements() {
   📸 核心修改: 摄像头显示样式 
   ================================================= 
 */
+.webcam-container {
+  position: relative;
+  margin-bottom: 10px;
+}
+
 .webcam-display {
     /* 默认隐藏，等待 JS 切换为 display: block */
     display: none; 
     
-    /* 定位到右上角 */
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    
     /* 尺寸和外观 */
-    width: 200px; 
-    height: 150px;
+    width: 100%; 
+    height: 100%;
     border-radius: 12px;
     border: 3px solid #0B5345; /* 圣诞绿边框 */
     /* 镜像翻转，让用户看到自己像照镜子一样 */
     transform: scaleX(-1); 
     box-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 20px #0B5345;
-    z-index: 100; 
     object-fit: cover; 
+}
+
+.gesture-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  transform: scaleX(-1); /* 与视频同步镜像 */
+  pointer-events: none;
+}
+
+/* 手势状态显示 */
+.gesture-status {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.gesture-indicator {
+  display: inline-block;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  transition: all 0.3s;
+}
+
+.gesture-indicator.fist {
+  background-color: #922B21;
+  box-shadow: 0 0 10px rgba(146, 43, 33, 0.8);
+}
+
+.gesture-indicator.open {
+  background-color: #0B5345;
+  box-shadow: 0 0 10px rgba(11, 83, 69, 0.8);
+}
+
+.gesture-indicator.pinch {
+  background-color: #2874A6;
+  box-shadow: 0 0 10px rgba(40, 116, 166, 0.8);
+}
+
+.gesture-indicator.rotate {
+  background-color: #F7DC6F;
+  box-shadow: 0 0 10px rgba(247, 220, 111, 0.8);
+  color: #333;
+}
+
+.gesture-indicator.neutral {
+  background-color: #666;
+  box-shadow: 0 0 10px rgba(102, 102, 102, 0.8);
 }
 
 
@@ -1015,8 +1148,7 @@ function createTreeElements() {
   background: rgba(11, 83, 69, 0.7);
   color: #F7DC6F;
   padding: 8px 20px; border-radius: 20px;
-  -webkit-backdrop-filter: blur(8px);
-          backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid rgba(247, 220, 111, 0.3);
   font-size: 14px; display: flex; align-items: center; gap: 8px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.4);
@@ -1041,8 +1173,7 @@ function createTreeElements() {
   top: 50px;
   background: rgba(0, 0, 0, 0.3); /* 添加背景使其更清晰 */
   border: 1px solid rgba(255, 255, 255, 0.1);
-  -webkit-backdrop-filter: blur(15px);
-          backdrop-filter: blur(15px);
+  backdrop-filter: blur(15px);
   border-radius: 12px;
   padding: 15px;
   pointer-events: auto;
@@ -1079,8 +1210,7 @@ function createTreeElements() {
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 15px 30px; border-radius: 30px;
   display: flex; gap: 30px; pointer-events: none;
-  -webkit-backdrop-filter: blur(5px);
-          backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
   z-index: 10;
 }
 

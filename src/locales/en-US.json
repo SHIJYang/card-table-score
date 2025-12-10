@@ -20,7 +20,8 @@
     "theme": "Theme",
     "themes": {
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "custom": "Custom"
     },
     "selectTheme": "Select theme",
     "language": "Language",

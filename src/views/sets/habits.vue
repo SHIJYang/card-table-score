@@ -60,6 +60,12 @@ const { t } = useI18n()
   margin: 0 auto;
   background: var(--el-bg-color-page); /* 页面背景 */
   min-height: 100vh;
+  h1{
+    
+    font-weight: bold;
+    color: var(--el-text-color-regular);
+    margin-bottom: 20px;
+  }
 }
 .settings-form {
   margin-top: 20px;
