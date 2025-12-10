@@ -6,7 +6,7 @@
       <!-- 主题 -->
       <el-form-item :label="$t('settings.theme')">
         <el-select v-model="settingsStore.theme" @change="settingsStore.setTheme" :placeholder="$t('settings.selectTheme')">
-          <el-option v-for="themeKey in ['light', 'dark']" :key="themeKey" :label="$t(`settings.themes.${themeKey}`)" :value="themeKey" />
+          <el-option v-for="themeKey in ['light', 'dark', 'custom']" :key="themeKey" :label="$t(`settings.themes.${themeKey}`)" :value="themeKey" />
         </el-select>
       </el-form-item>
       <!-- 语言 -->
@@ -68,6 +68,7 @@ const { t } = useI18n()
   border-radius: 8px;
   box-shadow: var(--el-box-shadow-light);
   border: 1px solid var(--el-border-color-light);
+  transition: all 0.3s ease;
 }
 .el-form-item {
   margin-bottom: 20px;
@@ -75,5 +76,69 @@ const { t } = useI18n()
 .el-select,
 .el-slider {
   width: 100%;
+}
+
+/* 下拉选择框主题适配 */
+:deep(.el-select) {
+  --el-select-bg-color: var(--selectBg);
+}
+
+
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+/* 开关组件主题适配 */
+:deep(.el-switch.is-checked .el-switch__core) {
+  background-color: var(--selectBg);
+  border-color: var(--selectBg);
+}
+
+/* 滑块组件主题适配 */
+:deep(.el-slider__runway) {
+  background-color: var(--el-bg-color);
+}
+
+:deep(.el-slider__bar) {
+  background-color: var(--selectBg);
+}
+
+:deep(.el-slider__button) {
+  border-color: var(--selectBg);
+}
+
+:deep(.el-slider__button:hover) {
+  border-color: var(--selectBg);
+  box-shadow: 0 0 0 5px rgba(233, 200, 17, 0.1);
+}
+
+/* 按钮组件主题适配 */
+.el-button {
+  transition: all 0.3s ease;
+}
+
+.el-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 10px;
+  }
+  
+  .settings-form {
+    padding: 16px;
+  }
+  
+  .el-form-item {
+    margin-bottom: 16px;
+  }
 }
 </style>

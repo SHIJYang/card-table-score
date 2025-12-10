@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "games": "Games",
+    "our": "Our Games",
     "settings": "Settings",
     "score": "Score System",
     "gomoku": "Gomoku",
@@ -10,8 +11,9 @@
     "2048": "2048",
     "try": "Try It",
     "pictureSettings": "Picture Settings",
-    "habits": "Preferences",
-    "gameHistory": "Game History"
+    "habits": "Habits",
+    "gameHistory": "Game History",
+    "christmasTree": "Christmas Tree"
   },
   "settings": {
     "title": "Settings",

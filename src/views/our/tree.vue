@@ -110,17 +110,27 @@ let textureLoader = null
 
 // --- 生命周期 ---
 onMounted(async () => {
-  textureLoader = new THREE.TextureLoader()
-  textureLoader.setCrossOrigin('anonymous') 
+  try {
+    textureLoader = new THREE.TextureLoader()
+    textureLoader.setCrossOrigin('anonymous') 
 
-  initThree()
-  createEnvironment()
-  createTreeElements()
-  animate()
-  
-  await loadImagesFromStore()
-  
-  window.addEventListener('resize', onWindowResize)
+    initThree()
+    createEnvironment()
+    createTreeElements()
+    animate() // 先启动主要动画循环
+    
+    // 确保treeGroup和star已经创建完成后再调用animateDecorations
+    if (treeGroup && star) {
+      animateDecorations() // 启动装饰元素闪烁动画
+    }
+    
+    await loadImagesFromStore()
+    
+    window.addEventListener('resize', onWindowResize)
+  } catch (error) {
+    console.error('Mounted hook error:', error)
+    ElMessage.error('初始化场景时出现错误')
+  }
 })
 
 onUnmounted(() => {
@@ -532,8 +542,8 @@ function initThree() {
   scene.background = new THREE.Color('#050510')
   scene.fog = new THREE.FogExp2('#050510', 0.02)
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(0, 0, 12)
-  renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" })
+  camera.position.set(0, 0, 20)
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -551,8 +561,8 @@ function initThree() {
   composer.addPass(new RenderPass(scene, camera))
   composer.addPass(new EffectPass(camera, 
     new BloomEffect({ 
-      intensity: 2.0, 
-      luminanceThreshold: 0.1, 
+      intensity: 3.5, 
+      luminanceThreshold: 0.08, 
       mipmapBlur: true 
     }), 
     new SMAAEffect()
@@ -576,10 +586,10 @@ function createEnvironment() {
   
   // 粒子材质：使用更亮的颜色和 AdditiveBlending 增强发光
   const particleMaterial = new THREE.PointsMaterial({ 
-    size: 0.08, 
-    color: '#FFFFE0', 
+    size: 0.05, 
+    color: '#FFFFFF', 
     transparent: true, 
-    opacity: 0.8,
+    opacity: 0.9,
     blending: THREE.AdditiveBlending, 
     depthWrite: false 
   });
@@ -587,18 +597,153 @@ function createEnvironment() {
   scene.add(new THREE.Points(geo, particleMaterial));
 }
 
+import { getCurrentTheme } from '@/theme/index.js';
+
+// 声明star变量为全局变量
+let star;
+
 function createTreeElements() {
   scene.add(treeGroup)
-  const geometries = [new THREE.SphereGeometry(0.15, 16, 16), new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8)]
-  const materials = [
-    new THREE.MeshStandardMaterial({ color: '#0B5345', roughness: 0.7 }),
-    new THREE.MeshStandardMaterial({ color: '#F7DC6F', roughness: 0.2, metalness: 0.9, emissive: '#F7DC6F', emissiveIntensity: 0.2 }),
-    new THREE.MeshStandardMaterial({ color: '#922B21', roughness: 0.3 })
+  const geometries = [
+    new THREE.SphereGeometry(0.15, 32, 32), // 增加分段数使球体更光滑
+    new THREE.BoxGeometry(0.2, 0.2, 0.2), 
+    new THREE.CylinderGeometry(0.02, 0.02, 0.4, 12) // 增加分段数
   ]
+  
+  // 获取当前主题的装饰元素颜色
+  const theme = getCurrentTheme();
+  const decorationColors = theme.colors.decoration || {
+    gold: { light: '#E6BE8A', medium: '#FFD700', dark: '#D4AF37' },
+    red: { light: '#E74C3C', medium: '#C0392B', dark: '#922B21' },
+    blue: { light: '#3498DB', medium: '#2874A6', dark: '#1B4F72' },
+    green: { light: '#58D68D', medium: '#2ECC71', dark: '#1ABC9C' }
+  };
+  
+  // 增加更多精致的材质和颜色选择
+  const materials = [
+    // 绿色系 - 树叶材质
+    {
+        type: '树叶',
+        items: [
+            new THREE.MeshStandardMaterial({ color: decorationColors.green.dark, roughness: 0.6, metalness: 0.1 }),
+            new THREE.MeshStandardMaterial({ color: decorationColors.green.medium, roughness: 0.6, metalness: 0.1 }),
+            new THREE.MeshStandardMaterial({ color: decorationColors.green.light, roughness: 0.6, metalness: 0.1 })
+        ]
+    },
+    // 金色/黄色系 - 装饰材质
+    {
+        type: '金色装饰',
+        items: [
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.gold.dark,
+                roughness: 0.4,
+                metalness: 0.6,
+                emissive: decorationColors.gold.dark,
+                emissiveIntensity: 0.15,
+                transparent: false
+            }),
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.gold.medium,
+                roughness: 0.4,
+                metalness: 0.6,
+                emissive: decorationColors.gold.medium,
+                emissiveIntensity: 0.15,
+                transparent: false
+            }),
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.gold.light,
+                roughness: 0.4,
+                metalness: 0.6,
+                emissive: decorationColors.gold.light,
+                emissiveIntensity: 0.15,
+                transparent: false
+            })
+        ]
+    },
+    // 红色系 - 装饰材质
+    {
+        type: '红色装饰',
+        items: [
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.red.medium,
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: decorationColors.red.medium,
+                emissiveIntensity: 0.15
+            }),
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.red.light,
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: decorationColors.red.light,
+                emissiveIntensity: 0.15
+            }),
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.red.dark,
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: decorationColors.red.dark,
+                emissiveIntensity: 0.15
+            })
+        ]
+    },
+    // 蓝色系 - 装饰材质
+    {
+        type: '蓝色装饰',
+        items: [
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.blue.light,
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: decorationColors.blue.light,
+                emissiveIntensity: 0.15
+            }),
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.blue.medium,
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: decorationColors.blue.medium,
+                emissiveIntensity: 0.15
+            }),
+            new THREE.MeshStandardMaterial({ 
+                color: decorationColors.blue.dark,
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: decorationColors.blue.dark,
+                emissiveIntensity: 0.15
+            })
+        ]
+    }
+];
+
+// 可以根据需要继续添加更多颜色或类型...
+  // 为不同类型的材质分配权重，增加金色/黄色系和其他彩色材质的出现概率
+  // 权重数组：[绿色系权重, 金色/黄色系权重, 红色系权重, 蓝色系权重]
+  const materialWeights = [0.3, 0.3, 0.2, 0.2]; // 调整权重使颜色分布更均匀
+  
   for (let i = 0; i < 300; i++) {
     const progress = i / 300, angle = i * 0.5
     const r = (1 - progress) * 3.5
-    const mesh = new THREE.Mesh(geometries[Math.floor(Math.random()*3)], materials[Math.floor(Math.random()*3)])
+    
+    // 根据权重随机选择材质类型
+    const random = Math.random();
+    let materialIndex;
+    
+    if (random < materialWeights[0]) {
+      // 绿色系 (0-2)
+      materialIndex = Math.floor(Math.random() * 3);
+    } else if (random < materialWeights[0] + materialWeights[1]) {
+      // 金色/黄色系 (3-4)
+      materialIndex = 3 + Math.floor(Math.random() * 2);
+    } else if (random < materialWeights[0] + materialWeights[1] + materialWeights[2]) {
+      // 红色系 (5-6)
+      materialIndex = 5 + Math.floor(Math.random() * 2);
+    } else {
+      // 蓝色系 (7)
+      materialIndex = 7;
+    }
+    
+    const mesh = new THREE.Mesh(geometries[Math.floor(Math.random()*3)], materials[materialIndex])
     mesh.userData = {
       treePos: new THREE.Vector3(Math.cos(angle)*r, (progress*8)-4, Math.sin(angle)*r),
       treeRot: new THREE.Euler(Math.random(), Math.random(), Math.random()),
@@ -610,11 +755,196 @@ function createTreeElements() {
     treeGroup.add(mesh)
   }
   // 树顶星
-  const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), new THREE.MeshStandardMaterial({ color: '#F7DC6F', emissive: '#F7DC6F', emissiveIntensity: 1 }))
+  star = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), new THREE.MeshStandardMaterial({ color: '#F7DC6F', emissive: '#F7DC6F', emissiveIntensity: 0.3 }))
   star.position.set(0, 4.5, 0)
   star.userData = { treePos: new THREE.Vector3(0,4.5,0), scatterPos: new THREE.Vector3(0,5,0), treeRot: new THREE.Euler(0,0,0), scatterRot: new THREE.Euler(Math.PI,0,0) }
   treeGroup.add(star)
 }
+
+// 增强装饰元素的动画效果 - 优化闪烁动画处理
+  function animateDecorations() {
+    try {
+      if (!treeGroup || !treeGroup.children || !Array.isArray(treeGroup.children)) {
+        console.warn('Tree group not initialized properly');
+        return;
+      }
+      
+      treeGroup.children.forEach((child, index) => {
+        try {
+          // 安全检查：确保 child 和 material 对象存在
+          if (child && child.material && typeof child.material === 'object') {
+            // 根据材质类型设置不同的动画参数
+            let baseIntensity = child.material.emissiveIntensity || 0;
+            let duration = 0.5 + Math.random();
+            let repeatDelay = 1 + Math.random() * 3;
+            
+            // 为不同颜色系设置不同的动画强度
+            if (typeof baseIntensity === 'number' && baseIntensity > 0.1) {
+              // 检测材质类型（基于emissive颜色或metalness值）
+              const isGolden = child.material.metalness > 0.9;
+              const isColorful = child.material.emissiveIntensity > 0.5 && !isGolden;
+              
+              // 为金色系元素设置柔和的闪烁效果
+              if (isGolden) {
+                baseIntensity = Math.max(baseIntensity, 0.3); // 降低金色系基础发光强度
+                duration = 0.3 + Math.random() * 0.5; // 保持闪烁频率
+                repeatDelay = 0.5 + Math.random() * 2; // 保持延迟
+              } 
+              // 为彩色系元素设置更柔和的闪烁效果
+              else if (isColorful) {
+                baseIntensity = Math.max(baseIntensity, 0.2);
+                duration = 0.6 + Math.random() * 0.8;
+                repeatDelay = 1 + Math.random() * 2.5;
+              }
+              
+              // 为每个发光物体创建随机闪烁动画
+              const flicker = () => {
+                try {
+                  // 安全检查：确保动画参数合理
+                  if (baseIntensity > 0 && child && child.material) {
+                    gsap.to(child.material, {
+                      emissiveIntensity: [
+                        baseIntensity,
+                        baseIntensity * (0.7 + Math.random() * 0.6), // 更大的强度变化范围
+                        baseIntensity
+                      ],
+                      duration: duration,
+                      repeat: -1,
+                      repeatDelay: repeatDelay,
+                      ease: isGolden ? 'power3.inOut' : 'power2.inOut', // 金色使用更明显的缓动
+                      onUpdate: () => {
+                        // 防止材质被销毁导致的错误
+                        if (!child || !child.material) return;
+                        // 确保emissiveIntensity不会变成无效值
+                        if (isNaN(child.material.emissiveIntensity)) {
+                          child.material.emissiveIntensity = baseIntensity;
+                        }
+                      }
+                    });
+                  }
+                } catch (err) {
+                  console.error('Animation error in flicker function:', err);
+                }
+              };
+              
+              // 延迟启动，使闪烁不同步
+              setTimeout(flicker, index * 30); // 缩短延迟，让闪烁更快开始
+            }
+            
+          }
+        } catch (err) {
+          console.error('Error animating child:', err);
+        }
+      });
+      
+      // 为树顶星创建脉冲式闪烁 - 增强效果
+      if (star && star.material && typeof star.material.emissiveIntensity === 'number') {
+        const starPulse = () => {
+          try {
+            // 降低树顶星的脉冲效果强度
+            gsap.to(star.material, {
+              emissiveIntensity: [0.3, 0.8, 0.3], // 降低强度范围
+              duration: 1.5, // 保持脉冲速度
+              repeat: -1,
+              ease: 'power3.inOut',
+              onUpdate: () => {
+                // 安全检查
+                if (!star || !star.material) return;
+                if (isNaN(star.material.emissiveIntensity)) {
+                  star.material.emissiveIntensity = 0.3;
+                }
+              }
+            });
+          } catch (err) {
+            console.error('Animation error in starPulse function:', err);
+          }
+        };
+        
+        starPulse();
+      }
+    } catch (error) {
+      console.error('Error in animateDecorations:', error);
+    }
+  }
+
+  // 监听主题变化，更新装饰元素颜色
+  function setupThemeListener() {
+    // 存储当前主题名称，用于检测变化
+    let currentThemeName = getCurrentTheme().name;
+    
+    // 创建一个定时器来检查主题变化
+    setInterval(() => {
+      const newTheme = getCurrentTheme();
+      if (newTheme.name !== currentThemeName) {
+        // 主题发生变化，更新装饰元素颜色
+        updateDecorationColors(newTheme);
+        currentThemeName = newTheme.name;
+      }
+    }, 1000); // 每秒检查一次
+  }
+
+  // 更新装饰元素的颜色
+  function updateDecorationColors(theme) {
+    const decorationColors = theme.colors.decoration || {
+      gold: { light: '#E6BE8A', medium: '#FFD700', dark: '#D4AF37' },
+      red: { light: '#E74C3C', medium: '#C0392B', dark: '#922B21' },
+      blue: { light: '#3498DB', medium: '#2874A6', dark: '#1B4F72' },
+      green: { light: '#58D68D', medium: '#2ECC71', dark: '#1ABC9C' }
+    };
+    
+    // 更新所有装饰元素的材质颜色
+    treeGroup.traverse((child) => {
+      if (child.isMesh && child.material) {
+        // 根据材质特性判断类型并更新颜色
+        if (child.material.metalness > 0.6 && child.material.emissiveIntensity > 0.2) {
+          // 金色装饰
+          const goldShades = [decorationColors.gold.dark, decorationColors.gold.medium, decorationColors.gold.light];
+          const color = goldShades[Math.floor(Math.random() * goldShades.length)];
+          child.material.color.set(color);
+          child.material.emissive.set(color);
+        } else if (child.material.emissiveIntensity > 0.2 && 
+                  (child.material.color.r > 0.7 || 
+                   child.material.color.b > 0.7)) {
+          // 彩色装饰 - 红色或蓝色
+          if (child.material.color.r > child.material.color.b) {
+            // 红色系
+            const redShades = [decorationColors.red.dark, decorationColors.red.medium, decorationColors.red.light];
+            const color = redShades[Math.floor(Math.random() * redShades.length)];
+            child.material.color.set(color);
+            child.material.emissive.set(color);
+          } else {
+            // 蓝色系
+            const blueShades = [decorationColors.blue.dark, decorationColors.blue.medium, decorationColors.blue.light];
+            const color = blueShades[Math.floor(Math.random() * blueShades.length)];
+            child.material.color.set(color);
+            child.material.emissive.set(color);
+          }
+        } else if (child.material.color.g > 0.5 && child.material.metalness < 0.5) {
+          // 树叶材质（绿色）
+          const greenShades = [decorationColors.green.dark, decorationColors.green.medium, decorationColors.green.light];
+          const color = greenShades[Math.floor(Math.random() * greenShades.length)];
+          child.material.color.set(color);
+        }
+        
+        // 特殊处理树顶星
+        if (child === star) {
+          // 根据主题调整树顶星的颜色
+          let starColor = '#F7DC6F'; // 默认金色
+          if (theme.name === 'dark') {
+            starColor = '#FFEB3B'; // 暗主题使用更亮的黄色
+          } else if (theme.name === 'custom') {
+            starColor = theme.colors.warning || '#F7DC6F'; // 自定义主题使用warning色
+          }
+          child.material.color.set(starColor);
+          child.material.emissive.set(starColor);
+        }
+      }
+    });
+  }
+
+  // 初始化主题监听
+  setupThemeListener();
+
 </script>
 
 <style scoped>
@@ -685,7 +1015,8 @@ function createTreeElements() {
   background: rgba(11, 83, 69, 0.7);
   color: #F7DC6F;
   padding: 8px 20px; border-radius: 20px;
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
   border: 1px solid rgba(247, 220, 111, 0.3);
   font-size: 14px; display: flex; align-items: center; gap: 8px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.4);
@@ -710,7 +1041,8 @@ function createTreeElements() {
   top: 50px;
   background: rgba(0, 0, 0, 0.3); /* 添加背景使其更清晰 */
   border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+          backdrop-filter: blur(15px);
   border-radius: 12px;
   padding: 15px;
   pointer-events: auto;
@@ -747,7 +1079,8 @@ function createTreeElements() {
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 15px 30px; border-radius: 30px;
   display: flex; gap: 30px; pointer-events: none;
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+          backdrop-filter: blur(5px);
   z-index: 10;
 }
 

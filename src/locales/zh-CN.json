@@ -2,6 +2,7 @@
   "nav": {
     "home": "首页",
     "games": "游戏",
+    "our": "我们",
     "settings": "设置",
     "score": "分数系统",
     "gomoku": "五子棋",
@@ -11,7 +12,8 @@
     "try": "试玩",
     "pictureSettings": "图片设置",
     "habits": "设置",
-    "gameHistory": "游戏记录"
+    "gameHistory": "游戏记录",
+    "christmasTree": "圣诞树"
   },
   "settings": {
     "title": "设置",
