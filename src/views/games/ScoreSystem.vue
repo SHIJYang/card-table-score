@@ -623,6 +623,7 @@ const lowestScore = computed(() => {
   align-items: center;
   gap: 2px;
   min-width: 80px;
+  transition: all var(--transition-duration);
 }
 
 .player-name-text {
@@ -635,9 +636,15 @@ const lowestScore = computed(() => {
 
 .player-actions {
   display: flex;
-
+  gap: 4px;
   margin-left: auto;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-duration);
+}
+
+.player-name:hover .player-actions {
+  opacity: 1;
 }
 
 .player-actions .el-button:hover {
@@ -677,6 +684,7 @@ const lowestScore = computed(() => {
   align-items: center;
   flex-wrap: nowrap;
   min-width: 240px;
+  transition: all var(--transition-duration);
 }
 
 .score-input {
@@ -694,6 +702,12 @@ const lowestScore = computed(() => {
   padding: 6px 8px;
   min-width: 20px;
   font-size: 13px;
+  transition: all var(--transition-duration);
+}
+
+.score-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--box-shadow-hover);
 }
 
 .score-positive {
@@ -715,18 +729,20 @@ const lowestScore = computed(() => {
   font-size: 14px;
   color: var(--text-color-secondary);
   padding: 8px 12px;
-  background-color: #f9f9f9;
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--border-color);
 }
 
 .el-timeline-item {
   padding-bottom: 20px;
+  transition: all var(--transition-duration);
 }
 
 .el-timeline-item__timestamp {
   font-size: 12px;
-  color: var(--info-color);
+  color: var(--text-color-light);
 }
 
 .empty-state {
@@ -736,11 +752,12 @@ const lowestScore = computed(() => {
 
 .score-summary {
   padding: 16px;
-
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
+  border: 1px solid var(--border-color);
 }
 
 .summary-item {

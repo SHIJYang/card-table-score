@@ -1,5 +1,6 @@
 {
   "nav": {
+    "2048": "2048",
     "home": "Home",
     "games": "Games",
     "our": "Our Games",
@@ -8,7 +9,6 @@
     "gomoku": "Gomoku",
     "shop": "Shop",
     "snake": "Snake",
-    "2048": "2048",
     "try": "Try It",
     "pictureSettings": "Picture Settings",
     "habits": "Habits",

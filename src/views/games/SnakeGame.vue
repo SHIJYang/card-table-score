@@ -360,9 +360,10 @@ onUnmounted(() => {
 
 <style scoped>
 .game-card {
- 
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   width: 100%;
- 
+  transition: all var(--transition-duration);
 }
 
 .card-header {
@@ -378,7 +379,7 @@ onUnmounted(() => {
   gap: 12px;
   font-weight: bold;
   font-size: 15px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .game-container {
@@ -395,10 +396,13 @@ onUnmounted(() => {
   max-width: 600px;
   min-width: 300px;
   aspect-ratio: 1 / 1;
-  background: #f0f0f0;
-  border: 4px solid #333;
+  background-color: var(--bg-tertiary);
+  border: 4px solid var(--text-color);
+  border-radius: var(--border-radius);
   overflow: hidden;
   position: relative;
+  box-shadow: var(--box-shadow);
+  transition: all var(--transition-duration);
 }
 
 .game-board {
@@ -413,26 +417,35 @@ onUnmounted(() => {
   min-width: 250px;
 }
 .grid-cell {
-  background-color: #fff;
-  border-radius: 2px;
+  background-color: var(--bg-color);
+  border-radius: var(--border-radius-small);
   height: 100%;
   width: 100%;
-  transition: background-color 0.1s;
+  transition: background-color var(--transition-duration);
+  border: 1px solid var(--border-color-light);
 }
 
 /* 边界单元格样式 */
 .border-cell {
-  background-color: #e0e0e0 !important;
-  border: 1px solid #bdbdbd;
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color);
 }
 
 .snake-segment {
-  background-color: #4caf50;
+  background-color: var(--success-color);
+  border-radius: var(--border-radius-small);
+  border: 1px solid var(--success-color-dark);
 }
 
 .snake-head {
-  background-color: #2e7d32;
+  background-color: var(--success-color-dark);
   position: relative;
+  border-radius: var(--border-radius-small);
+  transition: transform var(--transition-duration);
+}
+
+.snake-head:hover {
+  transform: scale(1.05);
 }
 
 .snake-head::after,
@@ -454,14 +467,16 @@ onUnmounted(() => {
 }
 
 .food {
-  background: radial-gradient(circle, #ff5722, #d84315);
+  background: radial-gradient(circle, var(--warning-color), var(--warning-color-dark));
   border-radius: 50%;
   animation: pulse 1s infinite alternate;
+  border: 1px solid var(--warning-color-dark);
 }
 
 @keyframes pulse {
   to {
     transform: scale(1.15);
+    filter: brightness(1.1);
   }
 }
 
@@ -484,19 +499,30 @@ onUnmounted(() => {
   width: 70px; /* 增加按钮宽度 */
   height: 70px; /* 增加按钮高度 */
   font-size: 24px; /* 增加图标大小 */
-  border: 2px solid #dcdfe6; /* 添加边框 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
-  transition: all 0.3s ease; /* 添加过渡效果 */
+  border: 2px solid var(--border-color);
+  box-shadow: var(--box-shadow);
+  background-color: var(--bg-secondary);
+  color: var(--text-color);
+  transition: all var(--transition-duration);
+}
+
+.mobile-controls .el-button:hover:not(:disabled) {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--box-shadow-hover);
 }
 
 .mobile-controls .el-button:active {
   transform: scale(0.95); /* 点击时的缩放效果 */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow);
 }
 
-.mobile-controls .el-button:not(:disabled):hover {
-  background-color: #f5f7fa; /* 悬停效果 */
-  border-color: #409eff;
+.mobile-controls .el-button:disabled {
+  opacity: 0.5;
+  background-color: var(--bg-tertiary);
+  color: var(--text-color-light);
 }
 
 /* 通用操作按钮 */
@@ -506,6 +532,7 @@ onUnmounted(() => {
   justify-content: space-around;
   width: 100%;
   flex-wrap: wrap;
+  transition: all var(--transition-duration);
 }
 
 .info-alert {
@@ -513,6 +540,26 @@ onUnmounted(() => {
   font-size: 14px;
   display: flex;
   gap: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-duration);
+}
+
+.info-alert p {
+  color: var(--text-color-secondary);
+  margin: 4px 0;
+}
+
+.card-header h2 {
+  color: var(--text-color);
+  margin: 0;
+  transition: color var(--transition-duration);
+}
+
+/* 高分样式 */
+.high-score {
+  color: var(--warning-color) !important;
+  font-weight: 800;
 }
 
 /* 响应式：PC 隐藏虚拟按钮 */

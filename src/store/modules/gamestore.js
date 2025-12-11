@@ -206,7 +206,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function submitGameRecord(recordData) {
     try {
-      const res = await gameApi.submitGameRecord(recordData)
+      const res = await gameApi.submitGameScore(recordData)
       // 更新本地统计
       gameStats.value.totalPlayed += 1
       gameStats.value.totalScore += recordData.score
@@ -223,7 +223,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function fetchCategories() {
     try {
-      const res = await gameApi.getCategories()
+      const res = await gameApi.getGameCategories()
       categories.value = res.data || []
       return res.data
     } catch (error) {
@@ -256,7 +256,9 @@ export const useGameStore = defineStore('game', () => {
 
   async function fetchRanking(params = {}) {
     try {
-      const res = await gameApi.getRanking(params)
+      // 由于getGameRanking需要gameId参数，这里我们需要从params中获取或使用默认值
+      const gameId = params.gameId || 'snake'; // 使用默认游戏ID
+      const res = await gameApi.getGameRanking(gameId, params)
       ranking.value = res.data || []
       return res.data
     } catch (error) {

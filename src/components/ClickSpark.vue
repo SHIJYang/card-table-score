@@ -44,7 +44,7 @@ const handleThemeChange = () => {
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  sparkColor: computed(() => currentTheme.value.colors.decoration?.gold?.light || "#f0f0f0"),
+  sparkColor: "#f0f0f0",
   sparkSize: 8, // 减小粒子大小
   sparkRadius: 15,
   sparkCount: 6, // 减少粒子数量
@@ -52,6 +52,12 @@ const props = withDefaults(defineProps<Props>(), {
   easing: "ease-out",
   extraScale: 0.8, // 减小缩放
   sparkOpacity: 0.6, // 降低透明度
+});
+
+// 计算实际使用的火花颜色，优先使用props，如果没有则使用主题色
+const actualSparkColor = computed(() => {
+  return props.sparkColor !== "#f0f0f0" ? props.sparkColor : 
+         currentTheme.value.colors.decoration?.gold?.light || "#f0f0f0";
 });
 
 const containerRef = useTemplateRef<HTMLDivElement>("containerRef");
@@ -130,7 +136,7 @@ const draw = (timestamp: number) => {
     const currentOpacity = props.sparkOpacity * (1 - eased);
     
     // 处理不同颜色格式
-    let rgbColor = props.sparkColor;
+    let rgbColor = actualSparkColor.value;
     if (rgbColor.startsWith('#')) {
       // 十六进制颜色转换为RGB
       const hex = rgbColor.replace('#', '');
@@ -225,7 +231,7 @@ onUnmounted(() => {
 
 watch(
   [
-    () => props.sparkColor,
+    () => actualSparkColor.value,
     () => props.sparkSize,
     () => props.sparkRadius,
     () => props.sparkCount,

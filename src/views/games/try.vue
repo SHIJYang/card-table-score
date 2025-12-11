@@ -6,7 +6,7 @@
           text="404"
           :font-size="180"
           font-weight="800"
-          color="#8c8c8c"
+          :color="getComputedStyle(document.documentElement).getPropertyValue('--text-color-light')"
           :enable-hover="true"
           :base-intensity="0.2"
           :hover-intensity="0.8"
@@ -15,7 +15,7 @@
           text="error"
           :font-size="80"
           font-weight="800"
-          color="#8c8c8c"
+          :color="getComputedStyle(document.documentElement).getPropertyValue('--text-color-light')"
           :enable-hover="true"
           :base-intensity="0.2"
           :hover-intensity="0.8"
@@ -84,5 +84,28 @@ import ShinyText from "../../components/gsap/ShinyText.vue";
   align-items: center;
   gap: 20px;
   padding: 0;
+  background-color: var(--bg-color);
+  transition: background-color var(--transition-duration);
+}
+
+/* 响应式字体大小 */
+@media (max-width: 768px) {
+  .error404 :deep(.fuzzy-text) {
+    font-size: 120px !important;
+  }
+  
+  .error404 :deep(.fuzzy-text:nth-child(2)) {
+    font-size: 60px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .error404 :deep(.fuzzy-text) {
+    font-size: 80px !important;
+  }
+  
+  .error404 :deep(.fuzzy-text:nth-child(2)) {
+    font-size: 40px !important;
+  }
 }
 </style>

@@ -295,14 +295,15 @@ onMounted(() => {
 }
 
 .current-player.black {
-  background-color: #000;
-  color: white;
+  background-color: var(--text-color);
+  color: var(--bg-primary);
+  border: 1px solid var(--border-color);
 }
 
 .current-player.white {
-  background-color: #fff;
-  color: #000;
-  border: 1px solid #ccc;
+  background-color: var(--bg-primary);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
 
 .game-status {
@@ -326,11 +327,11 @@ onMounted(() => {
 }
 
 .game-board {
-  background: #deb887;
-  border: 2px solid #8b4513;
-  border-radius: 4px;
+  background: var(--selectBg);
+  border: 2px solid var(--text-color-secondary);
+  border-radius: var(--border-radius);
   padding: 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--box-shadow);
 }
 
 .board-grid {
@@ -360,7 +361,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 1px;
-  background: #8b4513;
+  background: var(--text-color-secondary);
   transform: translateY(-50%);
 }
 
@@ -371,12 +372,13 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: #8b4513;
+  background: var(--text-color-secondary);
   transform: translateX(-50%);
 }
 
 .board-cell:hover {
-  background-color: rgba(139, 69, 19, 0.1);
+  background-color: var(--bg-secondary);
+  transition: background-color var(--transition-duration);
 }
 
 .board-cell.has-stone {
@@ -397,7 +399,8 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--box-shadow);
+  transition: all var(--transition-duration);
 }
 
 .black-stone {
@@ -416,9 +419,10 @@ onMounted(() => {
 }
 
 .move-history {
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   padding: 16px;
+  border: 1px solid var(--border-color);
 }
 
 .move-history h4 {
@@ -442,17 +446,19 @@ onMounted(() => {
 
 .history-item.black {
   background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .history-item.white {
   background: rgba(255, 255, 255, 0.5);
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
 }
 
 .game-stats {
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   padding: 16px;
+  border: 1px solid var(--border-color);
 }
 
 .game-stats h4 {
@@ -471,9 +477,16 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 8px;
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-duration);
+}
+
+.stat-item:hover {
+  box-shadow: var(--box-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .stat-item .label {

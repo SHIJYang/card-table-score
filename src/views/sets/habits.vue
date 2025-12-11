@@ -89,7 +89,11 @@ const { t } = useI18n()
   --el-select-bg-color: var(--selectBg);
 }
 
-
+/* 输入框主题适配 */
+:deep(.el-input__wrapper) {
+  --el-input-bg-color: var(--selectBg);
+  transition: all 0.3s ease;
+}
 
 :deep(.el-input__wrapper:hover) {
   box-shadow: 0 0 0 1px var(--el-color-primary) inset;

@@ -3,6 +3,14 @@ import { createI18n } from 'vue-i18n'
 import zhCN from '@/locales/zh-CN.json'
 import enUS from '@/locales/en-US.json'
 
+// 兼容性修复：为vue-i18n提供currentInstance
+import * as VueRuntimeCore from '@vue/runtime-core'
+if (!globalThis.Vue) {
+  globalThis.Vue = {}
+}
+// 将currentInstance从@vue/runtime-core重新暴露给vue-i18n使用
+globalThis.Vue.currentInstance = VueRuntimeCore.currentInstance
+
 // 语言包
 const messages = {
   'zh-CN': zhCN,

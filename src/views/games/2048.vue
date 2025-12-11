@@ -506,7 +506,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  color: #776e65;
+  color: var(--text-color-secondary);
 }
 
 .game-info h1 {
@@ -521,34 +521,38 @@ onUnmounted(() => {
 .score-panel div {
   font-size: 1.2rem;
   margin-bottom: 10px;
-  background-color: #bbada0;
-  color: #eee4da;
+  background-color: var(--selectBg);
+  color: var(--text-color);
   padding: 5px 10px;
-  border-radius: 3px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
 }
 
 button {
-  background-color: #8f7a66;
+  background-color: var(--primary-color);
   color: white;
-  border: none;
+  border: 1px solid var(--border-color);
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 1rem;
-  transition: background-color 0.2s;
+  transition: all var(--transition-duration);
 }
 
 button:hover {
-  background-color: #705d4c;
+  background-color: var(--primary-color-dark-2);
+  transform: translateY(-1px);
+  box-shadow: var(--box-shadow-hover);
 }
 
 .game-board {
-  background-color: #bbada0;
-  border-radius: 6px;
+  background-color: var(--selectBg);
+  border-radius: var(--border-radius);
   padding: 10px;
   position: relative;
   outline: none;
-  touch-action: manipulation; /* 优化触摸体验 */
+  touch-action: manipulation;
+  border: 2px solid var(--border-color);
 }
 
 .grid-cell {
@@ -564,13 +568,14 @@ button:hover {
   width: 80px;
   height: 80px;
   margin-right: 10px;
-  background-color: #cdc1b4;
-  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all var(--transition-duration) ease;
+  border: 1px solid var(--border-color);
 }
 
 .cell:last-child {
@@ -595,52 +600,52 @@ button:hover {
 
 /* 数字方块颜色 */
 .cell-2 {
-  background-color: #eee4da;
-  color: #776e65;
+  background-color: var(--decoration-colors-gold-light, #eee4da);
+  color: var(--text-color);
 }
 .cell-4 {
-  background-color: #ede0c8;
-  color: #776e65;
+  background-color: var(--decoration-colors-gold-medium, #ede0c8);
+  color: var(--text-color);
 }
 .cell-8 {
-  background-color: #f2b179;
-  color: #f9f6f2;
+  background-color: var(--decoration-colors-blue-light, #f2b179);
+  color: white;
 }
 .cell-16 {
-  background-color: #f59563;
-  color: #f9f6f2;
+  background-color: var(--decoration-colors-blue-medium, #f59563);
+  color: white;
 }
 .cell-32 {
-  background-color: #f67c5f;
-  color: #f9f6f2;
+  background-color: var(--decoration-colors-blue-dark, #f67c5f);
+  color: white;
 }
 .cell-64 {
-  background-color: #f65e3b;
-  color: #f9f6f2;
+  background-color: var(--decoration-colors-red-light, #f65e3b);
+  color: white;
 }
 .cell-128 {
-  background-color: #edcf72;
-  color: #f9f6f2;
+  background-color: var(--decoration-colors-red-medium, #edcf72);
+  color: white;
   font-size: 20px;
 }
 .cell-256 {
-  background-color: #edcc61;
-  color: #f9f6f2;
+  background-color: var(--primary-color, #edcc61);
+  color: white;
   font-size: 20px;
 }
 .cell-512 {
-  background-color: #edc850;
-  color: #f9f6f2;
+  background-color: var(--primary-color-light-3, #edc850);
+  color: white;
   font-size: 20px;
 }
 .cell-1024 {
-  background-color: #edc53f;
-  color: #f9f6f2;
+  background-color: var(--success-color, #edc53f);
+  color: white;
   font-size: 16px;
 }
 .cell-2048 {
-  background-color: #edc22e;
-  color: #f9f6f2;
+  background-color: var(--warning-color, #edc22e);
+  color: white;
   font-size: 16px;
 }
 
@@ -685,13 +690,14 @@ button:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(238, 228, 218, 0.9);
-  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 10;
+  border: 2px solid var(--border-color);
 }
 
 .game-over p,
@@ -703,7 +709,7 @@ button:hover {
 }
 
 .game-win {
-  background-color: rgba(237, 194, 46, 0.5);
+  background-color: rgba(103, 194, 58, 0.7);
 }
 
 /* 响应式调整 - 重点修复手机端数字显示问题 */
