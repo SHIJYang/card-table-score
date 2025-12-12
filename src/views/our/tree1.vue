@@ -290,11 +290,13 @@ const randomSpherePoint = (r) => {
 
 // ========== 图片加载逻辑 ==========
 
-const addPhotoMeshFromUrl = (url, key) => {
+const addPhotoMeshFromUrl = (originalUrl, key) => {
   if (loadedKeys.has(key)) return; 
-
+  const proxyUrl = convertToProxyUrl(originalUrl);
+  
+  
   textureLoader.load(
-    url, 
+    proxyUrl, 
     (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       loadedKeys.add(key);
@@ -337,15 +339,34 @@ const addPhotoMeshFromUrl = (url, key) => {
 };
 
 // 监听 Store 变化，自动将新图片添加到 3D 场景
+const convertToProxyUrl = (originalUrl) => {
+  if (!originalUrl) return '';
+  
+  // 生产/开发环境通用的替换逻辑
+  // 将 https://free.picui.cn 替换为 /picui-proxy
+  const targetDomain = 'https://free.picui.cn';
+  const proxyPrefix = '/picui-proxy';
+
+  if (originalUrl.includes(targetDomain)) {
+    return originalUrl.replace(targetDomain, proxyPrefix);
+  }
+  return originalUrl;
+};
 watch(imageList, (newImages) => {
   if (newImages && newImages.length > 0) {
     newImages.forEach(imgData => {
       // 兼容性处理：根据你的 API 返回，key 可能是 id，url 可能是 url 或 path
-      const key = imgData.key || imgData.id || Math.random().toString();
-      const url = imgData.url || imgData.path;
+      const key = imgData.key;
 
+      // 2. 提取图片 URL (在 links 对象下的 url 属性)
+      // 使用 ?. 可选链防止 links 为空时报错
+      const url = imgData.links?.url; 
+
+      // 3. 只有当 key 和 url 都存在时才添加
       if (url && key) {
         addPhotoMeshFromUrl(url, key);
+      } else {
+        console.warn('跳过无效图片数据:', imgData);
       }
     });
   }
