@@ -1,56 +1,41 @@
 <template>
   <div class="grand-tree-container">
-    <div id="loader" v-if="isLoading" :class="{ 'fade-out': isFadingOut }">
-      <div class="spinner"></div>
-      <div class="loader-text">Loading Memories</div>
-    </div>
-
     <div ref="canvasContainer" id="canvas-container"></div>
-
     <div id="ui-layer" :class="{ 'ui-hidden': isUiHidden }">
-      <h1>Merry Christmas</h1>
-      
-      <div class="controls-wrapper">
+      <div class="panel-section">
+        <video ref="videoElement" id="webcam" class="webcam-display" autoplay playsinline muted></video>
         <div class="btn-group">
-          <label class="upload-btn">
-            Select Folder
-            <input 
-              type="file" 
-              ref="folderInput" 
-              webkitdirectory 
-              directory 
-              multiple 
-              @change="handleImageUpload"
-            >
-          </label>
-          
-          <label class="upload-btn">
-            Select Files
-            <input 
-              type="file" 
-              ref="fileInput" 
-              multiple 
-              accept="image/*" 
-              @change="handleImageUpload"
-            >
-          </label>
+          <el-button color="#0B5345" :plain="viewState !== 'closed'" @click="onCloseTree()">
+            🎄 合拢
+          </el-button>
+          <el-button color="#0B5345" :plain="viewState !== 'open'" @click="onOpenTree()">
+            ✨ 散开
+          </el-button>
         </div>
-        <div class="hint-text">Use "Select Folder" to load all photos at once</div>
-        <div class="hint-text" style="opacity: 0.7; font-size: 8px;">Or put photos in "/images/"</div>
+        <el-button 
+          class="grab-btn" 
+          color="#922B21" 
+          :disabled="photos.length === 0" 
+          @click="onGrabRandomPhoto()"
+        >
+          抓取
+        </el-button>
+        <div class="gesture-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="gestureControlEnabled">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">🤚 手势控制</span>
+        </div>
       </div>
-    </div>
-
-    <div id="webcam-wrapper" :class="{ 'ui-hidden': isUiHidden }">
-      <video ref="webcamVideo" id="webcam" autoplay playsinline></video>
-      <div id="debug-info">{{ debugText }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, reactive } from 'vue';
+import { ref, onMounted, onUnmounted, reactive, computed ,watch} from 'vue';
 import * as THREE from 'three';
-// 注意：在标准 NPM 环境下，路径通常是 three/examples/jsm/...
+
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -61,9 +46,16 @@ import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 const isLoading = ref(true);
 const isFadingOut = ref(false);
 const isUiHidden = ref(false);
-const debugText = ref('Initializing...');
+
 const canvasContainer = ref(null);
-const webcamVideo = ref(null);
+const videoElement = ref(null);
+
+// --- 提供方法给模板使用 ---
+defineExpose({
+  onCloseTree,
+  onOpenTree,
+  onGrabRandomPhoto
+});
 
 // --- 核心全局变量 (非响应式，为了性能) ---
 // 这些变量用于 3D 渲染循环，不需要 Vue 的响应式系统监听
@@ -112,8 +104,114 @@ const STATE = {
   focusIndex: -1, 
   focusTarget: null, // 当前聚焦的 Three.js Mesh 对象
   hand: { detected: false, x: 0, y: 0 },
+  mouse: { x: 0, y: 0, isDown: false, moveX: 0, moveY: 0 },
   rotation: { x: 0, y: 0 } 
 };
+
+// --- 手势控制状态 ---
+const gestureControlEnabled = ref(false);
+let isMediaPipeInitialized = false;
+let webcamStream = null;
+
+// --- 提取的按钮方法 ---
+function onCloseTree() {
+  STATE.mode = 'TREE';
+  STATE.focusTarget = null;
+}
+
+function onOpenTree() {
+  STATE.mode = 'SCATTER';
+  STATE.focusTarget = null;
+}
+
+function onGrabRandomPhoto() {
+  STATE.mode = 'FOCUS';
+  const photos = particleSystem.filter(p => p.type === 'PHOTO');
+  if (photos.length) {
+    STATE.focusTarget = photos[Math.floor(Math.random() * photos.length)].mesh;
+  }
+}
+
+// --- 手势控制切换方法 ---
+function toggleGestureControl() {
+  if (gestureControlEnabled.value) {
+    // 开启手势控制
+    if (!isMediaPipeInitialized) {
+      initMediaPipe();
+    } else {
+      // 如果已初始化但被暂停，重新启用
+      enableWebcam();
+    }
+  } else {
+    // 关闭手势控制
+    disableWebcam();
+  }
+}
+
+function enableWebcam() {
+  if (webcamStream && videoElement.value) {
+    videoElement.value.srcObject = webcamStream;
+  }
+}
+
+function disableWebcam() {
+  if (videoElement.value) {
+    videoElement.value.srcObject = null;
+  }
+  // 重置手势检测状态
+  STATE.hand.detected = false;
+}
+
+// --- 鼠标控制方法 ---
+function onMouseDown(event) {
+  STATE.mouse.isDown = true;
+  STATE.mouse.x = event.clientX;
+  STATE.mouse.y = event.clientY;
+}
+
+function onMouseMove(event) {
+  if (STATE.mouse.isDown) {
+    const moveX = event.clientX - STATE.mouse.x;
+    const moveY = event.clientY - STATE.mouse.y;
+    
+    STATE.mouse.moveX = moveX;
+    STATE.mouse.moveY = moveY;
+    
+    // 鼠标旋转控制，无论手势控制是否开启都可用
+    const sensitivity = 0.005;
+    STATE.rotation.y += moveX * sensitivity;
+    STATE.rotation.x += moveY * sensitivity;
+    
+    // 限制X轴旋转范围，避免过度旋转
+    STATE.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, STATE.rotation.x));
+    
+    STATE.mouse.x = event.clientX;
+    STATE.mouse.y = event.clientY;
+  }
+}
+
+function onMouseUp() {
+  STATE.mouse.isDown = false;
+}
+
+// --- 计算属性 --- 
+const photos = computed(() => {
+  return particleSystem.filter(p => p.type === 'PHOTO');
+});
+
+const viewState = computed(() => {
+  if (STATE.mode === 'TREE') return 'closed';
+  if (STATE.mode === 'SCATTER') return 'open';
+  return 'focus';
+});
+
+// --- 监听手势控制开关状态变化 ---
+watch(
+  () => gestureControlEnabled.value,
+  () => {
+    toggleGestureControl();
+  }
+);
 
 // --- 生命周期钩子 ---
 
@@ -124,6 +222,14 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeydown);
   // 窗口大小调整
   window.addEventListener('resize', handleResize);
+  
+  // 添加鼠标事件监听，确保鼠标控制始终可用
+  const container = document.querySelector('.grand-tree-container');
+  if (container) {
+    container.addEventListener('mousedown', onMouseDown);
+    container.addEventListener('mousemove', onMouseMove);
+  }
+  window.addEventListener('mouseup', onMouseUp);
 });
 
 onUnmounted(() => {
@@ -131,9 +237,22 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
   window.removeEventListener('resize', handleResize);
   
+  // 清理鼠标事件监听器
+  const container = document.querySelector('.grand-tree-container');
+  if (container) {
+    container.removeEventListener('mousedown', onMouseDown);
+    container.removeEventListener('mousemove', onMouseMove);
+  }
+  window.removeEventListener('mouseup', onMouseUp);
+  
   // 清理 Three.js 资源
   if (renderer) renderer.dispose();
   if (scene) scene.clear();
+  
+  // 清理摄像头资源
+  if (webcamStream) {
+    webcamStream.getTracks().forEach(track => track.stop());
+  }
 });
 
 // --- 初始化主函数 ---
@@ -148,7 +267,8 @@ async function init() {
   loadPredefinedImages(); // 加载预设图片
   setupPostProcessing();  // 设置后期处理 (辉光效果)
   
-  await initMediaPipe(); // 初始化手势识别
+  // 不再自动初始化手势识别，只在用户启用手势控制时才初始化
+  // await initMediaPipe(); // 初始化手势识别
 
   // 关闭加载动画
   isFadingOut.value = true;
@@ -618,25 +738,6 @@ function updatePhotoLayout() {
   });
 }
 
-// --- 事件处理 ---
-
-function handleImageUpload(e) {
-  const files = e.target.files;
-  if(!files.length) return;
-  
-  Array.from(files).forEach(f => {
-    if (!f.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      new THREE.TextureLoader().load(ev.target.result, (t) => {
-        t.colorSpace = THREE.SRGBColorSpace;
-        addPhotoToScene(t);
-      });
-    }
-    reader.readAsDataURL(f);
-  });
-}
-
 function handleResize() {
   if (!camera || !renderer) return;
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -654,7 +755,7 @@ function handleKeydown(e) {
 // --- MediaPipe 手势识别逻辑 ---
 
 async function initMediaPipe() {
-  if (!webcamVideo.value) return;
+  if (!videoElement.value) return;
   
   const constraints = {
     video: {
@@ -678,14 +779,15 @@ async function initMediaPipe() {
     });
 
     if (navigator.mediaDevices?.getUserMedia) {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      webcamVideo.value.srcObject = stream;
-      webcamVideo.value.addEventListener("loadeddata", predictWebcam);
-      debugText.value = "Webcam active. Show hand.";
+      webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
+      videoElement.value.srcObject = webcamStream;
+      videoElement.value.addEventListener("loadeddata", predictWebcam);
+      
+      isMediaPipeInitialized = true;
     }
   } catch(e) {
     console.warn("Webcam access error", e);
-    debugText.value = "Camera error: " + e.message;
+    
     // 隐藏摄像头UI
     const webcamWrapper = document.getElementById('webcam-wrapper');
     if(webcamWrapper) webcamWrapper.style.display = 'none';
@@ -694,17 +796,16 @@ async function initMediaPipe() {
 
 let lastVideoTime = -1;
 async function predictWebcam() {
-  if (!webcamVideo.value) return;
+  if (!videoElement.value) return;
   
-  if (webcamVideo.value.currentTime !== lastVideoTime) {
-    lastVideoTime = webcamVideo.value.currentTime;
-    if (handLandmarker) {
-      const result = handLandmarker.detectForVideo(webcamVideo.value, performance.now());
+  if (videoElement.value.currentTime !== lastVideoTime) {
+    lastVideoTime = videoElement.value.currentTime;
+    if (handLandmarker && gestureControlEnabled.value) {
+      const result = handLandmarker.detectForVideo(videoElement.value, performance.now());
       processGestures(result);
     }
   }
-  // 注意：这里由 requestAnimationFrame(animate) 统一驱动循环，或者独立驱动皆可
-  // 为了性能，我们让 animate 主循环来处理 3D，这里仅处理数据
+
   requestAnimationFrame(predictWebcam);
 }
 
@@ -712,6 +813,12 @@ async function predictWebcam() {
  * 手势解析逻辑
  */
 function processGestures(result) {
+  // 只有在手势控制启用时才处理手势
+  if (!gestureControlEnabled.value) {
+    STATE.hand.detected = false;
+    return;
+  }
+  
   if (result.landmarks && result.landmarks.length > 0) {
     STATE.hand.detected = true;
     const lm = result.landmarks[0];
@@ -741,7 +848,7 @@ function processGestures(result) {
     const extensionRatio = avgTipDist / handSize;
     const pinchRatio = pinchDist / handSize;
 
-    debugText.value = `Size: ${handSize.toFixed(2)} | Ext: ${extensionRatio.toFixed(2)} | Pinch: ${pinchRatio.toFixed(2)} | Mode: ${STATE.mode}`;
+   
 
     // 4. 模式切换逻辑
     if (extensionRatio < 1.5) {
@@ -762,7 +869,7 @@ function processGestures(result) {
     }
   } else {
     STATE.hand.detected = false;
-    debugText.value = "No hand detected";
+    
   }
 }
 
@@ -771,8 +878,8 @@ function animate() {
   animationFrameId = requestAnimationFrame(animate);
   const dt = clock.getDelta();
 
-  // 旋转逻辑：根据手势位置或自动旋转
-  if (STATE.mode === 'SCATTER' && STATE.hand.detected) {
+  // 旋转逻辑：手势控制优先，但鼠标控制始终可用
+  if (gestureControlEnabled.value && STATE.mode === 'SCATTER' && STATE.hand.detected) {
     const targetRotY = STATE.hand.x * Math.PI * 0.9;
     const targetRotX = STATE.hand.y * Math.PI * 0.25;
     STATE.rotation.y += (targetRotY - STATE.rotation.y) * 3.0 * dt;
@@ -785,6 +892,8 @@ function animate() {
       STATE.rotation.y += 0.1 * dt;
     }
   }
+  
+  // 鼠标控制始终可用，鼠标拖动时会直接修改STATE.rotation
 
   mainGroup.rotation.y = STATE.rotation.y;
   mainGroup.rotation.x = STATE.rotation.x;
@@ -812,6 +921,69 @@ function animate() {
   font-family: 'Times New Roman', serif;
 }
 
+/* 手势控制开关样式 */
+.gesture-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #444;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #4CAF50;
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 1px #4CAF50;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+.toggle-label {
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
 #canvas-container {
   width: 100%;
   height: 100%;
@@ -824,11 +996,11 @@ function animate() {
 /* UI Overlay */
 #ui-layer {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 10; pointer-events: none;
-  display: flex; flex-direction: column; 
-  align-items: center;
-  padding-top: 40px;
+  top: 20px; left: 20px;
+  z-index: 10; pointer-events: auto;
+  display: flex; flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
   box-sizing: border-box;
   transition: opacity 0.5s ease;
 }
@@ -889,6 +1061,35 @@ h1 {
 
 .btn-group {
   display: flex; gap: 10px;
+}
+
+/* 按钮点击效果 */
+.el-button {
+  transition: all 0.2s ease;
+  transform-origin: center;
+}
+
+.el-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3) !important;
+}
+
+.el-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5) !important;
+  opacity: 0.9;
+}
+
+/* 抓取按钮特殊样式 */
+.grab-btn {
+  font-weight: bold !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.grab-btn:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 15px rgba(146, 43, 33, 0.4) !important;
 }
 
 .upload-btn {
@@ -953,5 +1154,24 @@ input[type="file"] { display: none; }
   background: rgba(0,0,0,0.5);
   padding: 2px 5px;
   pointer-events: none;
+}
+/* Webcam display in control panel */
+.webcam-display {
+  width: 200px;
+  height: 150px;
+  border-radius: 6px;
+  border: 2px solid rgba(212, 175, 55, 0.5);
+  margin-bottom: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Panel section styling */
+.panel-section {
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
 }
 </style>
