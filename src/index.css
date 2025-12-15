@@ -16,8 +16,7 @@ code {
 
 /* 保留应用特定的样式，但使用Element Plus的颜色变量 */
 .player-row {
-  margin-bottom: 8px;
-  padding: 8px;
+  
   background-color: var(--el-bg-color-light);
   border-radius: 4px;
   display: flex;

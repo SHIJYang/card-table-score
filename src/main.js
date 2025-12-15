@@ -32,8 +32,8 @@ app.use(ElementPlus)
 app.use(router)
 app.use(i18n)
 
-// 在文件末尾、挂载应用前添加
-import './assets/custom-element-theme.css'
+
+
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   // 仅在生产环境注册（避免本地开发干扰）
   window.addEventListener('load', () => {

@@ -5,17 +5,13 @@
         <el-card class="game-card">
           <template #header>
             <div class="card-header">
-              <h2>⚫⚪ 五子棋游戏</h2>
+              <h2>⚫⚪ 五子棋大作战</h2>
               <div class="game-controls">
-                <el-button type="primary" @click="startNewGame"
-                  >新游戏</el-button
-                >
-                <el-button type="warning" @click="resetGame"
-                  >重新开始</el-button
-                >
-                <span class="current-player" :class="currentPlayer">
-                  当前回合: {{ currentPlayer === "black" ? "黑子" : "白子" }}
-                </span>
+                <el-button type="primary" @click="startNewGame" size="large" class="cartoon-btn">新游戏</el-button>
+                <el-button type="warning" @click="resetGame" size="large" class="cartoon-btn">重置</el-button>
+                <div class="status-badge" :class="currentPlayer">
+                  当前: {{ currentPlayer === "black" ? "黑方" : "白方" }}
+                </div>
                 <span class="game-status">{{ gameStatus }}</span>
               </div>
             </div>
@@ -24,7 +20,6 @@
           <div class="game-container">
             <div class="game-board-container">
               <div class="game-board" ref="gameBoard">
-                <!-- 棋盘网格 -->
                 <div class="board-grid">
                   <div v-for="row in 15" :key="row" class="board-row">
                     <div
@@ -55,14 +50,16 @@
             </div>
 
             <div class="game-info">
-              <el-alert title="游戏规则" type="info" :closable="false">
-                <p>黑白双方轮流在棋盘上放置棋子</p>
-                <p>先在横、竖、斜方向连成五子者获胜</p>
-                <p>黑子先行，点击棋盘交叉点放置棋子</p>
+              <el-alert title="游戏规则" type="info" :closable="false" class="cartoon-alert">
+                <template #default>
+                  <p>1. 黑白轮流落子</p>
+                  <p>2. 五子连线获胜</p>
+                  <p>3. 黑方先行</p>
+                </template>
               </el-alert>
 
               <div class="move-history">
-                <h4>落子记录</h4>
+                <h4>📜 落子记录</h4>
                 <div class="history-list">
                   <div
                     v-for="(move, index) in moveHistory"
@@ -70,32 +67,27 @@
                     class="history-item"
                     :class="move.player"
                   >
-                    <span
-                      >第{{ index + 1 }}手:
-                      {{ move.player === "black" ? "黑子" : "白子" }}</span
-                    >
-                    <span
-                      >({{ String.fromCharCode(65 + move.col)
-                      }}{{ move.row + 1 }})</span
-                    >
+                    <span class="step-num">#{{ index + 1 }}</span>
+                    <span>{{ move.player === "black" ? "黑" : "白" }}</span>
+                    <span class="coord">({{ String.fromCharCode(65 + move.col) }}{{ move.row + 1 }})</span>
                   </div>
                 </div>
               </div>
 
               <div class="game-stats">
-                <h4>游戏统计</h4>
+                <h4>📊 统计</h4>
                 <div class="stats-grid">
                   <div class="stat-item">
-                    <span class="label">总步数:</span>
+                    <span class="label">步数</span>
                     <span class="value">{{ moveHistory.length }}</span>
                   </div>
                   <div class="stat-item">
-                    <span class="label">黑子:</span>
-                    <span class="value">{{ blackStones }}</span>
+                    <span class="label">黑子</span>
+                    <span class="value black-count">{{ blackStones }}</span>
                   </div>
                   <div class="stat-item">
-                    <span class="label">白子:</span>
-                    <span class="value">{{ whiteStones }}</span>
+                    <span class="label">白子</span>
+                    <span class="value white-count">{{ whiteStones }}</span>
                   </div>
                 </div>
               </div>
@@ -127,9 +119,9 @@ const lastMove = ref(null);
 // 计算属性
 const gameStatus = computed(() => {
   if (gameOver.value) {
-    return winner.value === "black" ? "黑方获胜！" : "白方获胜！";
+    return winner.value === "black" ? "🏆 黑方获胜！" : "🏆 白方获胜！";
   }
-  return "游戏中";
+  return "⚔️ 激战中";
 });
 
 const blackStones = computed(() => {
@@ -143,13 +135,11 @@ const whiteStones = computed(() => {
 // 开始新游戏
 const startNewGame = () => {
   resetBoard();
-  //ElMessage.info("新游戏开始！黑子先行");
 };
 
 // 重置游戏
 const resetGame = () => {
   resetBoard();
-  //ElMessage.info("游戏已重置");
 };
 
 // 重置棋盘
@@ -265,7 +255,9 @@ onMounted(() => {
 
 .game-card {
   border-radius: var(--border-radius);
+  border: 2px solid var(--border-color);
   box-shadow: var(--box-shadow);
+  background: var(--bg-secondary);
 }
 
 .card-header {
@@ -279,6 +271,7 @@ onMounted(() => {
   margin: 0;
   color: var(--text-color);
   font-size: 24px;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
 }
 
 .game-controls {
@@ -287,29 +280,30 @@ onMounted(() => {
   gap: 16px;
 }
 
-.current-player {
+.status-badge {
   font-weight: bold;
   font-size: 16px;
-  padding: 4px 12px;
-  border-radius: 4px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0px 0px var(--border-color);
 }
 
-.current-player.black {
+.status-badge.black {
   background-color: var(--text-color);
   color: var(--bg-primary);
-  border: 1px solid var(--border-color);
 }
 
-.current-player.white {
+.status-badge.white {
   background-color: var(--bg-primary);
   color: var(--text-color);
-  border: 1px solid var(--border-color);
 }
 
 .game-status {
-  font-weight: bold;
+  font-weight: 800;
   color: var(--primary-color);
-  font-size: 16px;
+  font-size: 18px;
+  text-shadow: 1px 1px 0px var(--border-color);
 }
 
 .game-container {
@@ -324,44 +318,44 @@ onMounted(() => {
   align-items: center;
   width: 100%;
   height: 100%;
+  padding: 10px;
 }
 
 .game-board {
-  background: var(--selectBg);
-  border: 2px solid var(--text-color-secondary);
+  background: #FDCB6E; /* 亮黄色木纹感 */
+  border: 4px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 5px;
-  box-shadow: var(--box-shadow);
+  padding: 10px;
+  box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.2);
 }
 
 .board-grid {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  background-color: transparent;
 }
 
 .board-row {
   display: flex;
-  gap: 0;
 }
 
 .board-cell {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   position: relative;
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
 }
 
+/* 棋盘线 */
 .board-cell::before {
   content: "";
   position: absolute;
   top: 50%;
   left: 0;
   right: 0;
-  height: 1px;
-  background: var(--text-color-secondary);
+  height: 2px;
+  background: var(--text-color);
+  opacity: 0.6;
   transform: translateY(-50%);
 }
 
@@ -371,23 +365,16 @@ onMounted(() => {
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 1px;
-  background: var(--text-color-secondary);
+  width: 2px;
+  background: var(--text-color);
+  opacity: 0.6;
   transform: translateX(-50%);
 }
 
-.board-cell:hover {
-  background-color: var(--bg-secondary);
-  transition: background-color var(--transition-duration);
-}
-
-.board-cell.has-stone {
-  cursor: not-allowed;
-}
-
-.board-cell.last-move::before,
-.board-cell.last-move::after {
-  background: #ff0000;
+.board-cell:hover::before, 
+.board-cell:hover::after {
+    opacity: 1;
+    background: var(--primary-color);
 }
 
 .stone {
@@ -399,17 +386,45 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  box-shadow: var(--box-shadow);
-  transition: all var(--transition-duration);
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.2);
 }
 
+/* 黑子 - 像巧克力豆 */
 .black-stone {
-  background: radial-gradient(circle at 30% 30%, #666, #000);
+  background: #2d3436;
+}
+.black-stone::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 8px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    transform: rotate(-45deg);
 }
 
+/* 白子 - 像牛奶糖 */
 .white-stone {
-  background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-  border: 1px solid #999;
+  background: #ffffff;
+}
+.white-stone::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 8px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    transform: rotate(-45deg);
+}
+
+/* 最新一步的标记 */
+.board-cell.last-move .stone {
+    box-shadow: 0 0 0 3px var(--danger-color);
 }
 
 .game-info {
@@ -418,16 +433,18 @@ onMounted(() => {
   gap: 20px;
 }
 
+.cartoon-alert {
+    border: 2px solid var(--info-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+}
+
 .move-history {
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   padding: 16px;
-  border: 1px solid var(--border-color);
-}
-
-.move-history h4 {
-  margin: 0 0 12px 0;
-  color: var(--text-color);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--box-shadow);
 }
 
 .history-list {
@@ -439,31 +456,29 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 8px 12px;
-  margin: 4px 0;
-  border-radius: 4px;
+  margin: 6px 0;
+  border-radius: 8px;
   font-size: 14px;
+  font-weight: bold;
+  border: 1px solid var(--border-color);
 }
 
 .history-item.black {
-  background: rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--border-color);
+  background: #dfe6e9;
+  color: var(--text-color);
 }
 
 .history-item.white {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-color);
 }
 
 .game-stats {
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   padding: 16px;
-  border: 1px solid var(--border-color);
-}
-
-.game-stats h4 {
-  margin: 0 0 12px 0;
-  color: var(--text-color);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--box-shadow);
 }
 
 .stats-grid {
@@ -476,29 +491,38 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px;
+  padding: 10px;
   background: var(--bg-primary);
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  border: 1px solid var(--border-color);
-  transition: all var(--transition-duration);
+  border: 2px solid var(--border-color);
+  transition: transform 0.2s;
 }
 
 .stat-item:hover {
-  box-shadow: var(--box-shadow-hover);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 2px 4px 0px 0px var(--border-color);
 }
 
 .stat-item .label {
   font-size: 12px;
+  font-weight: bold;
   color: var(--text-color-secondary);
   margin-bottom: 4px;
 }
 
 .stat-item .value {
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--primary-color);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.cartoon-btn {
+    border: 2px solid var(--border-color);
+    box-shadow: 3px 3px 0px 0px var(--border-color);
+    transition: all 0.1s;
+}
+.cartoon-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px 0px var(--border-color);
 }
 
 /* 响应式设计 */
@@ -507,43 +531,13 @@ onMounted(() => {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-
-  .card-header {
-    flex-direction: column;
-    gap: 12px;
-    text-align: center;
-  }
-
-  .game-controls {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
   .board-cell {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
-
   .stone {
     width: 18px;
     height: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .board-cell {
-    min-width: 16px;
-    min-height: 16px;
-  }
-
-  .stone {
-    width: 14px;
-    height: 14px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
   }
 }
 </style>

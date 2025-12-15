@@ -3,51 +3,54 @@
     <el-container>
       <el-main class="game-container">
         <div class="game-info">
-          <h1>2048</h1>
+          <div class="title-box">2048</div>
           <div class="score-panel">
-            <div>分数: {{ score }}</div>
-            <div>最高分: {{ highScore }}</div>
-            <button @click="resetGame">重新开始</button>
-          </div>
-        </div>
-
-        <div
-          class="game-board"
-          tabindex="0"
-          ref="boardRef"
-          @touchstart="handleTouchStart"
-          @touchmove="handleTouchMove"
-          @touchend="handleTouchEnd"
-        >
-          <div class="grid-cell" v-for="(row, rowIdx) in grid" :key="rowIdx">
-            <div
-              class="cell"
-              v-for="(val, colIdx) in row"
-              :key="colIdx"
-              :class="[
-                val ? 'cell-' + val : '',
-                { 'cell-moved': movedCells.has(`${rowIdx},${colIdx}`) },
-                { 'cell-merged': mergedCells.has(`${rowIdx},${colIdx}`) },
-              ]"
-            >
-              <span class="cell-number">{{ val || "" }}</span>
+            <div class="score-box">
+                <span class="label">分数</span>
+                <span class="val">{{ score }}</span>
+            </div>
+            <div class="score-box best">
+                <span class="label">最佳</span>
+                <span class="val">{{ highScore }}</span>
             </div>
           </div>
+          <button class="restart-btn" @click="resetGame">🔄 重来</button>
+        </div>
 
-          <!-- 游戏结束遮罩 -->
-          <div class="game-over" v-if="isGameOver">
-            <p>游戏结束!</p>
-            <p>最终得分: {{ score }}</p>
-            <button @click="resetGame">再来一局</button>
-          </div>
+        <div class="game-board-outer">
+            <div
+            class="game-board"
+            tabindex="0"
+            ref="boardRef"
+            @touchstart="handleTouchStart"
+            @touchmove="handleTouchMove"
+            @touchend="handleTouchEnd"
+            >
+            <div class="grid-cell" v-for="(row, rowIdx) in grid" :key="rowIdx">
+                <div
+                class="cell"
+                v-for="(val, colIdx) in row"
+                :key="colIdx"
+                :class="[
+                    val ? 'cell-' + val : '',
+                    { 'cell-moved': movedCells.has(`${rowIdx},${colIdx}`) },
+                    { 'cell-merged': mergedCells.has(`${rowIdx},${colIdx}`) },
+                ]"
+                >
+                <span class="cell-number">{{ val || "" }}</span>
+                </div>
+            </div>
 
-          <!-- 胜利提示 -->
-          <div class="game-win" v-if="isWin && !isGameOver">
-            <p>恭喜你赢了!</p>
-            <p>当前得分: {{ score }}</p>
-            <button @click="continueGame">继续游戏</button>
-            <button @click="resetGame">再来一局</button>
-          </div>
+            <div class="overlay game-over" v-if="isGameOver">
+                <h3>😭 游戏结束!</h3>
+                <p>得分: {{ score }}</p>
+                <button class="restart-btn" @click="resetGame">再试一次</button>
+            </div>
+            <div class="overlay game-win" v-if="isWin && !isGameOver">
+                <h3>🎉 赢啦!</h3>
+                <button class="restart-btn" @click="continueGame">继续</button>
+            </div>
+            </div>
         </div>
       </el-main>
     </el-container>
@@ -492,338 +495,76 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleKeyDown);
 });
 </script>
-
 <style scoped>
 .game-container {
-  font-family: Arial, sans-serif;
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
+  max-width: 450px; margin: 0 auto; padding: 20px;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
 }
-
 .game-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  color: var(--text-color-secondary);
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 20px;
 }
+.title-box {
+    font-size: 48px; font-weight: 900; color: var(--primary-color);
+    text-shadow: 3px 3px 0 var(--border-color);
+}
+.score-panel { display: flex; gap: 10px; }
+.score-box {
+    background: var(--border-color); padding: 5px 15px; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; min-width: 60px;
+}
+.score-box .label { font-size: 10px; color: #ccc; text-transform: uppercase; }
+.score-box .val { font-size: 20px; font-weight: bold; color: white; }
+.score-box.best { background: var(--warning-color); border: 2px solid var(--border-color); }
+.score-box.best .val { color: var(--text-color); }
 
-.game-info h1 {
-  margin: 0;
-  font-size: 40px;
+.restart-btn {
+    background: var(--primary-color); color: white; border: 3px solid var(--border-color);
+    padding: 10px; border-radius: 12px; font-weight: bold; cursor: pointer;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.2);
 }
+.restart-btn:active { transform: translate(2px, 2px); box-shadow: none; }
 
-.score-panel {
-  text-align: right;
+.game-board-outer {
+    background: #bbada0; padding: 10px; border-radius: 12px;
+    border: 4px solid var(--border-color);
+    box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+    position: relative;
 }
-
-.score-panel div {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  background-color: var(--selectBg);
-  color: var(--text-color);
-  padding: 5px 10px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--border-color);
-}
-
-button {
-  background-color: var(--primary-color);
-  color: white;
-  border: 1px solid var(--border-color);
-  padding: 8px 16px;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all var(--transition-duration);
-}
-
-button:hover {
-  background-color: var(--primary-color-dark-2);
-  transform: translateY(-1px);
-  box-shadow: var(--box-shadow-hover);
-}
-
-.game-board {
-  background-color: var(--selectBg);
-  border-radius: var(--border-radius);
-  padding: 10px;
-  position: relative;
-  outline: none;
-  touch-action: manipulation;
-  border: 2px solid var(--border-color);
-}
-
-.grid-cell {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.grid-cell:last-child {
-  margin-bottom: 0;
-}
+.game-board { outline: none; }
+.grid-cell { display: flex; gap: 10px; margin-bottom: 10px; }
+.grid-cell:last-child { margin-bottom: 0; }
 
 .cell {
-  width: 80px;
-  height: 80px;
-  margin-right: 10px;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: all var(--transition-duration) ease;
-  border: 1px solid var(--border-color);
+    width: 25%; aspect-ratio: 1; background: rgba(238, 228, 218, 0.35);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: bold; color: var(--text-color);
+    position: relative; transition: all 0.1s ease-in-out;
 }
+.cell-number { z-index: 2; }
 
-.cell:last-child {
-  margin-right: 0;
+/* 糖果色方块配置 */
+.cell-2 { background: #eee4da; border: 2px solid #ccc; }
+.cell-4 { background: #ede0c8; border: 2px solid #ddd; }
+.cell-8 { background: #f2b179; color: white; border: 2px solid #e67e22; }
+.cell-16 { background: #f59563; color: white; border: 2px solid #d35400; }
+.cell-32 { background: #f67c5f; color: white; border: 2px solid #c0392b; }
+.cell-64 { background: #f65e3b; color: white; border: 2px solid #c0392b; }
+.cell-128 { background: #edcf72; font-size: 24px; box-shadow: 0 0 10px #f1c40f; }
+.cell-256 { background: #edcc61; font-size: 24px; box-shadow: 0 0 10px #f1c40f; }
+.cell-512 { background: #edc850; font-size: 24px; }
+.cell-1024 { background: #edc53f; font-size: 20px; }
+.cell-2048 { background: #edc22e; font-size: 20px; border: 2px solid gold; }
+
+.cell-moved { animation: pop 0.2s; }
+.cell-merged { animation: pop 0.2s; z-index: 5; }
+@keyframes pop { 0% { transform: scale(0.5); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+.overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.7); display: flex; flex-direction: column;
+    justify-content: center; align-items: center; z-index: 10;
+    backdrop-filter: blur(4px); border-radius: 8px;
 }
-
-/* 修复数字显示位置 */
-.cell-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 1;
-  /* 确保文字垂直居中 */
-  position: relative;
-  top: 0;
-  left: 0;
-}
-
-/* 数字方块颜色 */
-.cell-2 {
-  background-color: var(--decoration-colors-gold-light, #eee4da);
-  color: var(--text-color);
-}
-.cell-4 {
-  background-color: var(--decoration-colors-gold-medium, #ede0c8);
-  color: var(--text-color);
-}
-.cell-8 {
-  background-color: var(--decoration-colors-blue-light, #f2b179);
-  color: white;
-}
-.cell-16 {
-  background-color: var(--decoration-colors-blue-medium, #f59563);
-  color: white;
-}
-.cell-32 {
-  background-color: var(--decoration-colors-blue-dark, #f67c5f);
-  color: white;
-}
-.cell-64 {
-  background-color: var(--decoration-colors-red-light, #f65e3b);
-  color: white;
-}
-.cell-128 {
-  background-color: var(--decoration-colors-red-medium, #edcf72);
-  color: white;
-  font-size: 20px;
-}
-.cell-256 {
-  background-color: var(--primary-color, #edcc61);
-  color: white;
-  font-size: 20px;
-}
-.cell-512 {
-  background-color: var(--primary-color-light-3, #edc850);
-  color: white;
-  font-size: 20px;
-}
-.cell-1024 {
-  background-color: var(--success-color, #edc53f);
-  color: white;
-  font-size: 16px;
-}
-.cell-2048 {
-  background-color: var(--warning-color, #edc22e);
-  color: white;
-  font-size: 16px;
-}
-
-/* 动画效果 */
-.cell-moved {
-  animation: move 0.2s ease;
-}
-
-.cell-merged {
-  animation: merge 0.3s ease;
-}
-
-@keyframes move {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes merge {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* 游戏结束和胜利遮罩 */
-.game-over,
-.game-win {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: var(--border-radius);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  border: 2px solid var(--border-color);
-}
-
-.game-over p,
-.game-win p {
-  margin: 10px 0;
-  font-size: 1.5rem;
-  color: #776e65;
-  font-weight: bold;
-}
-
-.game-win {
-  background-color: rgba(103, 194, 58, 0.7);
-}
-
-/* 响应式调整 - 重点修复手机端数字显示问题 */
-@media (max-width: 420px) {
-  .game-container {
-    padding: 10px;
-  }
-
-  .cell {
-    width: calc(25% - 8px);
-    height: 0;
-    padding-bottom: calc(25% - 8px);
-    margin-right: 8px;
-    position: relative;
-  }
-
-  .cell-number {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: auto;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-
-  /* 针对不同数字大小调整字体大小 */
-  .cell-128 .cell-number,
-  .cell-256 .cell-number,
-  .cell-512 .cell-number {
-    font-size: 16px;
-  }
-
-  .cell-1024 .cell-number,
-  .cell-2048 .cell-number {
-    font-size: 14px;
-  }
-
-  /* 游戏信息区域在手机端的调整 */
-  .game-info {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-
-  .game-info h1 {
-    font-size: 32px;
-  }
-
-  .score-panel {
-    text-align: center;
-  }
-
-  .score-panel div {
-    font-size: 1rem;
-    padding: 8px 12px;
-    margin-bottom: 8px;
-  }
-
-  button {
-    padding: 10px 20px;
-    font-size: 0.9rem;
-  }
-}
-
-/* 针对小屏幕手机的额外优化 */
-@media (max-width: 360px) {
-  .game-container {
-    padding: 8px;
-  }
-
-  .cell-number {
-    font-size: 16px;
-  }
-
-  .cell-128 .cell-number,
-  .cell-256 .cell-number,
-  .cell-512 .cell-number {
-    font-size: 14px;
-  }
-
-  .cell-1024 .cell-number,
-  .cell-2048 .cell-number {
-    font-size: 12px;
-  }
-
-  .game-info h1 {
-    font-size: 28px;
-  }
-}
-
-/* 针对横屏模式的优化 */
-@media (max-height: 500px) and (orientation: landscape) {
-  .game-container {
-    padding: 10px;
-    max-width: 100%;
-  }
-
-  .game-info {
-    flex-direction: row;
-    margin-bottom: 15px;
-  }
-
-  .cell {
-    width: 60px;
-    height: 60px;
-  }
-
-  .cell-number {
-    font-size: 18px;
-  }
-}
+.overlay h3 { font-size: 40px; color: var(--text-color); margin: 0 0 20px 0; }
 </style>

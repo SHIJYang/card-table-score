@@ -5,17 +5,17 @@
         <FuzzyText
           text="404"
           :font-size="180"
-          font-weight="800"
-          :color="getComputedStyle(document.documentElement).getPropertyValue('--text-color-light')"
+          font-weight="900"
+          :color="themeColor"
           :enable-hover="true"
           :base-intensity="0.2"
           :hover-intensity="0.8"
         />
         <FuzzyText
-          text="error"
+          text="oops!"
           :font-size="80"
-          font-weight="800"
-          :color="getComputedStyle(document.documentElement).getPropertyValue('--text-color-light')"
+          font-weight="900"
+          :color="secondaryColor"
           :enable-hover="true"
           :base-intensity="0.2"
           :hover-intensity="0.8"
@@ -24,55 +24,14 @@
     </el-container>
   </div>
 </template>
-<!-- <TiltedCard
-        image-src="https://picsum.photos/800/600?random=3"
-        alt-text="Sample image"
-        caption-text="Hover to see tooltip"
-        container-height="200px"
-        container-width="200px"
-        image-height="200px"
-        image-width="200px"
-        :rotate-amplitude="19"
-        :scale-on-hover="1.1"
-        :show-mobile-warning="true"
-        :show-tooltip="true"
-        :display-overlay-content="false"
-      >
-        <template #overlay>
-          <div class="overlay-content">Your overlay content here</div>
-        </template>
-      </TiltedCard> -->
-<!-- <Squares
-        direction="diagonal"
-        :speed="0.5"
-        :squareSize="20"
-        borderColor="#999"
-        hoverFillColor="#222"
-        style="height: 100%; width: 100%"
-      /> -->
 
-<!-- <ClickSpark
-        spark-color="#0dffb7"
-        :spark-size="10"
-        :spark-radius="40"
-        :spark-count="20"
-        :duration="600"
-        easing="ease-out"
-        :extra-scale="1.2"
-        class="interactive-area"
-      ></ClickSpark> -->
-<!-- <ShinyText
-          text="Just some shiny text!"
-          :disabled="false"
-          :speed="3"
-          class-name="your-custom-class"
-        /> -->
 <script setup>
+import { computed } from 'vue';
 import FuzzyText from "../../components/gsap/FuzzyText.vue";
-import ClickSpark from "../../components/ClickSpark.vue";
-import Squares from "../../components/gsap/Squares.vue";
-import TiltedCard from "../../components/gsap/TiltedCard.vue";
-import ShinyText from "../../components/gsap/ShinyText.vue";
+
+// 获取 CSS 变量颜色
+const themeColor = computed(() => getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#FF6B6B');
+const secondaryColor = computed(() => getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#2C3E50');
 </script>
 
 <style scoped>
@@ -83,29 +42,15 @@ import ShinyText from "../../components/gsap/ShinyText.vue";
   justify-content: center;
   align-items: center;
   gap: 20px;
-  padding: 0;
   background-color: var(--bg-color);
   transition: background-color var(--transition-duration);
+  /* 增加卡通背景圆点装饰 */
+  background-image: radial-gradient(var(--border-color-extra-light) 2px, transparent 2px);
+  background-size: 30px 30px;
 }
 
-/* 响应式字体大小 */
 @media (max-width: 768px) {
-  .error404 :deep(.fuzzy-text) {
-    font-size: 120px !important;
-  }
-  
-  .error404 :deep(.fuzzy-text:nth-child(2)) {
-    font-size: 60px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .error404 :deep(.fuzzy-text) {
-    font-size: 80px !important;
-  }
-  
-  .error404 :deep(.fuzzy-text:nth-child(2)) {
-    font-size: 40px !important;
-  }
+  .error404 :deep(.fuzzy-text) { font-size: 120px !important; }
+  .error404 :deep(.fuzzy-text:nth-child(2)) { font-size: 60px !important; }
 }
 </style>

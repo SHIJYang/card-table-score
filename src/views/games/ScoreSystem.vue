@@ -10,204 +10,82 @@
                   <div class="card-header">
                     <div class="title">
                       <el-icon><Trophy /></el-icon>
-                      <span>计分板</span>
+                      <span>🏆 欢乐计分板</span>
                     </div>
                     <div class="add-player-form">
                       <el-input
                         v-model="newPlayerName"
-                        placeholder="输入玩家昵称"
+                        placeholder="新玩家名字"
                         size="small"
+                        class="cartoon-input"
                         @keyup.enter="handleAddPlayer"
-                        class="player-input"
-                      >
-                      </el-input>
-                      <el-button
-                        type="primary"
-                        @click="handleAddPlayer"
-                        class="add-btn"
-                      >
-                        新增
+                      />
+                      <el-button type="primary" @click="handleAddPlayer" class="cartoon-btn-small">
+                        + 新增
                       </el-button>
                     </div>
                   </div>
                 </template>
-                <div v-if="players.length === 0" class="empty-state">
-                  <el-empty
-                    description="暂无玩家，请添加玩家开始游戏"
-                    :image-size="120"
-                  >
-                    <el-button
-                      type="primary"
-                      @click="
-                        newPlayerName = '玩家1';
-                        handleAddPlayer();
-                      "
-                      >添加示例玩家</el-button
-                    >
-                  </el-empty>
+                
+                <el-empty v-if="players.length === 0" description="还没人来玩呢~" :image-size="120">
+                    <el-button type="primary" class="cartoon-btn" @click="newPlayerName='玩家1';handleAddPlayer()">添加示例</el-button>
+                </el-empty>
+
+                <div v-else class="players-list">
+                    <div v-for="(player, index) in players" :key="index" class="player-card">
+                        <div class="player-info">
+                            <div class="rank-num">#{{ index + 1 }}</div>
+                            <div class="name-section">
+                                <span v-if="!player.isEditing" class="name-text">{{ player.name }}</span>
+                                <el-input v-else v-model="player.editingName" size="small" class="edit-input" />
+                                <div class="edit-actions">
+                                    <el-button v-if="!player.isEditing" link @click="startEditName(player)"><el-icon><Edit /></el-icon></el-button>
+                                    <template v-else>
+                                        <el-button link type="success" @click="finishEditName(player)"><el-icon><Check /></el-icon></el-button>
+                                        <el-button link type="danger" @click="cancelEditName(player)"><el-icon><Close /></el-icon></el-button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="score-display" :class="getScoreClass(player.score)">
+                            {{ player.score }}
+                        </div>
+
+                        <div class="control-panel">
+                            <el-button class="cartoon-icon-btn minus" @click="minusScore(player)">-</el-button>
+                            <el-input-number v-model="player.scoreInput" :min="1" :max="100" size="small" :controls="false" class="step-input" />
+                            <el-button class="cartoon-icon-btn plus" @click="addScore(player)">+</el-button>
+                            <el-button type="danger" circle plain size="small" @click="removePlayer(index)" class="delete-btn"><el-icon><Delete /></el-icon></el-button>
+                        </div>
+                    </div>
                 </div>
-                <el-table
-                  v-else
-                  :data="players"
-                  :stripe="true"
-                  :border="true"
-                  class="custom-table"
-                >
-                  <el-table-column label="玩家名称" width="150">
-                    <template #default="scope">
-                      <div class="player-name" v-if="!scope.row.isEditing">
-                        <span class="player-name-text">{{
-                          scope.row.name
-                        }}</span>
-                        <div class="player-actions">
-                          <el-button
-                            type="primary"
-                            link
-                            @click="startEditName(scope.row)"
-                          >
-                            <el-icon><Edit /></el-icon>
-                          </el-button>
-                          <el-button
-                            type="danger"
-                            link
-                            @click="removePlayer(scope.$index)"
-                          >
-                            <el-icon><Delete /></el-icon>
-                          </el-button>
-                        </div>
-                      </div>
-                      <div class="player-name-edit" v-else>
-                        <el-input
-                          v-model="scope.row.editingName"
-                          size="small"
-                          @keyup.enter="finishEditName(scope.row)"
-                        />
-                        <el-button
-                          type="success"
-                          link
-                          @click="finishEditName(scope.row)"
-                        >
-                          <el-icon><Check /></el-icon>
-                        </el-button>
-                        <el-button
-                          type="danger"
-                          link
-                          @click="cancelEditName(scope.row)"
-                        >
-                          <el-icon><Close /></el-icon>
-                        </el-button>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="score" label="分数" width="54">
-                    <template #default="scope">
-                      <span
-                        :class="{
-                          'score-positive': scope.row.score > 0,
-                          'score-negative': scope.row.score < 0,
-                          'score-zero': scope.row.score === 0,
-                        }"
-                      >
-                        {{ scope.row.score }}
-                      </span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作" min-width="220">
-                    <template #default="scope">
-                      <div class="button-group">
-                        <el-input
-                          v-model="scope.row.scoreInput"
-                          :min="1"
-                          :max="100"
-                          size="small"
-                          class="score-input"
-                        />
-                        <div class="score-actions">
-                          <el-button
-                            type="primary"
-                            size="small"
-                            @click="addScore(scope.row)"
-                            class="score-btn"
-                          >
-                            <el-icon><Plus /></el-icon>
-                          </el-button>
-                          <el-button
-                            type="danger"
-                            size="small"
-                            @click="minusScore(scope.row)"
-                            class="score-btn"
-                          >
-                            <el-icon><Minus /></el-icon>
-                          </el-button>
-                        </div>
-                      </div>
-                    </template>
-                  </el-table-column>
-                </el-table>
-                <div v-if="players.length > 0" class="score-summary">
+
+                <div v-if="players.length > 0" class="score-summary cartoon-box">
                   <div class="summary-item">
-                    <span class="label">总分：</span>
+                    <span class="label">🌟 总分:</span>
                     <span class="value">{{ totalScore }}</span>
                   </div>
                   <div class="summary-item">
-                    <span class="label">最高分：</span>
-                    <span class="value">{{ highestScore.score }}</span>
-                    <span class="player">({{ highestScore.name }})</span>
-                  </div>
-                  <div class="summary-item">
-                    <span class="label">最低分：</span>
-                    <span class="value">{{ lowestScore.score }}</span>
-                    <span class="player">({{ lowestScore.name }})</span>
+                    <span class="label">🥇 冠军:</span>
+                    <span class="value highlight">{{ highestScore.name }} ({{ highestScore.score }})</span>
                   </div>
                 </div>
               </el-card>
-              <el-card
-                class="history-card animate__animated animate__fadeInLeft"
-                style="margin-top: 24px"
-              >
+
+              <el-card class="history-card" style="margin-top: 24px">
                 <template #header>
-                  <div class="card-header">
-                    <div class="title">
-                      <el-icon><Timer /></el-icon>
-                      <span>历史记录</span>
+                    <div class="card-header" @click="toggleHistory" style="cursor: pointer">
+                        <div class="title"><el-icon><Timer /></el-icon> 📝 历史记录</div>
+                        <el-icon><component :is="isHistoryCollapsed ? 'ArrowDown' : 'ArrowUp'" /></el-icon>
                     </div>
-                    <div class="header-actions">
-                      <el-button type="info" text @click="handleClearHistory">
-                        清空记录
-                      </el-button>
-                      <el-button type="primary" link @click="toggleHistory">
-                        <el-icon
-                          ><component
-                            :is="isHistoryCollapsed ? 'ArrowDown' : 'ArrowUp'"
-                        /></el-icon>
-                        {{ isHistoryCollapsed ? "展开" : "收起" }}
-                      </el-button>
-                    </div>
-                  </div>
                 </template>
-                <el-collapse-transition>
-                  <div v-show="!isHistoryCollapsed">
-                    <div v-if="history.length <= 1" class="empty-state">
-                      <el-empty
-                        description="暂无历史记录"
-                        :image-size="80"
-                      ></el-empty>
+                <div v-show="!isHistoryCollapsed" class="history-content">
+                    <div v-for="(record, index) in history" :key="index" class="history-row">
+                        <span class="time">{{ record.time.split(' ')[1] }}</span>
+                        <span class="content">{{ record.content }}</span>
                     </div>
-                    <el-timeline v-else>
-                      <el-timeline-item
-                        v-for="(record, index) in history"
-                        :key="index"
-                        :type="record.type"
-                        :timestamp="record.time"
-                        :hollow="true"
-                      >
-                        <div class="timeline-content">
-                          {{ record.content }}
-                        </div>
-                      </el-timeline-item>
-                    </el-timeline>
-                  </div>
-                </el-collapse-transition>
+                </div>
               </el-card>
             </el-col>
           </el-row>
@@ -219,625 +97,128 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import {
-  Plus,
-  Minus,
-  Trophy,
-  Timer,
-  User,
-  Edit,
-  Delete,
-  Check,
-  Close,
-  ArrowUp,
-  ArrowDown,
-} from "@element-plus/icons-vue";
+import { Plus, Minus, Trophy, Timer, Edit, Delete, Check, Close, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 
-const players = ref([
-  {
-    name: "玩家1",
-    score: 0,
-    scoreInput: 10,
-    avatar: "",
-    isEditing: false,
-    editingName: "",
-  },
-  {
-    name: "玩家2",
-    score: 0,
-    scoreInput: 10,
-    avatar: "",
-    isEditing: false,
-    editingName: "",
-  },
-]);
-
-const history = ref([
-  { time: new Date().toLocaleString(), content: "游戏开始", type: "primary" },
-]);
-
-// 新玩家名称
+const players = ref([{ name: "玩家1", score: 0, scoreInput: 10, isEditing: false, editingName: "" }]);
+const history = ref([]);
 const newPlayerName = ref("");
-
-// 历史记录收起状态
 const isHistoryCollapsed = ref(false);
 
-// 切换历史记录显示状态
-const toggleHistory = () => {
-  isHistoryCollapsed.value = !isHistoryCollapsed.value;
-};
-
-// 从本地存储加载数据
+const toggleHistory = () => { isHistoryCollapsed.value = !isHistoryCollapsed.value; };
 const loadData = () => {
   try {
     const saved = localStorage.getItem("scoreData");
     if (saved) {
       const data = JSON.parse(saved);
-      if (data.players && Array.isArray(data.players)) {
-        data.players.forEach((player) => {
-          if (!player.scoreInput) {
-            player.scoreInput = 10;
-          }
-          // 确保 scoreInput 是数字类型
-          player.scoreInput = Number(player.scoreInput);
-          player.isEditing = false;
-          player.editingName = "";
-        });
-        players.value = data.players;
-      }
-
-      if (data.history && Array.isArray(data.history)) {
-        history.value = data.history;
-      }
+      if (data.players) players.value = data.players.map(p => ({...p, scoreInput: Number(p.scoreInput) || 10, isEditing: false}));
+      if (data.history) history.value = data.history;
     }
-  } catch (error) {
-    console.error("加载数据失败:", error);
-  }
+  } catch (error) {}
 };
-
-// 保存数据到本地存储
 const saveData = () => {
-  try {
-    const playersToSave = players.value.map((player) => {
-      const { isEditing, editingName, ...rest } = player;
-      return rest;
-    });
-
-    localStorage.setItem(
-      "scoreData",
-      JSON.stringify({
-        players: playersToSave,
-        history: history.value,
-      })
-    );
-  } catch (error) {
-    console.error("保存数据失败:", error);
-  }
+    localStorage.setItem("scoreData", JSON.stringify({ players: players.value.map(({isEditing, editingName, ...r}) => r), history: history.value }));
 };
 
 const handleAddPlayer = () => {
-  if (!newPlayerName.value.trim()) {
-    ElMessage.warning("玩家昵称不能为空");
-    return;
-  }
-
-  const nameExists = players.value.some(
-    (player) => player.name === newPlayerName.value
-  );
-  if (nameExists) {
-    ElMessage.warning("玩家昵称已存在");
-    return;
-  }
-
-  const newPlayer = {
-    name: newPlayerName.value,
-    score: 0,
-    scoreInput: 10, // 默认值设为10
-    avatar: "",
-    isEditing: false,
-    editingName: "",
-  };
-
-  players.value.push(newPlayer);
-  history.value.unshift({
-    time: new Date().toLocaleString(),
-    content: `新增玩家 ${newPlayer.name}`,
-    type: "info",
-  });
-
-  saveData();
-  newPlayerName.value = "";
+  if (!newPlayerName.value.trim()) return ElMessage.warning("名字不能为空哦");
+  players.value.push({ name: newPlayerName.value, score: 0, scoreInput: 10, isEditing: false, editingName: "" });
+  addHistory(`🎉 欢迎新朋友 ${newPlayerName.value}`);
+  newPlayerName.value = ""; saveData();
 };
 
-const startEditName = (player) => {
-  players.value.forEach((p) => {
-    if (p !== player && p.isEditing) {
-      p.isEditing = false;
-      p.editingName = "";
-    }
-  });
+const addScore = (p) => { p.score += p.scoreInput; addHistory(`${p.name} 加了 ${p.scoreInput} 分! 🚀`); saveData(); };
+const minusScore = (p) => { p.score -= p.scoreInput; addHistory(`${p.name} 扣了 ${p.scoreInput} 分... 😢`); saveData(); };
+const startEditName = (p) => { p.editingName = p.name; p.isEditing = true; };
+const finishEditName = (p) => { if(p.editingName) { p.name = p.editingName; p.isEditing = false; saveData(); } };
+const cancelEditName = (p) => { p.isEditing = false; };
+const removePlayer = (i) => { players.value.splice(i, 1); saveData(); };
+const addHistory = (content) => history.value.unshift({ time: new Date().toLocaleString(), content });
 
-  player.editingName = player.name;
-  player.isEditing = true;
-};
+const totalScore = computed(() => players.value.reduce((t, p) => t + p.score, 0));
+const highestScore = computed(() => players.value.reduce((h, p) => p.score > h.score ? p : h, players.value[0] || {name:'-', score:0}));
+const getScoreClass = (s) => s > 0 ? 'pos' : s < 0 ? 'neg' : 'zero';
 
-const finishEditName = (player) => {
-  if (!player.editingName.trim()) {
-    ElMessage.warning("玩家昵称不能为空");
-    return;
-  }
-
-  const nameExists = players.value.some(
-    (p) => p !== player && p.name === player.editingName
-  );
-
-  if (nameExists) {
-    ElMessage.warning("玩家昵称已存在");
-    return;
-  }
-
-  const oldName = player.name;
-  player.name = player.editingName;
-  player.isEditing = false;
-
-  if (oldName !== player.name) {
-    history.value.unshift({
-      time: new Date().toLocaleString(),
-      content: `玩家 ${oldName} 改名为 ${player.name}`,
-      type: "info",
-    });
-    saveData();
-  }
-};
-
-const cancelEditName = (player) => {
-  player.isEditing = false;
-  player.editingName = "";
-};
-
-const removePlayer = (index) => {
-  ElMessageBox.confirm(
-    `确定要删除玩家 ${players.value[index].name} 吗？`,
-    "提示",
-    {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      type: "warning",
-    }
-  )
-    .then(() => {
-      const removedPlayer = players.value[index];
-      players.value.splice(index, 1);
-
-      history.value.unshift({
-        time: new Date().toLocaleString(),
-        content: `删除玩家 ${removedPlayer.name}`,
-        type: "warning",
-      });
-
-      saveData();
-      ElMessage({
-        type: "success",
-        message: "删除成功",
-      });
-    })
-    .catch(() => {
-      // 取消删除
-    });
-};
-
-const resetGame = () => {
-  ElMessageBox.confirm("确定要重置游戏吗？所有玩家分数将清零。", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(() => {
-      players.value.forEach((player) => {
-        player.score = 0;
-      });
-
-      history.value = [
-        {
-          time: new Date().toLocaleString(),
-          content: "游戏重置",
-          type: "warning",
-        },
-      ];
-
-      saveData();
-      ElMessage({
-        type: "success",
-        message: "游戏已重置",
-      });
-    })
-    .catch(() => {
-      // 取消重置
-    });
-};
-
-const handleClearHistory = () => {
-  ElMessageBox.confirm("确定要清空历史记录吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(() => {
-      history.value = [
-        {
-          time: new Date().toLocaleString(),
-          content: "历史记录已清空",
-          type: "info",
-        },
-      ];
-      saveData();
-      ElMessage({
-        type: "success",
-        message: "历史记录已清空",
-      });
-    })
-    .catch(() => {
-      // 取消清空
-    });
-};
-
-// 组件挂载时加载数据
 onMounted(loadData);
-
-const addScore = (player) => {
-  // 确保 scoreInput 是有效的数字
-  let scoreToAdd = Number(player.scoreInput);
-  if (isNaN(scoreToAdd) || scoreToAdd <= 0) {
-    scoreToAdd = 10; // 如果无效，使用默认值
-    player.scoreInput = 10;
-  }
-
-  player.score += scoreToAdd;
-  history.value.unshift({
-    time: new Date().toLocaleString(),
-    content: `${player.name} 加分 ${scoreToAdd}`,
-    type: "success",
-  });
-  saveData();
-};
-
-const minusScore = (player) => {
-  // 确保 scoreInput 是有效的数字
-  let scoreToMinus = Number(player.scoreInput);
-  if (isNaN(scoreToMinus) || scoreToMinus <= 0) {
-    scoreToMinus = 10; // 如果无效，使用默认值
-    player.scoreInput = 10;
-  }
-
-  player.score -= scoreToMinus;
-  history.value.unshift({
-    time: new Date().toLocaleString(),
-    content: `${player.name} 减分 ${scoreToMinus}`,
-    type: "danger",
-  });
-  saveData();
-};
-
-// 计算属性
-const totalScore = computed(() => {
-  if (players.value.length === 0) return 0;
-  return players.value.reduce((total, player) => total + player.score, 0);
-});
-
-const highestScore = computed(() => {
-  if (players.value.length === 0) return { name: "无", score: 0 };
-  return players.value.reduce(
-    (highest, player) => {
-      if (player.score > highest.score) {
-        return { name: player.name, score: player.score };
-      }
-      return highest;
-    },
-    { name: players.value[0].name, score: players.value[0].score }
-  );
-});
-
-const lowestScore = computed(() => {
-  if (players.value.length === 0) return { name: "无", score: 0 };
-  return players.value.reduce(
-    (lowest, player) => {
-      if (player.score < lowest.score) {
-        return { name: player.name, score: player.score };
-      }
-      return lowest;
-    },
-    { name: players.value[0].name, score: players.value[0].score }
-  );
-});
 </script>
+
 <style scoped>
-.score-system {
-  width: 100%;
-}
-
-.main-card,
-.history-card {
+.score-system { width: 100%; max-width: 800px; margin: 0 auto; }
+.main-card, .history-card {
+  border: 4px solid var(--border-color);
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  transition: all var(--transition-duration) ease;
-  overflow: hidden;
-  border: none;
+  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.1);
+  background: var(--bg-secondary);
+  overflow: visible;
 }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.title { font-size: 1.2rem; font-weight: 900; color: var(--text-color); display: flex; align-items: center; gap: 8px; }
 
-.main-card:hover,
-.history-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--box-shadow-hover);
+.add-player-form { display: flex; gap: 8px; }
+.cartoon-input :deep(.el-input__wrapper) {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: none;
 }
+.cartoon-btn-small {
+    border: 2px solid var(--border-color);
+    font-weight: bold;
+    box-shadow: 2px 2px 0 0 rgba(0,0,0,0.2);
+}
+.cartoon-btn-small:active { transform: translate(1px, 1px); box-shadow: none; }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.players-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.player-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    transition: transform 0.2s;
 }
+.player-card:hover { transform: scale(1.01); }
 
-.card-header .title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
+.player-info { display: flex; align-items: center; gap: 10px; flex: 1; }
+.rank-num {
+    width: 24px; height: 24px; background: var(--border-color); color: white;
+    border-radius: 50%; text-align: center; line-height: 24px; font-weight: bold; font-size: 12px;
+}
+.name-text { font-weight: bold; font-size: 1.1rem; }
 
-  color: var(--text-color);
+.score-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem; font-weight: 900;
+    width: 80px; text-align: center;
 }
+.score-display.pos { color: var(--success-color); }
+.score-display.neg { color: var(--danger-color); }
+.score-display.zero { color: var(--text-color-light); }
 
-.card-header .title .el-icon {
-  font-size: 18px;
-  color: var(--primary-color);
+.control-panel { display: flex; align-items: center; gap: 8px; }
+.cartoon-icon-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-color);
+    font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.1s;
 }
-.card-header .title span {
-  min-width: 50px;
-}
-.add-player-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.player-input {
-  width: 120px;
-  height: 100%;
-  transition: all var(--transition-duration) ease;
-}
-
-.player-input:focus {
-  width: 180px;
-}
-
-.add-btn {
-  transition: all 0.3s ease;
-}
-
-.add-btn:hover {
-  transform: scale(1.05);
-}
-
-.player-name {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  min-width: 80px;
-  transition: all var(--transition-duration);
-}
-
-.player-name-text {
-  flex: 1;
-  min-width: 40px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.player-actions {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity var(--transition-duration);
-}
-
-.player-name:hover .player-actions {
-  opacity: 1;
-}
-
-.player-actions .el-button:hover {
-  transform: scale(1.1);
-}
-
-.player-name-edit {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.custom-table {
-  margin-top: 6px;
-  border-radius: var(--border-radius);
-  overflow: hidden;
-}
-
-.el-table th {
-  background-color: #f5f7fa !important;
-  font-weight: 500;
-  color: var(--text-color);
-}
-
-.el-table--striped .el-table__body tr.el-table__row--striped td {
-  background-color: #fafafa;
-}
-
-.el-table td,
-.el-table th {
-  padding: 12px 0;
-}
-
-.button-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: nowrap;
-  min-width: 240px;
-  transition: all var(--transition-duration);
-}
-
-.score-input {
-  width: 70px;
-  flex-shrink: 0;
-}
-
-.score-actions {
-  display: flex;
-
-  flex-shrink: 0;
-}
-
-.score-btn {
-  padding: 6px 8px;
-  min-width: 20px;
-  font-size: 13px;
-  transition: all var(--transition-duration);
-}
-
-.score-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--box-shadow-hover);
-}
-
-.score-positive {
-  color: var(--success-color);
-  font-weight: 500;
-}
-
-.score-negative {
-  color: var(--danger-color);
-  font-weight: 500;
-}
-
-.score-zero {
-  color: var(--info-color);
-  font-weight: 500;
-}
-
-.timeline-content {
-  font-size: 14px;
-  color: var(--text-color-secondary);
-  padding: 8px 12px;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  border: 1px solid var(--border-color);
-}
-
-.el-timeline-item {
-  padding-bottom: 20px;
-  transition: all var(--transition-duration);
-}
-
-.el-timeline-item__timestamp {
-  font-size: 12px;
-  color: var(--text-color-light);
-}
-
-.empty-state {
-  padding: 40px 0;
-  text-align: center;
-}
+.cartoon-icon-btn:active { transform: scale(0.9); }
+.cartoon-icon-btn.plus { background: var(--success-color); color: white; }
+.cartoon-icon-btn.minus { background: var(--warning-color); color: var(--text-color); }
+.step-input { width: 50px; }
+.delete-btn { margin-left: 10px; }
 
 .score-summary {
-  padding: 16px;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  border: 1px solid var(--border-color);
+    margin-top: 20px; padding: 15px;
+    background: var(--selectBg);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    display: flex; gap: 20px; justify-content: center;
 }
+.summary-item { font-size: 1.1rem; }
+.highlight { font-weight: 900; color: var(--primary-color); }
 
-.summary-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.history-row {
+    padding: 8px 0; border-bottom: 1px solid var(--border-color-extra-light);
+    display: flex; gap: 10px; font-size: 0.9rem;
 }
-
-.summary-item .label {
-  font-weight: 500;
-  color: var(--text-color);
-}
-
-.summary-item .value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.summary-item .player {
-  font-size: 14px;
-  color: var(--text-color-secondary);
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .el-row {
-    flex-direction: column;
-  }
-
-  .el-col {
-    width: 100% !important;
-    margin-bottom: 16px;
-  }
-
-  .el-table {
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .history-card {
-    margin-top: 16px;
-  }
-
-  .button-group {
-    min-width: 220px;
-    gap: 4px;
-  }
-
-  .score-input {
-    width: 60px;
-  }
-
-  .score-btn {
-    padding: 4px 6px;
-    min-width: 3%;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .button-group {
-    min-width: 200px;
-    gap: 2px;
-  }
-
-  .score-input {
-    width: 50px;
-  }
-
-  .score-btn {
-    padding: 4px;
-    min-width: 30px;
-    font-size: 12px;
-  }
-}
+.history-row .time { color: var(--text-color-secondary); font-family: monospace; }
 </style>

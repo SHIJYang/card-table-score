@@ -38,7 +38,7 @@
           <span>{{ t('nav.our') }}</span>
         </template>
         <el-menu-item index="/our/tree">{{ t('nav.christmasTree') }}</el-menu-item>
-        <el-menu-item index="/our/tree1">{{ t('nav.christmasTree') }}</el-menu-item>
+        
       </el-sub-menu>
       
       <!-- 设置菜单 -->

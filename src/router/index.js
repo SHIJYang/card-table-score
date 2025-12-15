@@ -63,11 +63,6 @@ const routes = [
         component: () => import('../views/our/tree.vue')
     },
     {
-        path: '/our/tree1',
-        name: 'Tree1',
-        component: () => import('../views/our/tree1.vue')
-    },
-    {
         path: '/sets/picture',
         name: 'picture',
         component: () => import('../views/sets/picture.vue')
