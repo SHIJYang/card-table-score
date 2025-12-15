@@ -377,10 +377,10 @@ onUnmounted(() => stopFastAction());
 .setup-card {
   background-color: var(--bg-secondary);
   border: 4px solid var(--border-color);
-  box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.2);
+  
   border-radius: var(--border-radius);
   padding: 40px;
-  width: 100%;
+  
   max-width: 500px;
   margin: 100px auto;
 }
@@ -396,7 +396,7 @@ onUnmounted(() => stopFastAction());
   border-radius: var(--border-radius);
   padding: 15px;
   margin-bottom: 20px;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.1);
+  
 }
 .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .status-item {
@@ -425,7 +425,6 @@ onUnmounted(() => stopFastAction());
   padding: 15px;
   position: relative;
   transition: transform 0.2s;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.1);
 }
 .item-card:hover { transform: translateY(-5px); box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.15); }
 
@@ -454,13 +453,13 @@ onUnmounted(() => stopFastAction());
 .action-buttons { display: flex; gap: 10px; }
 .cartoon-btn, .cartoon-btn-small {
   border: 2px solid var(--border-color) !important;
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.8) !important;
+ 
   font-weight: bold !important;
   transition: all 0.1s;
 }
 .cartoon-btn:active, .cartoon-btn-small:active {
   transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.8) !important;
+  
 }
 .buy-btn { flex: 1; background-color: var(--success-color) !important; color: white !important; }
 .sell-btn { flex: 1; background-color: var(--danger-color) !important; color: white !important; }
@@ -492,7 +491,7 @@ onUnmounted(() => stopFastAction());
 
 .alert-message {
     border: 3px solid var(--border-color);
-    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.5);
+ 
     position: fixed; top: 20px; right: 20px; z-index: 999;
 }
 </style>

@@ -17,7 +17,7 @@
               <span class="icon">{{ mode.icon }}</span>
             </button>
 
-            <div class="divider-h"></div>
+            
 
             <button 
               @click="toggleCameraHandler" 
@@ -29,9 +29,11 @@
               <span class="icon spinning" v-else>⌛</span>
             </button>
 
-            <button @click="handleRefresh" :disabled="loading.images" title="重新获取相册数据">
-              <span class="icon" :class="{ spinning: loading.images }">🔄</span>
-            </button>
+            
+            <button class="active: cameraStore.isCameraOpen " @click="toggleUI" title="隐藏界面">
+              <span class="icon" v-if="!cameraStore.isLoading">👁️</span>
+        </button>
+        
           </div>
         </div>
 
@@ -51,9 +53,7 @@
           </div>
         </div>
 
-        <button class="toggle-btn top-right" @click="toggleUI" title="隐藏界面">
-          👁️
-        </button>
+        
       </div>
     </transition>
 
@@ -538,14 +538,14 @@ onBeforeUnmount(() => {
   position: absolute; inset: 0; z-index: 10; pointer-events: none;
 }
 .top-left-panel {
-  position: absolute; top: 30px; left: 30px; pointer-events: auto;
+  position: absolute; top: 10px; left: 10px; pointer-events: auto;
 }
 .glass-panel {
   background: rgba(20, 20, 20, 0.75);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px; padding: 10px;
-  display: flex; flex-direction: column; gap: 8px;
+  display: flex;  gap: 8px;
 }
 .glass-panel button {
   background: transparent; border: none; color: #ccc;
@@ -590,14 +590,14 @@ onBeforeUnmount(() => {
 }
 
 .toggle-btn {
-  position: absolute; top: 30px; right: 30px;
+  position: absolute; top: 10px; right: 10px;
   width: 40px; height: 40px; border-radius: 50%;
   background: rgba(20,20,20,0.6); border: 1px solid rgba(255,255,255,0.2);
   color: #d4af37; cursor: pointer; pointer-events: auto;
   display: flex; align-items: center; justify-content: center;
 }
 .wakeup-btn {
-  position: absolute; top: 20px; right: 20px;
+  position: absolute; top: 10px; right: 20px;
   background: rgba(0,0,0,0.8); border: 1px solid #d4af37; color: #d4af37;
   padding: 8px 16px; border-radius: 20px; cursor: pointer; z-index: 20;
 }
