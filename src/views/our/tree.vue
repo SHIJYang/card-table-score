@@ -15,16 +15,18 @@
               :title="mode.desc"
             >
               <span class="icon">{{ mode.icon }}</span>
-              </button>
+            </button>
 
             <div class="divider-h"></div>
 
             <button 
-              @click="toggleCamera" 
-              :class="{ active: enableMediaPipe }"
+              @click="toggleCameraHandler" 
+              :class="{ active: cameraStore.isCameraOpen }"
+              :disabled="cameraStore.isLoading"
               title="开启摄像头进行手势互动"
             >
-              <span class="icon">📷</span>
+              <span class="icon" v-if="!cameraStore.isLoading">📷</span>
+              <span class="icon spinning" v-else>⌛</span>
             </button>
 
             <button @click="handleRefresh" :disabled="loading.images" title="重新获取相册数据">
@@ -33,18 +35,18 @@
           </div>
         </div>
 
-        <div v-show="enableMediaPipe" class="camera-widget" :class="{ active: isHandDetected }">
+        <div v-show="cameraStore.isCameraOpen" class="camera-widget" :class="{ active: cameraStore.isHandDetected }">
           <video ref="videoRef" autoplay playsinline muted></video>
           
           <div class="overlay-feedback">
-            <svg v-if="gestureState.progress > 0" class="progress-ring" width="40" height="40">
+            <svg v-if="cameraStore.gesture.progress > 0" class="progress-ring" width="40" height="40">
                <circle class="progress-ring__circle" stroke="white" stroke-width="3" fill="transparent" r="16" cx="20" cy="20"
                  :style="{ strokeDashoffset: strokeDashoffset }" />
             </svg>
             
             <div class="status-text">
-              <span v-if="!isHandDetected" class="blink">SEARCHING</span>
-              <span v-else class="gesture-name">{{ gestureState.lastGesture }}</span>
+              <span v-if="!cameraStore.isHandDetected" class="blink">SEARCHING</span>
+              <span v-else class="gesture-name">{{ cameraStore.gesture.current }}</span>
             </div>
           </div>
         </div>
@@ -73,7 +75,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useImageStore } from '@/store'; 
+import { useImageStore,useCameraStore } from '@/store';
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -145,28 +148,21 @@ const STATE_KEYS = { TREE: 'tree', SCATTER: 'scatter', ZOOM: 'zoom' };
 const imageStore = useImageStore();
 const { imageList, loading } = storeToRefs(imageStore);
 
+// 初始化 Camera Store
+const cameraStore = useCameraStore();
+
 const canvasRef = ref(null);
 const videoRef = ref(null);
 
 const isInitLoading = ref(true);
 const uiHidden = ref(false);
 const currentState = ref(STATE_KEYS.TREE);
-const enableMediaPipe = ref(false);
-const isHandDetected = ref(false);
 const photoCount = ref(0);
 
-// 优化后的手势状态
-const gestureState = ref({
-  currentGesture: 'NONE', // 最终确认的手势
-  lastGesture: 'NONE',    // 当前帧检测到的手势
-  progress: 0,            // 0 - 100，触发进度
-  lockCounter: 0,         // 锁定计数
-});
-
-// 计算环形进度条的 stroke-dashoffset (周长 ≈ 100)
+// 计算环形进度条的 stroke-dashoffset (从 Store 获取进度)
 const strokeDashoffset = computed(() => {
-  const circumference = 2 * Math.PI * 16; // r=16
-  return circumference - (gestureState.value.progress / 100) * circumference;
+  const circumference = 2 * Math.PI * 16;
+  return circumference - (cameraStore.gesture.progress / 100) * circumference;
 });
 
 const ctx = {
@@ -180,8 +176,6 @@ const ctx = {
 let photoMeshes = []; 
 const loadedKeys = new Set();
 let zoomTargetIndex = -1;
-let handLandmarker = null;
-let lastVideoTime = -1;
 let rafId = null;
 
 const modes = computed(() => [
@@ -249,144 +243,24 @@ const triggerZoom = () => {
   });
 };
 
-const toggleCamera = () => {
-  enableMediaPipe.value = !enableMediaPipe.value;
-  if(enableMediaPipe.value) {
-    setupMediaPipe();
-  } else {
-    isHandDetected.value = false;
-    if(videoRef.value && videoRef.value.srcObject) {
-      const tracks = videoRef.value.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.value.srcObject = null;
-    }
-  }
-};
-
 const toggleUI = () => uiHidden.value = !uiHidden.value;
 const handleRefresh = () => imageStore.fetchImages();
 
-// ========== 4. MediaPipe 手势逻辑 (优化版) ==========
+// ========== 4. 连接 CameraStore 逻辑 ==========
 
-const setupMediaPipe = async () => {
-  try {
-    const { FilesetResolver, HandLandmarker } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/+esm');
-    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
-    
-    handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
-        delegate: "GPU"
-      },
-      runningMode: "VIDEO",
-      numHands: 1
-    });
+const toggleCameraHandler = () => {
+  // 必须把当前的 video DOM 传给 store
+  cameraStore.toggleCamera(videoRef.value);
+};
 
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 320, height: 240, frameRate: { ideal: 30 } } 
-      });
-      if(videoRef.value) {
-        videoRef.value.srcObject = stream;
-        videoRef.value.addEventListener("loadeddata", () => {
-           predictWebcam();
-        });
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    alert("无法启动摄像头");
-    enableMediaPipe.value = false;
+// 监听 Store 发出的动作触发信号
+watch(() => cameraStore.actionTrigger, (newVal) => {
+  if (newVal && newVal.type) {
+    handleModeChange(newVal.type);
   }
-};
+});
 
-const calcDist = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
-
-const analyzeGesture = (landmarks) => {
-  const wrist = landmarks[0];
-  const thumbTip = landmarks[4];
-  const indexTip = landmarks[8];
-  
-  const tips = [landmarks[8], landmarks[12], landmarks[16], landmarks[20]]; 
-
-  // 1. 抓取 (Pinch)
-  const pinchDist = calcDist(thumbTip, indexTip);
-  if (pinchDist < 0.05) return 'GRAB';
-
-  // 2. 张开/握拳
-  let totalDist = 0;
-  tips.forEach(tip => totalDist += calcDist(tip, wrist));
-  const avgDist = totalDist / 4;
-
-  if (avgDist < 0.28) return 'FIST';
-  if (avgDist > 0.35) return 'OPEN';
-
-  return 'UNKNOWN';
-};
-
-const predictWebcam = async () => {
-  if (!videoRef.value || !enableMediaPipe.value) return;
-  rafId = requestAnimationFrame(predictWebcam);
-
-  if (videoRef.value.currentTime === lastVideoTime) return;
-  lastVideoTime = videoRef.value.currentTime;
-
-  if (handLandmarker) {
-    const startTimeMs = performance.now();
-    const results = handLandmarker.detectForVideo(videoRef.value, startTimeMs);
-
-    if (results.landmarks && results.landmarks.length > 0) {
-      isHandDetected.value = true;
-      const landmarks = results.landmarks[0];
-      const gesture = analyzeGesture(landmarks);
-      
-      gestureState.value.lastGesture = gesture;
-
-      // --- 核心优化：确认进度条逻辑 ---
-      // 如果当前手势不是 UNKNOWN 且不是当前模式的手势 (防止重复触发)
-      // 特殊情况：GRAB 随时可以触发
-      let targetMode = null;
-      if (gesture === 'FIST') targetMode = STATE_KEYS.TREE;
-      if (gesture === 'OPEN') targetMode = STATE_KEYS.SCATTER;
-      if (gesture === 'GRAB') targetMode = STATE_KEYS.ZOOM;
-
-      const isSameAsCurrent = targetMode === currentState.value && gesture !== 'GRAB';
-
-      if (targetMode && !isSameAsCurrent) {
-         // 累加进度 (速度可调)
-         gestureState.value.progress = Math.min(gestureState.value.progress + 4, 100);
-      } else {
-         // 快速衰减
-         gestureState.value.progress = Math.max(gestureState.value.progress - 10, 0);
-      }
-
-      // 触发切换
-      if (gestureState.value.progress >= 100) {
-        if (targetMode) handleModeChange(targetMode);
-        gestureState.value.progress = 0; // 重置
-      }
-
-      // --- 旋转控制 (无延迟，直接响应) ---
-      if (currentState.value === STATE_KEYS.SCATTER && gesture === 'OPEN') {
-        const wristX = landmarks[0].x; 
-        if (wristX < 0.4) {
-          ctx.controls.autoRotate = true;
-          ctx.controls.autoRotateSpeed = (0.4 - wristX) * 20.0; 
-        } else if (wristX > 0.6) {
-          ctx.controls.autoRotate = true;
-          ctx.controls.autoRotateSpeed = (0.6 - wristX) * 20.0; 
-        } else {
-          ctx.controls.autoRotateSpeed = 0;
-        }
-      }
-    } else {
-      isHandDetected.value = false;
-      gestureState.value.progress = 0;
-    }
-  }
-};
-
-// ========== 5. Three.js Scene (保持不变，省略重复代码) ==========
+// ========== 5. Three.js Scene (基本不变) ==========
 
 const initScene = () => {
   if (!canvasRef.value) return;
@@ -435,6 +309,7 @@ const initScene = () => {
   isInitLoading.value = false;
 };
 
+// ... (createDecorations, randomSpherePoint, convertToProxyUrl, addPhotoMesh, watch imageList 保持不变) ...
 const createDecorations = () => {
   const mats = {
     gold: new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.gold, metalness: 1.0, roughness: 0.1 }),
@@ -554,10 +429,19 @@ const onWindowResize = () => {
 };
 
 const animate = () => {
-  requestAnimationFrame(animate);
+  rafId = requestAnimationFrame(animate);
   
   if (ctx.rig) ctx.rig.update();
   ctx.controls.update();
+
+  // 从 Store 获取旋转控制
+  if (currentState.value === STATE_KEYS.SCATTER && cameraStore.rotationFactor !== 0) {
+    ctx.controls.autoRotate = true;
+    ctx.controls.autoRotateSpeed = cameraStore.rotationFactor * 4.0; // 放大倍率
+  } else if (currentState.value === STATE_KEYS.SCATTER && cameraStore.rotationFactor === 0) {
+     // 没有手势控制时停止自转
+     ctx.controls.autoRotateSpeed = 0;
+  }
 
   const isTree = currentState.value === STATE_KEYS.TREE;
   const isZoom = currentState.value === STATE_KEYS.ZOOM;
@@ -632,11 +516,13 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onWindowResize);
   cancelAnimationFrame(rafId);
+  cameraStore.stopCamera(); // 组件销毁时关闭摄像头
   if (ctx.renderer) ctx.renderer.dispose();
 });
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .jewel-scene {
   position: relative;
   width: 100vw; height: 100vh;
@@ -673,7 +559,6 @@ onBeforeUnmount(() => {
 .glass-panel button:disabled { opacity: 0.3; cursor: not-allowed; }
 .divider-h { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
 
-/* 优化后的摄像头小窗 */
 .camera-widget {
   position: absolute; top: 30px; right: 80px; width: 110px; height: 82px;
   border-radius: 12px; overflow: hidden;
@@ -685,7 +570,6 @@ onBeforeUnmount(() => {
 .camera-widget:hover, .camera-widget.active { opacity: 1; border-color: rgba(212, 175, 55, 0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
 .camera-widget video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.8; }
 
-/* 反馈层 */
 .overlay-feedback {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   pointer-events: none;
@@ -698,12 +582,11 @@ onBeforeUnmount(() => {
 .gesture-name { color: #d4af37; }
 .blink { animation: blink 1.5s infinite; }
 
-/* 环形进度条 */
 .progress-ring { transform: rotate(-90deg); }
 .progress-ring__circle {
   transition: stroke-dashoffset 0.1s linear;
   stroke: #d4af37;
-  stroke-dasharray: 100 100; /* 周长约100 */
+  stroke-dasharray: 100 100;
 }
 
 .toggle-btn {
