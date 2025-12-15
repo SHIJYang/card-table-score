@@ -560,7 +560,7 @@ onBeforeUnmount(() => {
 .divider-h { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
 
 .camera-widget {
-  position: absolute; top: 30px; right: 80px; width: 110px; height: 82px;
+  position: absolute; top: 10px; right: 50px; width: 110px; height: 82px;
   border-radius: 12px; overflow: hidden;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(0,0,0,0.8); pointer-events: auto; 
