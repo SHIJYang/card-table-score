@@ -10,7 +10,7 @@
                   <div class="card-header">
                     <div class="title">
                       <el-icon><Trophy /></el-icon>
-                      <span> 欢乐计分板</span>
+                      <span> 计分板</span>
                     </div>
                     <div class="add-player-form">
                       <el-input

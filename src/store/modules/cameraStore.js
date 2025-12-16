@@ -21,14 +21,17 @@ export const useCameraStore = defineStore('camera', {
     },
 
     actionTrigger: null,   
-    rotationFactor: 0,     
-
+    rotationFactor: 0,    
+    
+    // ✅ 正确：状态定义在这里 
+    gestureHistory: [],
+    
     verticalFactor: 0, // 垂直高度因子 (-1.0 ~ 1.0)
     isMagicMode: false // 是否开启高光模式
   }),
 
   actions: {
-    // --- 初始化与开关 (保持不变，略) ---
+    // --- 初始化与开关 ---
     async toggleCamera(videoElement) {
       if (this.isCameraOpen) this.stopCamera();
       else await this.startCamera(videoElement);
@@ -47,7 +50,7 @@ export const useCameraStore = defineStore('camera', {
             },
             runningMode: "VIDEO",
             numHands: 1,
-            minHandDetectionConfidence: 0.6, // 提高置信度阈值，减少误检
+            minHandDetectionConfidence: 0.6,
             minHandPresenceConfidence: 0.6,
             minTrackingConfidence: 0.6
           });
@@ -83,6 +86,9 @@ export const useCameraStore = defineStore('camera', {
       this.verticalFactor = 0; 
       this.isMagicMode = false;
       
+      // 清理历史记录
+      this.gestureHistory = [];
+
       cancelAnimationFrame(rafId);
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -90,14 +96,13 @@ export const useCameraStore = defineStore('camera', {
       }
     },
 
-    // --- 核心循环 (优化：添加节流) ---
+    // --- 核心循环 ---
     predictLoop(videoElement) {
       if (!this.isCameraOpen || !videoElement) return;
       
       rafId = requestAnimationFrame(() => this.predictLoop(videoElement));
 
       const now = performance.now();
-      // 限制检测帧率到 15-20fps 节省性能，同时足够流畅
       if (now - lastProcessTime < 50) return; 
       lastProcessTime = now;
 
@@ -114,14 +119,13 @@ export const useCameraStore = defineStore('camera', {
           // 1. 分析手势
           const rawGesture = this.analyzeGeometry(landmarks);
           
-          // 2. 状态去抖动 (防止 FIST/OPEN 快速跳变)
+          // 2. 状态去抖动
           this.updateStableGesture(rawGesture);
           
           // 3. 更新业务逻辑
           this.updateLogic(this.gesture.stable, landmarks);
           
         } else {
-          // 手移出画面时，平滑归零
           this.isHandDetected = false;
           this.gesture.current = 'NONE';
           this.gesture.progress = Math.max(0, this.gesture.progress - 10);
@@ -130,27 +134,37 @@ export const useCameraStore = defineStore('camera', {
       }
     },
 
-    // --- 增强版几何计算 (基于手指弯曲度) ---
+    // --- 防抖函数 ---
+    updateStableGesture(rawGesture) {
+      this.gestureHistory.push(rawGesture);
+      if (this.gestureHistory.length > 6) {
+        this.gestureHistory.shift();
+      }
+
+      const isStable = this.gestureHistory.length >= 4 && 
+                       this.gestureHistory.every(g => g === rawGesture);
+
+      if (isStable && rawGesture !== this.gesture.stable) {
+        this.gesture.stable = rawGesture;
+      }
+    },
+
+    // --- 几何计算 ---
     analyzeGeometry(lm) {
-      // 内部辅助函数：判断手指是否弯曲
       const isFingerBent = (base, mid, tip) => {
         const distTip = Math.hypot(lm[tip].x - lm[0].x, lm[tip].y - lm[0].y);
         const distMid = Math.hypot(lm[mid].x - lm[0].x, lm[mid].y - lm[0].y);
         return distTip < distMid; 
       };
 
-      // 内部辅助函数：判断拇指是否弯曲
       const isThumbBent = () => {
         const dist = Math.hypot(lm[4].x - lm[17].x, lm[4].y - lm[17].y);
         return dist < 0.15; 
       };
 
-      // 1. GRAB (Pinch) - 优先级最高
       const pinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
       if (pinchDist < 0.06) return 'GRAB';
 
-      // 2. 统计弯曲手指 (排除拇指)
-      // Index(8), Middle(12), Ring(16), Pinky(20)
       const indexBent = isFingerBent(5, 6, 8);
       const middleBent = isFingerBent(9, 10, 12);
       const ringBent = isFingerBent(13, 14, 16);
@@ -162,37 +176,28 @@ export const useCameraStore = defineStore('camera', {
       if (ringBent) bentCount++;
       if (pinkyBent) bentCount++;
 
-      // === 新增手势判定 ===
+      // VICTORY (✌️)
+      if (!indexBent && !middleBent && ringBent && pinkyBent) return 'VICTORY';
 
-      // VICTORY (✌️): 食指、中指伸直，无名指、小指弯曲
-      if (!indexBent && !middleBent && ringBent && pinkyBent) {
-        return 'VICTORY';
-      }
+      // POINTING (☝️)
+      if (!indexBent && middleBent && ringBent && pinkyBent) return 'POINTING';
 
-      // POINTING (☝️): 仅食指伸直，其余三指弯曲
-      if (!indexBent && middleBent && ringBent && pinkyBent) {
-        return 'POINTING';
-      }
-
-      // FIST (✊): 3根以上手指弯曲
+      // FIST (✊)
       if (bentCount >= 3) return 'FIST'; 
 
-      // OPEN (🖐️): 1根以下弯曲且拇指张开
+      // OPEN (🖐️)
       if (bentCount <= 1 && !isThumbBent()) return 'OPEN'; 
 
       return 'UNKNOWN'; 
     },
 
-    // --- 状态去抖动 (防抖) ---
-    // 只有连续 N 帧识别为同一手势，才更新 stable 状态
-    gestureHistory: [],
+    // --- 业务逻辑更新 ---
     updateLogic(gesture, landmarks) {
       let targetAction = null;
       if (gesture === 'FIST') targetAction = 'tree';
       if (gesture === 'OPEN') targetAction = 'scatter';
       if (gesture === 'GRAB') targetAction = 'zoom';
 
-      // 1. 进度条与动作触发 (保持原有逻辑)
       const isRepeat = targetAction === this.gesture.lastConfirmed && targetAction !== 'zoom';
       
       if (targetAction && !isRepeat) {
@@ -207,7 +212,7 @@ export const useCameraStore = defineStore('camera', {
         this.gesture.progress = 0; 
       }
 
-      // 2. 旋转控制 (OPEN 状态)
+      // 旋转 (OPEN)
       let targetRotation = 0;
       if (gesture === 'OPEN') {
         const wristX = landmarks[0].x; 
@@ -216,21 +221,19 @@ export const useCameraStore = defineStore('camera', {
       }
       this.rotationFactor = this.lerp(this.rotationFactor, targetRotation, 0.1);
 
-      // 3. === [新增] 垂直升降控制 (POINTING 状态) ===
+      // 升降 (POINTING)
       let targetVertical = 0;
       if (gesture === 'POINTING') {
-        const wristY = landmarks[0].y; // 0顶部, 1底部
-        // 设定死区 [0.4, 0.6]，在这个范围内不动
+        const wristY = landmarks[0].y;
         if (wristY < 0.4) {
-          targetVertical = (0.4 - wristY) * 3.0; // 向上
+          targetVertical = (0.4 - wristY) * 3.0;
         } else if (wristY > 0.6) {
-          targetVertical = -(wristY - 0.6) * 3.0; // 向下
+          targetVertical = -(wristY - 0.6) * 3.0;
         }
       }
       this.verticalFactor = this.lerp(this.verticalFactor || 0, targetVertical, 0.1);
 
-      // 4. === [新增] 魔法高光 (VICTORY 状态) ===
-      // 直接切换布尔值
+      // 魔法 (VICTORY)
       this.isMagicMode = (gesture === 'VICTORY');
     },
 
