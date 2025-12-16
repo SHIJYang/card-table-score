@@ -21,6 +21,7 @@
     "themes": {
       "light": "浅色",
       "dark": "深色",
+      "cartoon": "卡通",
       "custom": "自定义"
     },
     "selectTheme": "请选择主题",

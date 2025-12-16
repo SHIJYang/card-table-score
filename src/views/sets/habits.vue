@@ -1,21 +1,17 @@
-<!-- habits.vue -->
 <template>
   <div class="settings-page">
     <h1>{{ $t("settings.title") }}</h1>
     <el-form label-position="left" label-width="120px" class="settings-form">
-      <!-- 主题 -->
       <el-form-item :label="$t('settings.theme')">
         <el-select v-model="settingsStore.theme" @change="settingsStore.setTheme" :placeholder="$t('settings.selectTheme')">
-          <el-option v-for="themeKey in ['light', 'dark', 'custom']" :key="themeKey" :label="$t(`settings.themes.${themeKey}`)" :value="themeKey" />
+          <el-option v-for="themeKey in ['light', 'dark', 'cartoon', 'custom']" :key="themeKey" :label="$t(`settings.themes.${themeKey}`)" :value="themeKey" />
         </el-select>
       </el-form-item>
-      <!-- 语言 -->
       <el-form-item :label="$t('settings.language')">
         <el-select v-model="settingsStore.language" @change="settingsStore.setLanguage" :placeholder="$t('settings.selectLanguage')">
           <el-option v-for="langKey in ['zh-CN', 'en-US']" :key="langKey" :label="$t(`settings.languages.${langKey}`)" :value="langKey" />
         </el-select>
       </el-form-item>
-      <!-- 其他设置 -->
       <el-form-item :label="$t('settings.autoSave')">
         <el-switch v-model="settingsStore.autoSave" @change="settingsStore.setAutoSave" />
       </el-form-item>
@@ -60,22 +56,28 @@ const { t } = useI18n()
   margin: 0 auto;
   background: var(--el-bg-color-page); /* 页面背景 */
   min-height: 100vh;
-  h1{
-    
-    font-weight: bold;
-    color: var(--el-text-color-regular);
-    margin-bottom: 20px;
-  }
+  transition: background 0.3s ease; /* 添加背景过渡，切换主题更顺滑 */
 }
+
+.settings-page h1 {
+  font-weight: bold;
+  color: var(--el-text-color-regular);
+  margin-bottom: 20px;
+}
+
 .settings-form {
   margin-top: 20px;
   background: var(--el-bg-color);
   padding: 24px;
-  border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
+  
+  /* 优化：使用 CSS 变量以支持卡通主题的大圆角和阴影 */
+  border-radius: var(--borderRadius, 8px); 
+  box-shadow: var(--boxShadow, var(--el-box-shadow-light));
+  
   border: 1px solid var(--el-border-color-light);
-  transition: all 0.3s ease;
+  transition: all var(--transitionDuration, 0.3s) ease;
 }
+
 .el-form-item {
   margin-bottom: 20px;
 }
@@ -92,6 +94,8 @@ const { t } = useI18n()
 /* 输入框主题适配 */
 :deep(.el-input__wrapper) {
   --el-input-bg-color: var(--selectBg);
+  /* 优化：圆角也跟随主题变量 */
+  border-radius: var(--borderRadius, 4px);
   transition: all 0.3s ease;
 }
 
@@ -130,6 +134,8 @@ const { t } = useI18n()
 /* 按钮组件主题适配 */
 .el-button {
   transition: all 0.3s ease;
+  /* 优化：圆角跟随主题 */
+  border-radius: var(--borderRadius, 4px);
 }
 
 .el-button:hover {

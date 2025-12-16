@@ -10,7 +10,7 @@
                   <div class="card-header">
                     <div class="title">
                       <el-icon><Trophy /></el-icon>
-                      <span>🏆 欢乐计分板</span>
+                      <span> 欢乐计分板</span>
                     </div>
                     <div class="add-player-form">
                       <el-input
@@ -34,7 +34,7 @@
                 <div v-else class="players-list">
                     <div v-for="(player, index) in players" :key="index" class="player-card">
                         <div class="player-info">
-                            <div class="rank-num">#{{ index + 1 }}</div>
+                        
                             <div class="name-section">
                                 <span v-if="!player.isEditing" class="name-text">{{ player.name }}</span>
                                 <el-input v-else v-model="player.editingName" size="small" class="edit-input" />
@@ -145,9 +145,8 @@ onMounted(loadData);
 <style scoped>
 .score-system { width: 100%; max-width: 800px; margin: 0 auto; }
 .main-card, .history-card {
-  border: 4px solid var(--border-color);
+ 
   border-radius: var(--border-radius);
-  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.1);
   background: var(--bg-secondary);
   overflow: visible;
 }
@@ -163,7 +162,6 @@ onMounted(loadData);
 .cartoon-btn-small {
     border: 2px solid var(--border-color);
     font-weight: bold;
-    box-shadow: 2px 2px 0 0 rgba(0,0,0,0.2);
 }
 .cartoon-btn-small:active { transform: translate(1px, 1px); box-shadow: none; }
 
@@ -176,7 +174,7 @@ onMounted(loadData);
     border-radius: 12px;
     transition: transform 0.2s;
 }
-.player-card:hover { transform: scale(1.01); }
+
 
 .player-info { display: flex; align-items: center; gap: 10px; flex: 1; }
 .rank-num {
@@ -200,7 +198,7 @@ onMounted(loadData);
     font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: all 0.1s;
 }
-.cartoon-icon-btn:active { transform: scale(0.9); }
+
 .cartoon-icon-btn.plus { background: var(--success-color); color: white; }
 .cartoon-icon-btn.minus { background: var(--warning-color); color: var(--text-color); }
 .step-input { width: 50px; }
@@ -208,7 +206,7 @@ onMounted(loadData);
 
 .score-summary {
     margin-top: 20px; padding: 15px;
-    background: var(--selectBg);
+    background: var(--bgSecondary);
     border: 2px dashed var(--border-color);
     border-radius: 12px;
     display: flex; gap: 20px; justify-content: center;

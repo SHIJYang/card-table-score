@@ -1,99 +1,103 @@
 <template>
-  <div class="common-layout">
+  <div class="common-layout gomoku-page">
     <el-container>
-      <el-main style="padding: 0">
-        <el-card class="game-card">
-          <template #header>
-            <div class="card-header">
-              <h2>⚫⚪ 五子棋大作战</h2>
-              <div class="game-controls">
-                <el-button type="primary" @click="startNewGame" size="large" class="cartoon-btn">新游戏</el-button>
-                <el-button type="warning" @click="resetGame" size="large" class="cartoon-btn">重置</el-button>
-                <div class="status-badge" :class="currentPlayer">
-                  当前: {{ currentPlayer === "black" ? "黑方" : "白方" }}
+      <el-main style="padding: 20px;">
+        <div class="game-wrapper">
+          
+          <div class="board-section">
+            <el-card class="game-card" :body-style="{ padding: '0px' }">
+              <template #header>
+                <div class="card-header">
+                  <div class="title-box">
+                    <span class="icon">⚫⚪</span>
+                    <h2>五子棋大作战</h2>
+                  </div>
+                  <div class="mobile-status is-mobile">
+                    {{ currentPlayer === 'black' ? '黑方' : '白方' }}回合
+                  </div>
                 </div>
-                <span class="game-status">{{ gameStatus }}</span>
-              </div>
-            </div>
-          </template>
+              </template>
 
-          <div class="game-container">
-            <div class="game-board-container">
-              <div class="game-board" ref="gameBoard">
-                <div class="board-grid">
-                  <div v-for="row in 15" :key="row" class="board-row">
-                    <div
-                      v-for="col in 15"
-                      :key="col"
-                      class="board-cell"
-                      :class="{
-                        'has-stone': board[row - 1][col - 1] !== '',
-                        'last-move':
-                          lastMove &&
-                          lastMove.row === row - 1 &&
-                          lastMove.col === col - 1,
-                      }"
-                      @click="placeStone(row - 1, col - 1)"
-                    >
+              <div class="game-board-container">
+                <div class="game-board">
+                  <div class="board-grid">
+                    <div v-for="row in 15" :key="row" class="board-row">
                       <div
-                        v-if="board[row - 1][col - 1] === 'black'"
-                        class="stone black-stone"
-                      ></div>
-                      <div
-                        v-else-if="board[row - 1][col - 1] === 'white'"
-                        class="stone white-stone"
-                      ></div>
+                        v-for="col in 15"
+                        :key="col"
+                        class="board-cell"
+                        :class="{
+                          'last-move': lastMove && lastMove.row === row - 1 && lastMove.col === col - 1
+                        }"
+                        @click="placeStone(row - 1, col - 1)"
+                      >
+                        <transition name="pop">
+                          <div
+                            v-if="board[row - 1][col - 1] === 'black'"
+                            class="stone black-stone"
+                          ></div>
+                          <div
+                            v-else-if="board[row - 1][col - 1] === 'white'"
+                            class="stone white-stone"
+                          ></div>
+                        </transition>
+                        
+                        
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div class="game-info">
-              <el-alert title="游戏规则" type="info" :closable="false" class="cartoon-alert">
-                <template #default>
-                  <p>1. 黑白轮流落子</p>
-                  <p>2. 五子连线获胜</p>
-                  <p>3. 黑方先行</p>
-                </template>
-              </el-alert>
-
-              <div class="move-history">
-                <h4>📜 落子记录</h4>
-                <div class="history-list">
-                  <div
-                    v-for="(move, index) in moveHistory"
-                    :key="index"
-                    class="history-item"
-                    :class="move.player"
-                  >
-                    <span class="step-num">#{{ index + 1 }}</span>
-                    <span>{{ move.player === "black" ? "黑" : "白" }}</span>
-                    <span class="coord">({{ String.fromCharCode(65 + move.col) }}{{ move.row + 1 }})</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="game-stats">
-                <h4>📊 统计</h4>
-                <div class="stats-grid">
-                  <div class="stat-item">
-                    <span class="label">步数</span>
-                    <span class="value">{{ moveHistory.length }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="label">黑子</span>
-                    <span class="value black-count">{{ blackStones }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="label">白子</span>
-                    <span class="value white-count">{{ whiteStones }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </el-card>
           </div>
-        </el-card>
+
+          <div class="sidebar-section">
+            <el-card class="game-card info-card">
+              <div class="turn-indicator" :class="currentPlayer">
+                 <span class="turn-label">当前执子</span>
+                 <div class="turn-badge">
+                   <div class="mini-stone" :class="currentPlayer"></div>
+                   <span>{{ currentPlayer === 'black' ? '黑方' : '白方' }}</span>
+                 </div>
+              </div>
+
+              <div class="game-message" v-if="gameOver">
+                 {{ winner === 'black' ? '🏆 黑方获胜!' : '🏆 白方获胜!' }}
+              </div>
+              <div class="game-message playing" v-else>
+                 正在思考中...
+              </div>
+
+              <div class="control-group">
+                <button class="cartoon-btn primary-btn" @click="startNewGame">
+                  <el-icon><RefreshRight /></el-icon> 新游戏
+                </button>
+                <button class="cartoon-btn warning-btn" @click="undoMove" :disabled="moveHistory.length === 0 || gameOver">
+                  <el-icon><Back /></el-icon> 悔棋
+                </button>
+              </div>
+            </el-card>
+
+            <el-card class="game-card stats-card">
+              <div class="card-title">对局数据</div>
+              <div class="stats-row">
+                <div class="stat-box">
+                  <div class="stat-val">{{ moveHistory.length }}</div>
+                  <div class="stat-label">总步数</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-val black-text">{{ blackStones }}</div>
+                  <div class="stat-label">黑子</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-val white-text">{{ whiteStones }}</div>
+                  <div class="stat-label">白子</div>
+                </div>
+              </div>
+            </el-card>
+          </div>
+
+        </div>
       </el-main>
     </el-container>
   </div>
@@ -102,51 +106,23 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
+import { RefreshRight, Back } from '@element-plus/icons-vue';
 
-// 游戏状态
-const gameBoard = ref(null);
-const board = ref(
-  Array(15)
-    .fill()
-    .map(() => Array(15).fill(""))
-);
+// --- 游戏逻辑部分保持不变 ---
+const board = ref(Array(15).fill().map(() => Array(15).fill("")));
 const currentPlayer = ref("black");
 const gameOver = ref(false);
 const winner = ref("");
 const moveHistory = ref([]);
 const lastMove = ref(null);
 
-// 计算属性
-const gameStatus = computed(() => {
-  if (gameOver.value) {
-    return winner.value === "black" ? "🏆 黑方获胜！" : "🏆 白方获胜！";
-  }
-  return "⚔️ 激战中";
-});
+const blackStones = computed(() => board.value.flat().filter((cell) => cell === "black").length);
+const whiteStones = computed(() => board.value.flat().filter((cell) => cell === "white").length);
 
-const blackStones = computed(() => {
-  return board.value.flat().filter((cell) => cell === "black").length;
-});
 
-const whiteStones = computed(() => {
-  return board.value.flat().filter((cell) => cell === "white").length;
-});
 
-// 开始新游戏
 const startNewGame = () => {
-  resetBoard();
-};
-
-// 重置游戏
-const resetGame = () => {
-  resetBoard();
-};
-
-// 重置棋盘
-const resetBoard = () => {
-  board.value = Array(15)
-    .fill()
-    .map(() => Array(15).fill(""));
+  board.value = Array(15).fill().map(() => Array(15).fill(""));
   currentPlayer.value = "black";
   gameOver.value = false;
   winner.value = "";
@@ -154,185 +130,131 @@ const resetBoard = () => {
   lastMove.value = null;
 };
 
-// 放置棋子
-const placeStone = (row, col) => {
-  if (gameOver.value || board.value[row][col] !== "") {
-    return;
+const undoMove = () => {
+  if (moveHistory.value.length === 0 || gameOver.value) return;
+  const last = moveHistory.value.pop();
+  board.value[last.row][last.col] = "";
+  if (moveHistory.value.length > 0) {
+    const prev = moveHistory.value[moveHistory.value.length - 1];
+    lastMove.value = { row: prev.row, col: prev.col };
+  } else {
+    lastMove.value = null;
   }
+  currentPlayer.value = last.player;
+  gameOver.value = false;
+};
 
-  // 放置棋子
+const placeStone = (row, col) => {
+  if (gameOver.value || board.value[row][col] !== "") return;
   board.value[row][col] = currentPlayer.value;
   lastMove.value = { row, col };
-
-  // 记录历史
-  moveHistory.value.push({
-    player: currentPlayer.value,
-    row,
-    col,
-    moveNumber: moveHistory.value.length + 1,
-  });
-
-  // 检查胜负
+  moveHistory.value.push({ player: currentPlayer.value, row, col, moveNumber: moveHistory.value.length + 1 });
+  
   if (checkWin(row, col, currentPlayer.value)) {
     gameOver.value = true;
     winner.value = currentPlayer.value;
-    ElMessage.success(
-      `${currentPlayer.value === "black" ? "黑方" : "白方"}获胜！`
-    );
+    ElMessage.success(`${currentPlayer.value === "black" ? "黑方" : "白方"}获胜！`);
     return;
   }
-
-  // 切换玩家
   currentPlayer.value = currentPlayer.value === "black" ? "white" : "black";
 };
 
-// 检查是否获胜
 const checkWin = (row, col, player) => {
-  const directions = [
-    [0, 1], // 水平
-    [1, 0], // 垂直
-    [1, 1], // 右下对角线
-    [1, -1], // 左下对角线
-  ];
-
+  const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
   for (const [dx, dy] of directions) {
     let count = 1;
-
-    // 正向检查
     for (let i = 1; i <= 4; i++) {
-      const newRow = row + dx * i;
-      const newCol = col + dy * i;
-      if (
-        newRow >= 0 &&
-        newRow < 15 &&
-        newCol >= 0 &&
-        newCol < 15 &&
-        board.value[newRow][newCol] === player
-      ) {
-        count++;
-      } else {
-        break;
-      }
+      const r = row + dx * i, c = col + dy * i;
+      if (r >= 0 && r < 15 && c >= 0 && c < 15 && board.value[r][c] === player) count++; else break;
     }
-
-    // 反向检查
     for (let i = 1; i <= 4; i++) {
-      const newRow = row - dx * i;
-      const newCol = col - dy * i;
-      if (
-        newRow >= 0 &&
-        newRow < 15 &&
-        newCol >= 0 &&
-        newCol < 15 &&
-        board.value[newRow][newCol] === player
-      ) {
-        count++;
-      } else {
-        break;
-      }
+      const r = row - dx * i, c = col - dy * i;
+      if (r >= 0 && r < 15 && c >= 0 && c < 15 && board.value[r][c] === player) count++; else break;
     }
-
-    if (count >= 5) {
-      return true;
-    }
+    if (count >= 5) return true;
   }
-
   return false;
 };
 
-// 组件挂载时初始化
 onMounted(() => {
   startNewGame();
 });
 </script>
 
 <style scoped>
-.gomoku-game {
-  width: 100%;
-  max-width: 1000px;
+.gomoku-page {
+  /* PC端默认变量 */
+  --board-bg: #eccc80;
+  --board-line: #5d4037; 
+  --cell-size: 38px;  /* PC端固定大小 */
+  --stone-size: 30px; /* PC端棋子大小 */
+  --bg-color: #f5f7fa;
+  --primary-color: #409eff;
+  
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', sans-serif;
+  overflow-x: hidden; /* 防止横向滚动条 */
+}
+
+.main-container {
+  padding: 20px;
+}
+
+.game-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 30px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.game-card {
-  border-radius: var(--border-radius);
-  border: 2px solid var(--border-color);
-  box-shadow: var(--box-shadow);
-  background: var(--bg-secondary);
+/* --- 左侧棋盘 --- */
+.board-section {
+  flex: 0 0 auto;
+  z-index: 10;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0px 5px;
+  padding: 15px 20px;
+  background-color: #fff;
+  border-bottom: 2px dashed #eee;
 }
 
-.card-header h2 {
-  margin: 0;
-  color: var(--text-color);
-  font-size: 24px;
-  text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-}
-
-.game-controls {
+.title-box {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
-
-.status-badge {
-  font-weight: bold;
-  font-size: 16px;
-  padding: 6px 16px;
-  border-radius: 20px;
-  border: 2px solid var(--border-color);
-  box-shadow: 2px 2px 0px 0px var(--border-color);
-}
-
-.status-badge.black {
-  background-color: var(--text-color);
-  color: var(--bg-primary);
-}
-
-.status-badge.white {
-  background-color: var(--bg-primary);
-  color: var(--text-color);
-}
-
-.game-status {
-  font-weight: 800;
-  color: var(--primary-color);
-  font-size: 18px;
-  text-shadow: 1px 1px 0px var(--border-color);
-}
-
-.game-container {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
+.title-box h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
 }
 
 .game-board-container {
+  padding: 20px;
+  background: #fffcf5;
   display: flex;
   justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 10px;
 }
 
 .game-board {
-  background: #FDCB6E; /* 亮黄色木纹感 */
-  border: 4px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 10px;
-  box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.2);
+  background-color: var(--board-bg);
+  padding: calc(var(--cell-size) / 2); /* 动态内边距 */
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 0 20px rgba(93, 64, 55, 0.2);
 }
 
 .board-grid {
   display: flex;
   flex-direction: column;
-  background-color: transparent;
+  border-top: 2px solid var(--board-line);
+  border-left: 2px solid var(--board-line);
 }
 
 .board-row {
@@ -340,204 +262,183 @@ onMounted(() => {
 }
 
 .board-cell {
-  width: 32px;
-  height: 32px;
+  width: var(--cell-size);
+  height: var(--cell-size);
   position: relative;
   cursor: pointer;
+  border-right: 2px solid var(--board-line);
+  border-bottom: 2px solid var(--board-line);
+  box-sizing: border-box;
 }
 
-/* 棋盘线 */
-.board-cell::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--text-color);
-  opacity: 0.6;
-  transform: translateY(-50%);
-}
-
-.board-cell::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--text-color);
-  opacity: 0.6;
-  transform: translateX(-50%);
-}
-
-.board-cell:hover::before, 
-.board-cell:hover::after {
-    opacity: 1;
-    background: var(--primary-color);
-}
-
-.stone {
-  width: 26px;
-  height: 26px;
+.star-point {
+  width: 20%; /* 相对大小 */
+  height: 20%;
+  max-width: 8px;
+  max-height: 8px;
+  background-color: var(--board-line);
   border-radius: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.stone {
+  width: 85%; /* 棋子占比 */
+  height: 85%;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 居中 */
   z-index: 2;
-  border: 2px solid var(--border-color);
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.2);
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
-/* 黑子 - 像巧克力豆 */
-.black-stone {
-  background: #2d3436;
-}
-.black-stone::after {
-    content: '';
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    width: 8px;
-    height: 4px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.4);
-    transform: rotate(-45deg);
+.black-stone { background: radial-gradient(circle at 35% 35%, #666, #000); }
+.white-stone { background: radial-gradient(circle at 35% 35%, #fff, #ddd); }
+
+.last-move::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20%; height: 20%;
+  background: #f56c6c;
+  border-radius: 50%;
+  z-index: 3;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.8);
 }
 
-/* 白子 - 像牛奶糖 */
-.white-stone {
-  background: #ffffff;
-}
-.white-stone::after {
-    content: '';
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    width: 8px;
-    height: 4px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.9);
-    transform: rotate(-45deg);
-}
-
-/* 最新一步的标记 */
-.board-cell.last-move .stone {
-    box-shadow: 0 0 0 3px var(--danger-color);
-}
-
-.game-info {
+/* --- 右侧侧边栏 --- */
+.sidebar-section {
+  width: 280px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.cartoon-alert {
-    border: 2px solid var(--info-color);
-    border-radius: var(--border-radius);
-    background: var(--bg-primary);
+.game-card {
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
+
+  background: #fff;
+  overflow: hidden;
 }
 
-.move-history {
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 16px;
-  border: 2px solid var(--border-color);
-  box-shadow: var(--box-shadow);
-}
+.info-card { padding: 20px; text-align: center; }
 
-.history-list {
-  max-height: 200px;
-  overflow-y: auto;
+.turn-indicator { margin-bottom: 15px; }
+.turn-label { display: block; font-size: 0.9rem; color: #909399; margin-bottom: 8px; }
+.turn-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 1.1rem;
 }
+.mini-stone { width: 14px; height: 14px; border-radius: 50%; }
+.mini-stone.black { background: #000; border: 1px solid #666; }
+.mini-stone.white { background: #fff; border: 1px solid #ccc; }
 
-.history-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin: 6px 0;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: bold;
-  border: 1px solid var(--border-color);
-}
+.game-message { height: 24px; margin-bottom: 20px; font-weight: bold; font-size: 1rem; }
+.game-message.playing { color: #409eff; }
 
-.history-item.black {
-  background: #dfe6e9;
-  color: var(--text-color);
-}
-
-.history-item.white {
-  background: #ffffff;
-  color: var(--text-color);
-}
-
-.game-stats {
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 16px;
-  border: 2px solid var(--border-color);
-  box-shadow: var(--box-shadow);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px;
-  background: var(--bg-primary);
-  border-radius: var(--border-radius);
-  border: 2px solid var(--border-color);
-  transition: transform 0.2s;
-}
-
-.stat-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 2px 4px 0px 0px var(--border-color);
-}
-
-.stat-item .label {
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--text-color-secondary);
-  margin-bottom: 4px;
-}
-
-.stat-item .value {
-  font-size: 20px;
-  font-weight: 900;
-}
+.control-group { display: flex; flex-direction: column; gap: 12px; }
 
 .cartoon-btn {
-    border: 2px solid var(--border-color);
-    box-shadow: 3px 3px 0px 0px var(--border-color);
-    transition: all 0.1s;
+  width: 100%; padding: 12px; border: none; border-radius: 8px;
+  font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  gap: 8px; transition: all 0.1s;
 }
-.cartoon-btn:active {
-    transform: translate(2px, 2px);
-    box-shadow: 1px 1px 0px 0px var(--border-color);
-}
+.primary-btn { background-color: #409eff; color: white; box-shadow: 0 4px 0 #2b7bc7; }
+.warning-btn { background-color: #fdf6ec; color: #e6a23c; border: 1px solid #fcead2; box-shadow: 0 4px 0 #ecdac1; }
+.cartoon-btn:active { transform: translateY(4px); box-shadow: none; }
+.cartoon-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; background: #f5f7fa; color: #c0c4cc; }
 
-/* 响应式设计 */
+.stats-card { padding: 16px; }
+.stats-row { display: flex; justify-content: space-around; }
+.stat-box { text-align: center; }
+.stat-val { font-size: 1.2rem; font-weight: 800; color: #303133; }
+.stat-label { font-size: 0.75rem; color: #909399; }
+
+/* 动画 */
+.pop-enter-active { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes popIn { from { transform: translate(-50%, -50%) scale(0); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+/* 默认隐藏移动端元素 */
+.is-mobile { display: none; }
+
+/* --- 响应式核心修复 (Max Width 768px) --- */
 @media (max-width: 768px) {
-  .game-container {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  /* 1. 重新定义 CSS 变量 */
+  .gomoku-page {
+    /* (屏幕宽度 - 左右Padding总量) / 15个格子 */
+    --cell-size: calc((100vw - 32px) / 17);
   }
-  .board-cell {
-    width: 22px;
-    height: 22px;
+
+  /* 2. 布局改为纵向 */
+  .main-container { padding: 10px 0; }
+  .game-wrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
   }
-  .stone {
-    width: 18px;
-    height: 18px;
+
+  /* 3. 棋盘容器优化 */
+  .board-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
+  .board-card {
+    width: 100%;
+    border-radius: 0; /* 移动端去掉圆角，贴边 */
+    border-left: none;
+    border-right: none;
+  }
+  .game-board-container {
+    padding: 10px 5px; /* 减少外围留白 */
+  }
+
+  /* 4. 控制栏移到底部，变成横条 */
+  .sidebar-section {
+    width: 100%;
+    padding: 0 10px;
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .info-card {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* 5. 移动端特定的显隐控制 */
+  .mobile-hidden { display: none !important; }
+  .is-mobile { display: block; }
+
+  /* 6. 移动端按钮组调整为横向 */
+  .control-group {
+    flex-direction: row;
+    width: auto;
+    gap: 10px;
+  }
+  .cartoon-btn {
+    padding: 8px 16px;
+    width: auto;
+    font-size: 0.9rem;
+  }
+  .btn-text { display: none; } /* 按钮只显示图标以节省空间 */
+  
+  /* 7. 移动端头部状态 */
+  .mobile-status {
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+  .status-black { color: #333; }
+  .status-white { color: #999; }
 }
 </style>

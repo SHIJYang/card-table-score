@@ -153,11 +153,14 @@ const cameraStore = useCameraStore();
 
 const canvasRef = ref(null);
 const videoRef = ref(null);
+let bloomPassRef = null;
 
 const isInitLoading = ref(true);
 const uiHidden = ref(false);
 const currentState = ref(STATE_KEYS.TREE);
 const photoCount = ref(0);
+
+
 
 // 计算环形进度条的 stroke-dashoffset (从 Store 获取进度)
 const strokeDashoffset = computed(() => {
@@ -244,9 +247,7 @@ const triggerZoom = () => {
 };
 
 const toggleUI = () => uiHidden.value = !uiHidden.value;
-const handleRefresh = () => imageStore.fetchImages();
 
-// ========== 4. 连接 CameraStore 逻辑 ==========
 
 const toggleCameraHandler = () => {
   // 必须把当前的 video DOM 传给 store
@@ -287,7 +288,11 @@ const initScene = () => {
   ctx.rig = new CameraRig(ctx.camera, ctx.controls);
   
   const renderScene = new RenderPass(ctx.scene, ctx.camera);
+  
+  // === 修改重点：将 BloomPass 赋值给外部变量 ===
   const bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85);
+  bloomPassRef = bloomPass; // 保存引用以便在 animate 中修改
+  
   ctx.composer = new EffectComposer(ctx.renderer);
   ctx.composer.addPass(renderScene);
   ctx.composer.addPass(bloomPass);
@@ -309,7 +314,7 @@ const initScene = () => {
   isInitLoading.value = false;
 };
 
-// ... (createDecorations, randomSpherePoint, convertToProxyUrl, addPhotoMesh, watch imageList 保持不变) ...
+
 const createDecorations = () => {
   const mats = {
     gold: new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.gold, metalness: 1.0, roughness: 0.1 }),
@@ -383,7 +388,7 @@ const addPhotoMesh = (url, key) => {
     const mesh = new THREE.Mesh(geometry, material);
     const frame = new THREE.Mesh(
       new THREE.BoxGeometry(w + 0.2, h + 0.2, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3 })
+      new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.2 })
     );
     frame.position.z = -0.05;
     mesh.add(frame);
@@ -434,15 +439,40 @@ const animate = () => {
   if (ctx.rig) ctx.rig.update();
   ctx.controls.update();
 
-  // 从 Store 获取旋转控制
+  // 1. 旋转逻辑 (原有)
   if (currentState.value === STATE_KEYS.SCATTER && cameraStore.rotationFactor !== 0) {
     ctx.controls.autoRotate = true;
-    ctx.controls.autoRotateSpeed = cameraStore.rotationFactor * 4.0; // 放大倍率
+    ctx.controls.autoRotateSpeed = cameraStore.rotationFactor * 4.0;
   } else if (currentState.value === STATE_KEYS.SCATTER && cameraStore.rotationFactor === 0) {
-     // 没有手势控制时停止自转
      ctx.controls.autoRotateSpeed = 0;
   }
 
+  // 2. === [新增] 垂直升降逻辑 (对应 POINTING 手势) ===
+  // 只有在相机不处于自动飞行状态时才允许控制
+  if (!ctx.rig.isAnimating && cameraStore.verticalFactor !== 0) {
+    const currentY = ctx.camera.position.y;
+    // 速度系数 2.0 可以根据需要调整
+    const delta = cameraStore.verticalFactor * 2.0; 
+    // 限制 Y 轴高度 (-50 到 150)，防止穿模或飞太远
+    const newY = THREE.MathUtils.clamp(currentY + delta, -50, 150);
+    
+    ctx.camera.position.y = newY;
+    // 保持看向当前的目标中心
+    ctx.camera.lookAt(ctx.controls.target);
+  }
+
+  // 3. === [新增] 魔法高光逻辑 (对应 VICTORY 手势) ===
+  if (bloomPassRef) {
+    // 如果 isMagicMode 为真，目标强度设为 4.5 (爆亮)，否则回到 1.5
+    const targetStrength = cameraStore.isMagicMode ? 4.5 : 1.5;
+    const targetRadius = cameraStore.isMagicMode ? 1.0 : 0.4;
+    
+    // 使用 lerp 平滑过渡，避免闪烁
+    bloomPassRef.strength = THREE.MathUtils.lerp(bloomPassRef.strength, targetStrength, 0.1);
+    bloomPassRef.radius = THREE.MathUtils.lerp(bloomPassRef.radius, targetRadius, 0.1);
+  }
+
+  // 下面是原有的粒子/网格更新逻辑
   const isTree = currentState.value === STATE_KEYS.TREE;
   const isZoom = currentState.value === STATE_KEYS.ZOOM;
 
@@ -475,6 +505,7 @@ const animate = () => {
   updateDecorations(ctx.meshes.gem, ctx.logicData.gem);
   updateDecorations(ctx.meshes.emerald, ctx.logicData.emerald);
 
+  // 照片墙更新逻辑
   photoMeshes.forEach((mesh, idx) => {
     if (ctx.rig && ctx.rig.isAnimating && idx === zoomTargetIndex) {
       mesh.lookAt(ctx.camera.position); 

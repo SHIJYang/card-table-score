@@ -21,7 +21,8 @@
     "themes": {
       "light": "Light",
       "dark": "Dark",
-      "custom": "Custom"
+      "custom": "Custom",
+      "cartoon": "Cartoon"
     },
     "selectTheme": "Select theme",
     "language": "Language",
