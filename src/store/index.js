@@ -15,6 +15,7 @@ export { useSettingsStore } from './modules/setstore'
 export { useAppStore } from './modules/appstore'
 export { useImageStore } from './modules/picturestore'
 export { useCameraStore } from './modules/cameraStore'
+export { useCamerasStore } from './modules/cameraStore2'
 // 为了向后兼容，也可以这样导入
 // import * as stores from '@/store'
 // const userStore = stores.useUserStore()

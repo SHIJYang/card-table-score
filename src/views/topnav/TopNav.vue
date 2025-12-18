@@ -31,6 +31,7 @@
           <span>{{ t('nav.our') }}</span>
         </template>
         <el-menu-item index="/our/tree">{{ t('nav.christmasTree') }}</el-menu-item>
+        <el-menu-item index="/our/trees">{{ t('nav.christmasTree') }}2</el-menu-item>
       </el-sub-menu>
       
       <el-sub-menu index="settings" popper-class="theme-popper">
