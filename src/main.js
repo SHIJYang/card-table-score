@@ -28,14 +28,12 @@ setupMock(request)
 // 初始化主题
 initTheme()
 
-// ❌ 已移除: app.use(ElementPlus) (不再需要全量注册)
-
 // 使用其他插件
 app.use(router)
 app.use(i18n)
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  // 仅在生产环境注册（避免本地开发干扰）
+ 
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
