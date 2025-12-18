@@ -12,9 +12,10 @@
         <span class="site-title is-mobile-hidden">LOVE GAMES</span>
       </el-menu-item>
       
-      <div class="flex-grow" /> <el-sub-menu index="games" popper-class="theme-popper">
+      <div class="flex-grow" />
+      
+      <el-sub-menu index="games" popper-class="theme-popper">
         <template #title>
-        
           <span>{{ t('nav.games') }}</span>
         </template>
         <el-menu-item index="/score">{{ t('nav.score') }}</el-menu-item>
@@ -27,7 +28,6 @@
       
       <el-sub-menu index="our" popper-class="theme-popper">
         <template #title>
-        
           <span>{{ t('nav.our') }}</span>
         </template>
         <el-menu-item index="/our/tree">{{ t('nav.christmasTree') }}</el-menu-item>
@@ -36,7 +36,6 @@
       
       <el-sub-menu index="settings" popper-class="theme-popper">
         <template #title>
-         
           <span>{{ t('nav.settings') }}</span>
         </template>
         <el-menu-item index="/sets/picture">{{ t('nav.pictureSettings') }}</el-menu-item>
@@ -51,7 +50,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-
 import logo from '../../assets/love-sign.svg'
 
 const route = useRoute()
@@ -68,115 +66,139 @@ const activeIndex = computed(() => route.path || '/')
   top: 0;
   z-index: 99;
   width: 100%;
-  padding: 10px 20px;
-  box-sizing: border-box;
+  padding: 0; /* 官网风格通常贴边 */
   background-color: transparent;
+  /* 解决某些浏览器下的层级问题 */
+  transform: translateZ(0);
 }
+
+/* 覆盖 Element 默认高度 */
 .el-menu--horizontal {
-  --el-menu-horizontal-height: 60px;
+  --el-menu-horizontal-height: 55px;
+  border-bottom: none;
 }
+
 /* 菜单主体 */
 .top-menu {
-  /* 1. 默认通用设置 */
-  --el-menu-bg-color: var(--bgPrimary);
-  --el-menu-text-color: var(--text);
-  --el-menu-hover-bg-color: var(--el-color-primary-light-9);
-  --el-menu-active-color: var(--primary);
+  width: 100%;
+  padding: 0 40px; /* 内容左右留白 */
   
-  border-bottom: none !important;
-  border-radius: var(--borderRadius);
-  border: 2px solid var(--border);
-  box-shadow: var(--boxShadow);
-  padding: 0 10px;
-  transition: all var(--transitionDuration, 0.3s);
+  /* 1. 背景处理：使用半透明背景 + 模糊，营造通透感 */
+  background-color: color-mix(in srgb, var(--bgSecondary), transparent 15%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  /* 2. 边框：仅底部有一条极淡的分割线 */
+  border-bottom: 1px solid var(--borderLighter) !important;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  box-shadow: none; /* 去除阴影，保持扁平 */
+  
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
-/* 2. 针对深色主题 (Dark) 的微调 */
+/* 深色模式适配 */
 :global([data-theme="dark"]) .top-menu {
-  --el-menu-hover-bg-color: var(--bgSecondary);
-  --el-menu-active-color: var(--primary); 
+  background-color: color-mix(in srgb, var(--bgSecondary), transparent 10%);
+  border-bottom: 1px solid var(--border);
 }
 
-/* 3. 针对卡通主题 (Cartoon) 的微调 */
+/* 卡通模式适配：加粗边框，纯色背景 */
 :global([data-theme="cartoon"]) .top-menu {
-  --el-menu-hover-bg-color: var(--selectBg);
-  --el-menu-text-color: var(--text); 
+  background-color: var(--bgSecondary);
+  border-bottom: 3px solid var(--text);
+  backdrop-filter: none;
 }
 
-/* Flex 占位符 */
+/* Flex 占位 */
 .flex-grow {
   flex-grow: 1;
 }
 
 /* Logo 区域 */
 .logo-item {
-  margin-right: 0;
-  padding: 0 10px;
-  background-color: transparent !important;
+  margin-right: 20px;
+  padding: 0 !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+.logo-item:hover {
+  background: transparent !important;
 }
 
 .logo {
-  height: 40px;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  height: 30px;
+  vertical-align: middle;
 }
 
 .site-title {
   margin-left: 10px;
-  font-weight: 900;
-  font-size: 1.2rem;
+  font-weight: 700;
+  font-size: 1.1rem;
   color: var(--text);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  /* 取消之前的渐变文字，回归清晰 */
 }
 
-/* 交互动效 */
-.logo-item:hover .logo {
-  transform: scale(1.2) rotate(-5deg);
-}
+/* --- 菜单项深度样式覆盖 --- */
 
-/* 深度选择器覆盖 Element Plus 内部样式 */
+/* 1. 通用状态 */
 :deep(.el-menu-item),
 :deep(.el-sub-menu__title) {
-  border-radius: var(--borderRadius);
-  margin: 5px 2px;
-  height: 50px !important;
-  line-height: 50px !important;
-  border-bottom: none !important;
-  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text) !important;
+  padding: 0 16px !important;
+  margin: 0 4px; /* 稍微拉开一点间距 */
+ 
+  background: transparent !important;
+  transition: color 0.2s, border-color 0.2s;
+  height: 55px !important;
+  line-height: 55px !important;
+  border-radius: 0; 
 }
 
-/* 激活状态：自定义胶囊样式 */
+/* 2. 悬停状态 (Hover) - 仅文字变色 */
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  color: var(--primary) !important;
+  background-color: transparent !important;
+}
+
+/* 3. 激活状态 (Active) - 底部亮条 */
 :deep(.el-menu-item.is-active) {
-  
+  color: var(--primary) !important;
 
-  font-weight: bold;
-  transform: translateY(-2px);
-
+  font-weight: 600;
+  background-color: transparent !important;
 }
 
+/* 子菜单激活时，父级标题状态 */
 :deep(.el-sub-menu.is-active .el-sub-menu__title) {
   color: var(--primary) !important;
-  font-weight: bold;
+  border-bottom: 2px solid var(--primary) !important;
 }
 
-/* 悬停状态 */
-:deep(.el-menu-item:not(.is-active):hover),
-:deep(.el-sub-menu__title:hover) {
-  background-color: var(--el-menu-hover-bg-color) !important;
-  color: var(--primary) !important;
-}
-
-/* 响应式 */
+/* 响应式适配 */
 @media (max-width: 768px) {
-  .top-nav-wrapper {
-    padding: 0;
-  }
   .top-menu {
-    border-radius: 0;
-    border: none;
-    border-bottom: 2px solid var(--border);
+    padding: 0 16px;
   }
+  
   .site-title {
     display: none;
+  }
+  
+  /* 移动端菜单项间距缩小 */
+  :deep(.el-menu-item),
+  :deep(.el-sub-menu__title) {
+    padding: 0 10px !important;
+    margin: 0;
   }
 }
 </style>

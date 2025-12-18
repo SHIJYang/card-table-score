@@ -39,6 +39,7 @@
     "notification": "Notifications",
     "tpapi": "Picture Token API",
     "enterApiUrl": "Enter image API URL",
-    "reset": "Reset Settings"
+    "reset": "Reset Settings",
+    "mode": "mode"
   }
 }

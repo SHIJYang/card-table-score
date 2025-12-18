@@ -1,5 +1,6 @@
 {
   "nav": {
+    "2048": "2048",
     "home": "首页",
     "games": "游戏",
     "our": "我们",
@@ -8,7 +9,6 @@
     "gomoku": "五子棋",
     "shop": "商店",
     "snake": "贪吃蛇",
-    "2048": "2048",
     "try": "试玩",
     "pictureSettings": "图片设置",
     "habits": "设置",
@@ -39,6 +39,7 @@
     "notification": "通知",
     "tpapi": "图片 Token API",
     "enterApiUrl": "请输入图片API地址",
-    "reset": "重置设置"
+    "reset": "重置设置",
+    "mode": "显示模式"
   }
 }

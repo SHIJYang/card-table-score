@@ -2,6 +2,9 @@
   <div class="settings-page">
     <h1>{{ $t("settings.title") }}</h1>
     <el-form label-position="left" label-width="120px" class="settings-form">
+      <el-form-item :label="$t('settings.mode') || '显示模式'">
+         <ThemeSwitch v-model="settingsStore.theme" />
+      </el-form-item>
       <el-form-item :label="$t('settings.theme')">
         <el-select v-model="settingsStore.theme" @change="settingsStore.setTheme" :placeholder="$t('settings.selectTheme')">
           <el-option v-for="themeKey in ['light', 'dark', 'cartoon', 'custom']" :key="themeKey" :label="$t(`settings.themes.${themeKey}`)" :value="themeKey" />
@@ -46,6 +49,7 @@
 import { useSettingsStore } from '@/store'
 import { useI18n } from 'vue-i18n'
 const settingsStore = useSettingsStore()
+import ThemeSwitch from '@/components/ThemeSwitch.vue' 
 const { t } = useI18n()
 </script>
 
@@ -54,96 +58,125 @@ const { t } = useI18n()
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
-  background: var(--el-bg-color-page); /* 页面背景 */
+  /* Use theme background */
+  background: var(--bgPrimary-color); 
   min-height: 100vh;
-  transition: background 0.3s ease; /* 添加背景过渡，切换主题更顺滑 */
+  transition: background 0.3s ease;
 }
 
 .settings-page h1 {
   font-weight: bold;
-  color: var(--el-text-color-regular);
+  /* Use header gradient for title text */
+  background: var(--headerBg);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--text-color);
+  text-shadow: 0 0 0 var(--text-color); 
+  
   margin-bottom: 20px;
+  font-size: 2rem;
+}
+
+/* Fix for transparent text in Safari/Chrome if text-shadow is active */
+@supports (-webkit-background-clip: text) {
+  .settings-page h1 {
+    text-shadow: none;
+    
+  }
 }
 
 .settings-form {
   margin-top: 20px;
-  background: var(--el-bg-color);
+  /* Secondary background for the card */
+  background: var(--bgSecondary-color);
   padding: 24px;
   
-  /* 优化：使用 CSS 变量以支持卡通主题的大圆角和阴影 */
-  border-radius: var(--borderRadius, 8px); 
-  box-shadow: var(--boxShadow, var(--el-box-shadow-light));
+  border-radius: var(--borderRadius); 
+  box-shadow: var(--boxShadow);
+  border: 1px solid var(--border-color);
   
-  border: 1px solid var(--el-border-color-light);
-  transition: all var(--transitionDuration, 0.3s) ease;
+  transition: all var(--transitionDuration) ease;
+}
+
+.settings-form:hover {
+  box-shadow: var(--boxShadowHover);
 }
 
 .el-form-item {
   margin-bottom: 20px;
 }
+
+/* Force label color to match theme */
+:deep(.el-form-item__label) {
+  color: var(--text-color);
+}
+
 .el-select,
 .el-slider {
   width: 100%;
 }
 
-/* 下拉选择框主题适配 */
-:deep(.el-select) {
-  --el-select-bg-color: var(--selectBg);
+/* --- Element Plus Overrides --- */
+
+/* Input / Select Backgrounds */
+:deep(.el-input__wrapper),
+:deep(.el-textarea__inner) {
+  /* Use secondary or disabled bg for inputs to stand out from form bg */
+  background-color: var(--bgDisabled-color) !important; 
+  box-shadow: 0 0 0 1px var(--border-color) inset !important;
+  border-radius: var(--borderRadius);
+  color: var(--text-color);
 }
 
-/* 输入框主题适配 */
-:deep(.el-input__wrapper) {
-  --el-input-bg-color: var(--selectBg);
-  /* 优化：圆角也跟随主题变量 */
-  border-radius: var(--borderRadius, 4px);
-  transition: all 0.3s ease;
+:deep(.el-input__inner) {
+  color: var(--text-color);
 }
 
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
-}
-
+/* Hover/Focus states for inputs */
+:deep(.el-input__wrapper:hover),
 :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
-/* 开关组件主题适配 */
+/* Select Dropdown Poppers (Global styles might be needed in App.vue, but local override attempts) */
+:deep(.el-select-dropdown__item) {
+  color: var(--text-color);
+}
+:deep(.el-select-dropdown__item.hover), 
+:deep(.el-select-dropdown__item:hover) {
+  background-color: var(--bgDisabled-color);
+}
+
+/* Switch Component */
+:deep(.el-switch__core) {
+  border-color: var(--border-color);
+  background-color: var(--bgDisabled-color);
+}
 :deep(.el-switch.is-checked .el-switch__core) {
-  background-color: var(--selectBg);
-  border-color: var(--selectBg);
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
 }
 
-/* 滑块组件主题适配 */
+/* Slider Component */
 :deep(.el-slider__runway) {
-  background-color: var(--el-bg-color);
+  background-color: var(--bgDisabled-color);
 }
-
 :deep(.el-slider__bar) {
-  background-color: var(--selectBg);
+  background-color: var(--primary-color);
 }
-
 :deep(.el-slider__button) {
-  border-color: var(--selectBg);
+  border-color: var(--primary-color);
+  background-color: var(--bgSecondary-color);
 }
 
-:deep(.el-slider__button:hover) {
-  border-color: var(--selectBg);
-  box-shadow: 0 0 0 5px rgba(233, 200, 17, 0.1);
-}
-
-/* 按钮组件主题适配 */
+/* Button Component */
 .el-button {
   transition: all 0.3s ease;
-  /* 优化：圆角跟随主题 */
-  border-radius: var(--borderRadius, 4px);
+  border-radius: var(--borderRadius);
+  font-weight: 600;
 }
 
-.el-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* 响应式设计 */
+/* Responsive Design */
 @media (max-width: 768px) {
   .settings-page {
     padding: 10px;
