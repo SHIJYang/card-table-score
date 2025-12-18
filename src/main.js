@@ -1,10 +1,11 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-// 重新引入Element Plus的默认样式
-import 'element-plus/dist/index.css'
-// 保留暗黑模式支持
+
 import 'element-plus/theme-chalk/dark/css-vars.css'
+
+// 引入全局样式
+import './index.css'
+
 import router from './router'
 import App from './App.vue'
 import request from './utils/request'
@@ -27,12 +28,11 @@ setupMock(request)
 // 初始化主题
 initTheme()
 
+// ❌ 已移除: app.use(ElementPlus) (不再需要全量注册)
+
 // 使用其他插件
-app.use(ElementPlus)
 app.use(router)
 app.use(i18n)
-
-
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   // 仅在生产环境注册（避免本地开发干扰）
@@ -47,5 +47,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       })
   })
 }
+
 // 挂载
 app.mount('#app')

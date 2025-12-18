@@ -76,7 +76,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
-// ========== 1. CameraRig (保持运镜逻辑) ==========
+// ========== 1. CameraRig (运镜系统) ==========
 class CameraRig {
   constructor(camera, controls) {
     this.camera = camera;
@@ -137,7 +137,15 @@ const CONFIG = {
 const THEMES = [
   { bg: 0x050505, gold: 0xffaa00, silver: 0xeeeeee, gem: 0xff0044, emerald: 0x00ff88 }, // 经典
   { bg: 0x000810, gold: 0x00ffff, silver: 0xffffff, gem: 0x0055ff, emerald: 0xaaddff }, // 冰雪
-  { bg: 0x1a0510, gold: 0xff69b4, silver: 0xffb7c5, gem: 0x9900ff, emerald: 0xffffff }  // 芭比
+  { bg: 0x1a0510, gold: 0xff69b4, silver: 0xffb7c5, gem: 0x9900ff, emerald: 0xffffff }, // 芭比
+  { bg: 0x0a043c, gold: 0x00f5d4, silver: 0xc4fb6d, gem: 0xff206e, emerald: 0x8000ff }, // 赛博朋克
+  { bg: 0x0c1a11, gold: 0xd4af37, silver: 0xe8f5e8, gem: 0x2e8b57, emerald: 0x90ee90 }, // 森系
+  { bg: 0x2c1608, gold: 0xd9a566, silver: 0xf5e9d8, gem: 0x8b4513, emerald: 0xb8860b }, // 复古
+  { bg: 0x121212, gold: 0x8b8b8b, silver: 0x444444, gem: 0x222222, emerald: 0x333333 }, // 暗黑极简
+  { bg: 0x2c1608, gold: 0xffd166, silver: 0xeef5db, gem: 0xc77dff, emerald: 0x70d6ff }, // 马卡龙
+  { bg: 0x0d0221, gold: 0xfc5185, silver: 0x3fc1c9, gem: 0xfdbf6f, emerald: 0xff758c }, // 霓虹
+  { bg: 0x2c1608, gold: 0xc8b6a6, silver: 0xf1eee9, gem: 0xa49688, emerald: 0xb9b0a2 }, // 莫兰迪
+  { bg: 0x2c2415, gold: 0xe6b349, silver: 0xd9c5a9, gem: 0xa67c52, emerald: 0xc19a6b }  // 沙漠
 ];
 
 const modes = [
@@ -148,7 +156,7 @@ const modes = [
 
 const cameraStore = useCamerasStore();
 const imageStore = useImageStore();
-const { imageList } = storeToRefs(imageStore); // 获取图片列表
+const { imageList } = storeToRefs(imageStore);
 
 const canvasRef = ref(null);
 const videoRef = ref(null);
@@ -158,22 +166,26 @@ const showLetter = ref(false);
 const currentState = ref('tree');
 const currentThemeIndex = ref(0);
 
+// Three.js 上下文
 const ctx = {
   scene: null, camera: null, renderer: null, composer: null, controls: null,
   rig: null, mainGroup: null, 
   meshes: {}, materials: {},
   logicData: { gold: [], silver: [], gem: [], emerald: [] },
-  photoMeshes: [], // 存储照片 Mesh
+  photoMeshes: [],
   loadedPhotoKeys: new Set(),
   textureLoader: new THREE.TextureLoader(),
-  dummy: new THREE.Object3D()
+  dummy: new THREE.Object3D(),
+  // 聚焦专用临时变量 (仿HTML逻辑)
+  focusIndex: -1,
+  invMatrix: new THREE.Matrix4(),
+  targetVec: new THREE.Vector3()
 };
 let rafId = null;
 
 // ========== 3. 生命周期 ==========
 onMounted(async () => {
   initScene();
-  // 触发图片加载
   if (imageStore.fetchImages) await imageStore.fetchImages();
 });
 
@@ -184,7 +196,7 @@ onBeforeUnmount(() => {
   if (ctx.renderer) ctx.renderer.dispose();
 });
 
-// 监听图片列表更新，动态添加照片
+// 监听图片列表
 watch(imageList, (newImages) => {
   if (newImages?.length) {
     newImages.forEach(imgData => {
@@ -198,17 +210,22 @@ watch(imageList, (newImages) => {
 // 监听手势指令
 watch(() => cameraStore.trigger.timestamp, () => {
   const t = cameraStore.trigger;
-  if (t.mode && t.mode !== currentState.value) handleModeChange(t.mode);
+  if (t.mode) {
+      if (t.mode === 'zoom' || t.mode !== currentState.value) {
+          handleModeChange(t.mode);
+      }
+  }
   if (t.theme) forceNextTheme();
   if (t.letter) showLetter.value = true;
 });
 
-// ========== 4. 交互逻辑 ==========
+// ========== 4. 交互逻辑 (完全仿HTML聚焦) ==========
 const toggleCamera = () => {
   cameraStore.toggleCamera(videoRef.value);
 };
 
 const handleModeChange = (modeKey) => {
+  // 如果不是zoom且模式未变，则不处理
   if (currentState.value === modeKey && modeKey !== 'zoom') return;
   currentState.value = modeKey;
 
@@ -218,25 +235,29 @@ const handleModeChange = (modeKey) => {
   const centerTarget = new THREE.Vector3(0, 0, 0);
 
   if (modeKey === 'tree') {
+    // 🎄: 看全景
     ctx.rig.flyTo(overviewPos, centerTarget, 1500, () => {
       ctx.controls.autoRotate = true;
       ctx.controls.autoRotateSpeed = 2.0;
     });
   } else if (modeKey === 'scatter') {
+    // 🌌: 看全景，停止自动旋转
     ctx.controls.autoRotate = false;
     ctx.rig.flyTo(overviewPos, centerTarget, 1200);
   } else if (modeKey === 'zoom') {
-    // 特写模式：如果照片，相机拉近看照片；没有照片则只拉近
+    // 🔭: 特写模式
+    // 核心差异：相机不动（去最佳观赏点），照片自己飞过来
+    
+    // 1. 切换到下一张
     if (ctx.photoMeshes.length > 0) {
-      // 随机选一张或者看第一张
-      const targetPhoto = ctx.photoMeshes[Math.floor(Math.random() * ctx.photoMeshes.length)];
-      const targetPos = targetPhoto.userData.scatterPos.clone().multiplyScalar(1.2); // 稍微往后一点
-      // 确保z轴有距离
-      targetPos.z += 20; 
-      ctx.rig.flyTo(targetPos, targetPhoto.userData.scatterPos, 1000);
-    } else {
-      ctx.rig.flyTo(new THREE.Vector3(0, 10, 50), new THREE.Vector3(0, 10, 0), 1000);
+      ctx.focusIndex = (ctx.focusIndex + 1) % ctx.photoMeshes.length;
     }
+    
+    // 2. 相机飞到正面标准位置 (Z=100)，而不是钻进树里
+    const viewingPos = new THREE.Vector3(0, 0, 100);
+    const viewingTarget = new THREE.Vector3(0, 0, 0);
+    
+    ctx.rig.flyTo(viewingPos, viewingTarget, 1000);
     ctx.controls.autoRotate = false;
   }
 };
@@ -245,28 +266,22 @@ const forceNextTheme = () => {
   currentThemeIndex.value = (currentThemeIndex.value + 1) % THEMES.length;
   const theme = THEMES[currentThemeIndex.value];
   
-  // 1. 场景颜色
   ctx.scene.background.setHex(theme.bg);
   ctx.scene.fog.color.setHex(theme.bg);
   
-  // 2. 粒子材质颜色
   if (ctx.materials.gold) ctx.materials.gold.color.setHex(theme.gold);
   if (ctx.materials.silver) ctx.materials.silver.color.setHex(theme.silver);
   if (ctx.materials.gem) ctx.materials.gem.color.setHex(theme.gem);
   if (ctx.materials.emerald) ctx.materials.emerald.color.setHex(theme.emerald);
 
-  // 3. 照片框颜色更新
-  const frameColor = new THREE.Color(theme.gold); // 用主题的金色作为边框色
+  const frameColor = new THREE.Color(theme.gold);
   ctx.photoMeshes.forEach(group => {
-    if (group.children[1]) { // children[1] 是边框 Mesh
-      group.children[1].material.color.copy(frameColor);
-    }
+    if (group.children[1]) group.children[1].material.color.copy(frameColor);
   });
 };
 
 // ========== 5. Three.js 核心 ==========
 
-// 辅助：处理跨域图片
 const convertToProxyUrl = (url) => {
   if (!url) return '';
   const targetDomain = 'https://free.picui.cn';
@@ -275,14 +290,12 @@ const convertToProxyUrl = (url) => {
   return url;
 };
 
-// 辅助：随机分布
 const randomSpherePoint = (r) => {
   const u = Math.random(), v = Math.random();
   const theta = 2 * Math.PI * u, phi = Math.acos(2 * v - 1);
   return new THREE.Vector3(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
 };
 
-// 核心：添加照片
 const addPhotoMesh = (url, key) => {
   if (ctx.loadedPhotoKeys.has(key)) return;
   const proxyUrl = convertToProxyUrl(url);
@@ -293,44 +306,41 @@ const addPhotoMesh = (url, key) => {
 
     const img = tex.image;
     const ratio = img.width / img.height;
-    const w = ratio >= 1 ? 5 : 5 * ratio;
+    const w = ratio >= 1 ? 5 : 5 * ratio; 
     const h = ratio >= 1 ? 5 / ratio : 5;
 
-    // 1. 照片平面
     const geometry = new THREE.PlaneGeometry(w, h);
     const material = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
     const photoMesh = new THREE.Mesh(geometry, material);
 
-    // 2. 边框
-    const frameGeo = new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.2);
+    // 边框
+    const frameGeo = new THREE.BoxGeometry(w + 0.4, h + 0.4, 0.2);
     const currentTheme = THEMES[currentThemeIndex.value];
     const frameMat = new THREE.MeshStandardMaterial({ color: currentTheme.gold, roughness: 0.3, metalness: 0.8 });
     const frameMesh = new THREE.Mesh(frameGeo, frameMat);
     frameMesh.position.z = -0.11;
 
-    // 3. 组合
     const group = new THREE.Group();
     group.add(photoMesh);
     group.add(frameMesh);
 
-    // 4. 计算位置 (树形态 vs 散开形态)
+    // 初始位置
     const h_pos = (Math.random() - 0.5) * CONFIG.treeHeight;
     const normH = (h_pos + CONFIG.treeHeight/2) / CONFIG.treeHeight;
-    const r = CONFIG.maxRadius * (1 - normH) * 1.2; // 稍微比树外面一点
+    const r = CONFIG.maxRadius * (1 - normH) * 1.3; 
     const theta = Math.random() * Math.PI * 2;
     
     const treePos = new THREE.Vector3(r * Math.cos(theta), h_pos, r * Math.sin(theta));
-    const scatterPos = randomSpherePoint(60 + Math.random() * 20); // 散开得更远一点
+    const scatterPos = randomSpherePoint(60 + Math.random() * 20); 
 
     group.position.copy(treePos);
-    group.lookAt(new THREE.Vector3(0, treePos.y, 0)); // 树模式面向中心或外侧
+    group.lookAt(new THREE.Vector3(0, treePos.y, 0));
 
-    // 存储元数据
     group.userData = {
       treePos,
       scatterPos,
       baseRot: group.rotation.clone(),
-      velocity: new THREE.Vector3((Math.random()-0.5)*0.01, (Math.random()-0.5)*0.01, 0)
+      scatterRot: new THREE.Euler(Math.random()*Math.PI, Math.random()*Math.PI, 0)
     };
 
     ctx.mainGroup.add(group);
@@ -450,17 +460,23 @@ const animate = () => {
 
   // --- 手势控制的组旋转缩放 ---
   if (isScatter || isZoom) {
-    // 星云/特写模式下，手势控制旋转和缩放
     ctx.mainGroup.rotation.y += 0.001 + (cameraStore.interaction.rotationFactor * 0.05);
+    // 聚焦模式下，如果不旋转可能更容易看清照片
+    if (isZoom) ctx.mainGroup.rotation.y *= 0.1; 
+
     const targetScale = cameraStore.interaction.scaleFactor;
     ctx.mainGroup.scale.setScalar(ctx.mainGroup.scale.x + (targetScale - ctx.mainGroup.scale.x) * 0.1);
   } else {
-    // 树模式：自动旋转，缩放归一
     ctx.mainGroup.rotation.y += 0.002;
     ctx.mainGroup.scale.setScalar(ctx.mainGroup.scale.x + (1.0 - ctx.mainGroup.scale.x) * 0.1);
   }
+  
+  // === 关键逻辑: 准备逆矩阵用于聚焦计算 ===
+  if (isZoom) {
+     ctx.invMatrix.copy(ctx.mainGroup.matrixWorld).invert();
+  }
 
-  // --- 更新普通粒子 (InstancedMesh) ---
+  // --- 更新粒子 (InstancedMesh) ---
   const updateMeshes = (key) => {
     const mesh = ctx.meshes[key];
     const data = ctx.logicData[key];
@@ -474,8 +490,8 @@ const animate = () => {
       item.rotation.y += item.rotSpeed.y;
       
       let s = item.scale;
-      // 特写模式下让粒子变小，避免遮挡照片
-      if (isZoom) s *= 0.2; 
+      // 特写模式下，粒子缩小，仿HTML的 scale=0.01 效果
+      if (isZoom) s *= 0.1; 
 
       ctx.dummy.position.copy(item.currentPos);
       ctx.dummy.rotation.copy(item.rotation);
@@ -487,27 +503,44 @@ const animate = () => {
   };
   updateMeshes('gold'); updateMeshes('silver'); updateMeshes('gem'); updateMeshes('emerald');
 
-  // --- 更新照片墙 (Group Mesh) ---
-  ctx.photoMeshes.forEach(group => {
-    let target = isTree ? group.userData.treePos : group.userData.scatterPos;
-    let targetScale = isTree ? 0.0 : 1.0; // 树模式下照片隐藏(缩放到0)或者可以设为1显示在树上，这里设为0为了简洁
-    // 如果想要树上也有照片，可以改为 targetScale = 0.5;
+  // --- 更新照片墙 (Group Mesh) - 仿HTML聚焦逻辑 ---
+  ctx.photoMeshes.forEach((group, idx) => {
+    let targetPos, targetScale, lookAtCam = false;
+
+    if (isZoom && idx === ctx.focusIndex) {
+        // === 聚焦态 (参照HTML逻辑) ===
+        // 目标位置: 相机正前方 Z-20 的位置，通过逆矩阵转换到 mainGroup 的局部空间
+        // 这样无论 Group 怎么转，照片都会飞到相机正前方
+        ctx.targetVec.set(0, 0, ctx.camera.position.z - 20).applyMatrix4(ctx.invMatrix);
+        targetPos = ctx.targetVec;
+        targetScale = 3.0; // 放大
+        lookAtCam = true;
+    } else {
+        // === 非聚焦态 ===
+        // 如果是特写模式，非主角照片隐藏 (仿HTML)
+        if (isZoom) {
+            targetPos = group.userData.scatterPos;
+            targetScale = 0; 
+        } else {
+            // 普通模式
+            targetPos = isTree ? group.userData.treePos : group.userData.scatterPos;
+            targetScale = isTree ? 0 : 1.0; 
+            if (isScatter) targetScale = 1.0;
+        }
+        lookAtCam = (isScatter || isZoom);
+    }
+
+    // 插值更新
+    group.position.lerp(targetPos, 0.1); // 这里的 lerp 会让照片从树里飞出来
     
-    // 散开模式 或 特写模式 显示照片
-    if (isScatter || isZoom) targetScale = 1.0;
-    
-    // 位置插值
-    group.position.lerp(target, 0.08);
-    // 缩放插值
     const currentS = group.scale.x;
     const nextS = currentS + (targetScale - currentS) * 0.1;
     group.scale.setScalar(nextS);
 
-    // 朝向控制
-    if (isScatter || isZoom) {
-        group.lookAt(ctx.camera.position); // 始终面向镜头
+    if (lookAtCam || (isZoom && idx === ctx.focusIndex)) {
+        group.lookAt(ctx.camera.position);
     } else {
-        group.rotation.copy(group.userData.baseRot); // 恢复初始朝向
+        group.rotation.copy(group.userData.baseRot);
     }
   });
 
