@@ -620,7 +620,14 @@ const animate = () => {
 </script>
 
 <style scoped>
-.jewel-scene { position: relative; width: 100vw; height: 100vh; background: #000; overflow: hidden; user-select: none; }
+.jewel-scene { 
+  position: relative; 
+  width: 100vw; 
+  height: calc(100vh - 60px); /* 修改这里 */
+  background: #000; 
+  overflow: hidden; 
+  user-select: none; 
+}
 .canvas-wrapper { position: absolute; inset: 0; z-index: 0; }
 .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 .top-left-panel { position: absolute; top: 20px; left: 20px; pointer-events: auto; }
@@ -658,9 +665,18 @@ const animate = () => {
 
 /* 摄像头和弹窗样式 */
 .camera-widget {
-  position: absolute; bottom: 20px; right: 20px; width: 140px; height: 105px;
-  border-radius: 10px; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);
-  background: #000; transform: scaleX(-1); pointer-events: auto;
+  position: absolute; 
+  top: 20px;  /* 改为 top */
+  right: 20px; 
+  width: 140px; 
+  height: 105px;
+  border-radius: 10px; 
+  overflow: hidden; 
+  border: 2px solid rgba(255,255,255,0.2);
+  background: #000; 
+  transform: scaleX(-1); 
+  pointer-events: auto;
+  z-index: 20; /* 确保在最上层 */
 }
 .camera-widget video { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
 .gesture-feedback {

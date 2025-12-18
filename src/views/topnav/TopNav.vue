@@ -72,7 +72,9 @@ const activeIndex = computed(() => route.path || '/')
   box-sizing: border-box;
   background-color: transparent;
 }
-
+.el-menu--horizontal {
+  --el-menu-horizontal-height: 60px;
+}
 /* 菜单主体 */
 .top-menu {
   /* 1. 默认通用设置 */
@@ -149,7 +151,6 @@ const activeIndex = computed(() => route.path || '/')
   font-weight: bold;
   transform: translateY(-2px);
 
-  border: 1px solid var(--border);
 }
 
 :deep(.el-sub-menu.is-active .el-sub-menu__title) {

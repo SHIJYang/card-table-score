@@ -556,7 +556,7 @@ onBeforeUnmount(() => {
 /* 样式保持不变 */
 .jewel-scene {
   position: relative;
-  width: 100vw; height: 100vh;
+  width: 100vw; height: calc(100vh - 60px);
   background: #000; overflow: hidden;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   user-select: none;
@@ -591,7 +591,7 @@ onBeforeUnmount(() => {
 .divider-h { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
 
 .camera-widget {
-  position: absolute; top: 10px; right: 50px; width: 110px; height: 82px;
+  position: absolute; top: 10px; right: 20px; width: 110px; height: 82px;
   border-radius: 12px; overflow: hidden;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(0,0,0,0.8); pointer-events: auto; 
