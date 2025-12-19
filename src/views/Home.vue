@@ -6,10 +6,7 @@
       
       <section class="section-block">
         <div class="container">
-          <div class="section-header">
-            <h2 class="section-title">游戏大厅</h2>
-            <p class="section-subtitle">选择你的冒险</p>
-          </div>
+          
 
           <div class="categories-grid">
             <div
@@ -164,15 +161,11 @@ const handleExplore = (url: string) => {
   z-index: 0;
 }
 
-.main-content {
-  position: relative;
-  z-index: 1;
-  padding: 20px 0 40px 0;
-}
+
 
 .container {
   max-width: 1200px;
-  height: 60vh;
+  
   margin: 0 auto;
   padding: 5vh 1.5rem;
 }

@@ -9,7 +9,7 @@
     >
       <el-menu-item index="/" class="logo-item">
         <img :src="logo" alt="Logo" class="logo" />
-        <span class="site-title is-mobile-hidden">LOVE GAMES</span>
+       
       </el-menu-item>
       
       <div class="flex-grow" />
@@ -66,13 +66,13 @@ const activeIndex = computed(() => route.path || '/')
   top: 0;
   z-index: 99;
   width: 100%;
-  padding: 0; /* 官网风格通常贴边 */
+  padding: 0; 
   background-color: transparent;
-  /* 解决某些浏览器下的层级问题 */
+  
   transform: translateZ(0);
 }
 
-/* 覆盖 Element 默认高度 */
+
 .el-menu--horizontal {
   --el-menu-horizontal-height: 55px;
   border-bottom: none;
@@ -81,7 +81,7 @@ const activeIndex = computed(() => route.path || '/')
 /* 菜单主体 */
 .top-menu {
   width: 100%;
-  padding: 0 40px; /* 内容左右留白 */
+  padding: 0 20px; 
   
   /* 1. 背景处理：使用半透明背景 + 模糊，营造通透感 */
   background-color: color-mix(in srgb, var(--bgSecondary), transparent 15%);
@@ -121,7 +121,7 @@ const activeIndex = computed(() => route.path || '/')
 
 /* Logo 区域 */
 .logo-item {
-  margin-right: 20px;
+
   padding: 0 !important;
   background: transparent !important;
   opacity: 1 !important;
@@ -150,11 +150,9 @@ const activeIndex = computed(() => route.path || '/')
 /* 1. 通用状态 */
 :deep(.el-menu-item),
 :deep(.el-sub-menu__title) {
-  font-size: 14px;
-  font-weight: 500;
+
   color: var(--text) !important;
-  padding: 0 16px !important;
-  margin: 0 4px; /* 稍微拉开一点间距 */
+  
  
   background: transparent !important;
   transition: color 0.2s, border-color 0.2s;
@@ -181,24 +179,8 @@ const activeIndex = computed(() => route.path || '/')
 /* 子菜单激活时，父级标题状态 */
 :deep(.el-sub-menu.is-active .el-sub-menu__title) {
   color: var(--primary) !important;
-  border-bottom: 2px solid var(--primary) !important;
+  border-bottom: none;
 }
 
-/* 响应式适配 */
-@media (max-width: 768px) {
-  .top-menu {
-    padding: 0 16px;
-  }
-  
-  .site-title {
-    display: none;
-  }
-  
-  /* 移动端菜单项间距缩小 */
-  :deep(.el-menu-item),
-  :deep(.el-sub-menu__title) {
-    padding: 0 10px !important;
-    margin: 0;
-  }
-}
+
 </style>

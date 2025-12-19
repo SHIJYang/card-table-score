@@ -431,7 +431,9 @@ const initScene = () => {
   ctx.controls.autoRotate = true;
   ctx.controls.autoRotateSpeed = 2.0;
 
+
   ctx.rig = new CameraRig(ctx.camera, ctx.controls);
+
 
   ctx.textureLoader.crossOrigin = 'Anonymous';
 
@@ -689,7 +691,7 @@ const animate = () => {
   position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(5px);
 }
 .letter-paper {
-  background: #fffbf0; color: #4a3b2a; width: 80%; max-width: 400px; padding: 40px; border-radius: 4px; box-shadow: 0 0 30px rgba(255,215,0,0.3); text-align: center; font-family: serif;
+  background: #fffbf0; color: #4a3b2a; width: 60%; max-width: 400px; padding: 40px; border-radius: 4px; box-shadow: 0 0 30px rgba(255,215,0,0.3); text-align: center; font-family: serif;
 }
 .letter-body { font-size: 1.1rem; line-height: 1.8; margin: 20px 0; }
 .hint { font-size: 0.8rem; color: #999; }
