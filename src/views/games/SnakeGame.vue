@@ -1,17 +1,16 @@
 <template>
-  <div class="common-layout">
-    <el-container>
-      <el-main style="padding: 0">
-        <el-card class="game-card">
-          <template #header>
+  
+    
+      
+        
             <div class="card-header">
-              <h2>🐛 贪吃蛇</h2>
+              <h2 class="game-title">🐛 贪吃蛇</h2>
               <div class="score-level">
                 <span class="badge score">🍎 {{ score }}</span>
                 <span class="badge level">⚡ Lv.{{ level }}</span>
               </div>
             </div>
-          </template>
+          
 
           <div class="game-container">
             <div class="game-board-wrapper">
@@ -32,33 +31,42 @@
             </div>
 
             <div class="controls-area">
-                <div class="mobile-controls" v-if="true"> <div class="control-row">
-                    <button class="d-pad-btn up" @click="changeDirection('up')"><el-icon><ArrowUp /></el-icon></button>
+                <div class="d-pad-container"> 
+                  <div class="control-row">
+                    <button class="d-pad-btn up" @click="changeDirection('up')">
+                      <el-icon><ArrowUp /></el-icon>
+                    </button>
                   </div>
                   <div class="control-row middle">
-                    <button class="d-pad-btn left" @click="changeDirection('left')"><el-icon><ArrowLeft /></el-icon></button>
+                    <button class="d-pad-btn left" @click="changeDirection('left')">
+                      <el-icon><ArrowLeft /></el-icon>
+                    </button>
                     <button class="action-btn" @click="togglePause">
                         <el-icon><component :is="isPaused ? 'VideoPlay' : 'VideoPause'" /></el-icon>
                     </button>
-                    <button class="d-pad-btn right" @click="changeDirection('right')"><el-icon><ArrowRight /></el-icon></button>
+                    <button class="d-pad-btn right" @click="changeDirection('right')">
+                      <el-icon><ArrowRight /></el-icon>
+                    </button>
                   </div>
                   <div class="control-row">
-                    <button class="d-pad-btn down" @click="changeDirection('down')"><el-icon><ArrowDown /></el-icon></button>
+                    <button class="d-pad-btn down" @click="changeDirection('down')">
+                      <el-icon><ArrowDown /></el-icon>
+                    </button>
                   </div>
                 </div>
 
                 <div class="menu-buttons">
-                    <el-button type="primary" size="large" class="cartoon-btn" @click="startGame" :disabled="isPlaying && !isPaused">
-                        {{ isPlaying ? "游戏中" : "开始游戏" }}
+                    <el-button type="primary" size="large" class="cartoon-btn big-btn" @click="startGame" :disabled="isPlaying && !isPaused">
+                        {{ isPlaying ? "游戏中..." : "开始游戏" }}
                     </el-button>
-                    <el-button type="warning" size="large" class="cartoon-btn" @click="resetGame">重置</el-button>
+                    <el-button type="warning" size="large" class="cartoon-btn big-btn" @click="resetGame">重置</el-button>
                 </div>
             </div>
           </div>
-        </el-card>
-      </el-main>
-    </el-container>
-  </div>
+       
+      
+    
+  
 </template>
 
 <script setup>
@@ -161,90 +169,140 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeyPress); clear
 </script>
 
 <style scoped>
-.game-card {
-  border: 4px solid var(--border-color);
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  box-shadow: 8px 8px 0 0 rgba(0,0,0,0.2);
-}
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-.card-header h2 { font-weight: 900; color: var(--text-color); margin: 0; }
-
-.badge {
-    padding: 6px 12px; border-radius: 20px; font-weight: bold; border: 2px solid var(--border-color);
-    margin-left: 8px; color: var(--text-color);
-}
-.score { background: var(--warning-color); }
-.level { background: var(--info-color); color: white; }
-
-.game-container {
-    display: flex; flex-direction: column; align-items: center; gap: 20px;
-    padding: 20px;
-}
-.game-board-wrapper {
-    background: #A8E6CF; /* 复古绿 */
-    border: 6px solid var(--text-color);
-    border-radius: 12px;
-    padding: 4px;
-    box-shadow: inset 4px 4px 10px rgba(0,0,0,0.1);
-}
-.game-board {
-    display: grid;
-    /* aspect-ratio: 1; */
-}
-.grid-row { display: flex; }
-.grid-cell { width: 12px; height: 12px; box-sizing: border-box; } /* 默认更小，适合手机 */
-@media (min-width: 600px) { .grid-cell { width: 18px; height: 18px; } }
-
-.snake-segment {
-    background: var(--success-color);
-    border-radius: 50%;
-    transform: scale(0.9);
-    border: 1px solid rgba(0,0,0,0.1);
-}
-.snake-head {
-    background: var(--text-color); /* 深色头 */
-    border-radius: 4px;
-    transform: scale(1.1);
-    position: relative;
-    z-index: 2;
-}
-.food {
-    background: var(--danger-color);
-    border-radius: 50%;
-    box-shadow: 0 0 5px var(--danger-color);
-    animation: pulse 0.8s infinite alternate;
-}
-@keyframes pulse { from { transform: scale(0.8); } to { transform: scale(1.2); } }
-
-.controls-area { display: flex; flex-direction: column; align-items: center; gap: 15px; }
-.mobile-controls {
-    background: var(--bg-primary); padding: 15px; border-radius: 50%;
+  /* 容器调整 */
+  .game-card {
+    width: 100%;
+    max-width: 600px;
     border: 4px solid var(--border-color);
-    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.2);
-}
-.control-row { display: flex; justify-content: center; gap: 10px; }
-.middle { margin: 5px 0; }
-
-.d-pad-btn, .action-btn {
-    width: 45px; height: 45px; border-radius: 12px;
-    border: 3px solid var(--border-color);
-    background: white; font-size: 20px;
-    cursor: pointer;
-    box-shadow: 0 4px 0 var(--border-color);
-    transition: all 0.1s;
-    display: flex; align-items: center; justify-content: center;
-}
-.d-pad-btn:active, .action-btn:active {
-    transform: translateY(4px); box-shadow: none;
-}
-.d-pad-btn { background: var(--selectBg); }
-.action-btn { background: var(--primary-color); color: white; border-radius: 50%; }
-
-.cartoon-btn {
-    border: 3px solid var(--border-color) !important;
-    font-weight: 900 !important;
-    box-shadow: 3px 3px 0 0 var(--border-color) !important;
-}
-.cartoon-btn:active { transform: translate(3px, 3px); box-shadow: none !important; }
-</style>
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius); /* 假设你有这个变量，如果没有请用 12px */
+    box-shadow: 8px 8px 0 0 rgba(0,0,0,0.15);
+    margin: 10px;
+  }
+  
+  .card-header { display: flex; justify-content: space-between; align-items: center;margin: 20px; }
+  .card-header h2 { font-weight: 900; color: var(--text-color); margin: 0; text-shadow: 2px 2px 0 var(--border-color); }
+  
+  .badge {
+      padding: 6px 12px; border-radius: 20px; font-weight: bold; border: 2px solid var(--border-color);
+      margin-left: 8px; color: var(--text-color);
+  }
+  .score { background: var(--warning-color); }
+  .level { background: var(--info-color); color: white; }
+  
+  .game-container {
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+      padding: 10px 0 20px 0;
+  }
+  
+  /* 棋盘样式 */
+  .game-board-wrapper {
+      background: #A8E6CF; /* 保持你原来的复古绿 */
+      border: 5px solid var(--text-color);
+      border-radius: 8px;
+      padding: 4px;
+      box-shadow: inset 4px 4px 10px rgba(0,0,0,0.1);
+  }
+  .game-board {
+      display: flex; 
+      flex-direction: column;
+  }
+  .grid-row { display: flex; }
+  
+  .grid-cell { 
+      /* 手机端适配：30格 x 11px = 330px，适配大多数屏幕 */
+      width: 11px; 
+      height: 11px; 
+      box-sizing: border-box; 
+      /* 关键：添加极淡的边框实现网格可视，不使用新变量 */
+      border: 1px solid rgba(0, 0, 0, 0.05); 
+  }
+  
+  /* 桌面端放大 */
+  @media (min-width: 600px) { 
+      .grid-cell { width: 16px; height: 16px; } 
+  }
+  
+  /* 蛇身与食物 - 使用你原本的变量 */
+  .snake-segment {
+      background: var(--success-color);
+      border-radius: 2px;
+      border: 1px solid rgba(0,0,0,0.2);
+      /* 消除网格线干扰，让蛇身看起来是连续的 */
+      border-color: transparent; 
+  }
+  .snake-head {
+      background: var(--text-color);
+      border-radius: 4px;
+      transform: scale(1.1);
+      z-index: 2;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  }
+  .food {
+      background: var(--danger-color);
+      border-radius: 50%;
+      box-shadow: 0 0 5px var(--danger-color);
+      animation: pulse 0.8s infinite alternate;
+      transform: scale(0.9);
+  }
+  @keyframes pulse { from { transform: scale(0.8); } to { transform: scale(1.1); } }
+  
+  /* 控制区优化 */
+  .controls-area { display: flex; flex-direction: column; align-items: center; gap: 15px;  }
+  
+  .mobile-controls {
+      background: var(--bg-primary); 
+      padding: 15px; 
+      border-radius: 50%;
+      border: 4px solid var(--border-color);
+      box-shadow: 6px 6px 0 0 rgba(0,0,0,0.2);
+  }
+  
+  .control-row { display: flex; justify-content: center; gap: 10px; }
+  .middle { margin: 5px 0; align-items: center; }
+  
+  /* 按钮放大优化 */
+  .d-pad-btn {
+      width: 60px; /* 放大到 60px */
+      height: 60px; 
+      border-radius: 12px;
+      border: 3px solid var(--border-color);
+      background: white; 
+      font-size: 24px; /* 图标放大 */
+      color: var(--text-color);
+      cursor: pointer;
+      box-shadow: 0 5px 0 var(--border-color); /* 增加厚度 */
+      transition: all 0.1s;
+      display: flex; align-items: center; justify-content: center;
+  }
+  
+  .action-btn {
+      width: 50px; /* 稍微小一点，区分功能 */
+      height: 50px; 
+      border-radius: 50%;
+      border: 3px solid var(--border-color);
+      background: var(--primary-color); 
+      color: white; 
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 var(--border-color); /* 使用 border-color 作为阴影以保持统一 */
+      display: flex; align-items: center; justify-content: center;
+  }
+  
+  .d-pad-btn:active, .action-btn:active {
+      transform: translateY(4px); 
+      box-shadow: none;
+  }
+  
+  .menu-buttons {
+      display: flex; gap: 15px; margin-top: 5px;
+  }
+  
+  .cartoon-btn {
+      border: 3px solid var(--border-color) !important;
+      font-weight: 900 !important;
+      box-shadow: 4px 4px 0 0 var(--border-color) !important;
+      padding: 20px 30px !important; /* 增加点击区域 */
+  }
+  .cartoon-btn:active { transform: translate(4px, 4px); box-shadow: none !important; }
+  </style>

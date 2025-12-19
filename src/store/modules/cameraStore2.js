@@ -100,7 +100,6 @@ export const useCamerasStore = defineStore('camera', {
       rafId = requestAnimationFrame(() => this.predictLoop(videoElement));
 
       const now = performance.now();
-      // 限制检测帧率为 30fps (每33ms一次)，节省性能
       if (now - lastProcessTime < 33) return; 
       lastProcessTime = now;
 
@@ -115,126 +114,125 @@ export const useCamerasStore = defineStore('camera', {
           this.processGesture(result.landmarks[0], now);
         } else {
           this.isHandDetected = false;
-          // 丢失手势时，快速降低置信度，而不是立即重置，防止闪烁
           if (this.gesture.confidence > 0) {
-             this.gesture.confidence = Math.max(0, this.gesture.confidence - 20);
+             this.gesture.confidence = Math.max(0, this.gesture.confidence - 15);
           }
-          // 缓慢复位交互参数
-          this.interaction.rotationFactor *= 0.9;
+          this.interaction.rotationFactor *= 0.8; 
         }
       }
     },
-
     // --- 核心手势算法 (防抖优化版) ---
     processGesture(lm, now) {
-      // 1. 基础几何计算
       const dist = (i, j) => Math.hypot(lm[i].x - lm[j].x, lm[i].y - lm[j].y);
-      const wrist = lm[0];
-      
-      // 手掌尺度基准 (手腕到中指根部)
       const palmSize = dist(0, 9); 
 
-      // 2. 手指状态判定 (伸直/弯曲)
-      const isOpen = (tip, pip) => dist(0, tip) > dist(0, pip) * 1.2;
+      // 1. 手指伸直判定优化：判断指尖到手腕距离 > 指关节到手腕距离
+      const isExtended = (tip, pip) => dist(0, tip) > dist(0, pip) * 1.15;
       
-      const indexOpen = isOpen(8, 5);
-      const middleOpen = isOpen(12, 9);
-      const ringOpen = isOpen(16, 13);
-      const pinkyOpen = isOpen(20, 17);
+      const f1 = isExtended(8, 6);  // 食指
+      const f2 = isExtended(12, 10); // 中指
+      const f3 = isExtended(16, 14); // 无名指
+      const f4 = isExtended(20, 18); // 小指
+      
+      // 2. 拇指特殊判定
+      // 拇指伸开：拇指尖距离小指根部较远
+      const thumbExtended = dist(4, 17) > palmSize * 1.2;
+      // 拇指向上：拇指尖的 Y 坐标明显高于所有指关节（在屏幕上 Y 越小越高）
+      const thumbUp = lm[4].y < lm[3].y && lm[4].y < lm[5].y && !f1 && !f2 && !f3 && !f4;
+      
+      // 3. 核心计算：OK 判定（食指尖和拇指尖捏合）
+      const isPinch = dist(4, 8) < palmSize * 0.3;
 
-      // 3. 拇指状态判定
-      const thumbOut = dist(4, 17) > palmSize * 1.1; 
-      const isPinch = dist(4, 8) < palmSize * 0.5;
+      // 4. 计算伸直手指的总数 (不含拇指)
+      const extendedCount = [f1, f2, f3, f4].filter(Boolean).length;
 
-      // 4. 手势分类
       let currentGesture = 'UNKNOWN';
 
-      if (isPinch && middleOpen && ringOpen && pinkyOpen) {
-        currentGesture = 'OK'; // 👌
-      } else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-        currentGesture = 'POINTING'; // 👉
-      } else if (indexOpen && middleOpen && ringOpen && pinkyOpen) {
-        currentGesture = thumbOut ? 'OPEN_FULL' : 'OPEN_NO_THUMB'; 
-      } else if (!indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-        currentGesture = thumbOut ? 'FIST_THUMB' : 'FIST_CLOSED'; 
+      // --- 手势状态机优化 ---
+      
+      // 👌 OK 手势：捏合且中、无、小指必须伸直 (极高区分度)
+      if (isPinch && f2 && f3 && f4) {
+        currentGesture = 'OK';
+      } 
+      // ✌️ 耶 / V手势：只有食指和中指伸直 (替代 POINTING，更稳定)
+      else if (f1 && f2 && !f3 && !f4) {
+        currentGesture = 'POINTING'; 
+      }
+      // 🖐 全张开：四指全开 + 拇指张开
+      else if (extendedCount === 4 && thumbExtended) {
+        currentGesture = 'OPEN_FULL';
+      }
+      // ✋ 四指开但拇指收：(替代 OPEN_NO_THUMB)
+      else if (extendedCount === 4 && !thumbExtended) {
+        currentGesture = 'OPEN_NO_THUMB';
+      }
+      // 👍 点赞手势：(替代 FIST_THUMB)
+      else if (thumbUp) {
+        currentGesture = 'FIST_THUMB';
+      }
+      // ✊ 握拳：所有手指都收起
+      else if (extendedCount === 0 && !thumbExtended) {
+        currentGesture = 'FIST_CLOSED';
       }
 
-      // 5. 状态确认 (核心优化：粘性防抖)
-      // 如果检测结果与当前记录一致，增加置信度（回血）
+      // 5. 粘性防抖逻辑 (维持原样，确保平滑)
       if (currentGesture === this.gesture.name) {
-        // 增加速度：+15 (快速确认)
-        this.gesture.confidence = Math.min(this.gesture.confidence + 15, 100);
+        this.gesture.confidence = Math.min(this.gesture.confidence + 20, 100);
       } else {
-        // 如果检测结果不一致，减少置信度（扣血）
-        // 扣减速度：-20 (容忍约 5 帧的误检或过渡)
-        this.gesture.confidence = Math.max(this.gesture.confidence - 20, 0);
-
-        // 只有当置信度归零时，才正式切换手势名称
+        this.gesture.confidence = Math.max(this.gesture.confidence - 25, 0);
         if (this.gesture.confidence === 0) {
           this.gesture.name = currentGesture;
         }
       }
 
-      // 6. 执行业务逻辑 (使用稳定后的 this.gesture.name，而非瞬时的 currentGesture)
-      // 提高触发门槛：必须 > 60 才执行逻辑，防止手势切换过程中的误触
-      if (this.gesture.confidence > 60) {
+      // 6. 业务触发
+      if (this.gesture.confidence > 70) {
         this.handleLogic(this.gesture.name, lm, now);
       }
     },
 
     handleLogic(gesture, lm, now) {
-      // 更新手掌中心用于旋转/缩放
       const center = lm[9]; 
-      
-      // 使用平滑插值更新手掌位置，减少画面抖动
       const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+      
       this.interaction.handPos.x = lerp(this.interaction.handPos.x, center.x, 0.2);
       this.interaction.handPos.y = lerp(this.interaction.handPos.y, center.y, 0.2);
 
-      // 1. 👊 圣诞树形态
-      if (gesture === 'FIST_CLOSED') {
-        this.triggerEvent('mode', 'tree');
-      }
+      switch (gesture) {
+        case 'FIST_CLOSED': // 👊 圣诞树
+          this.triggerEvent('mode', 'tree');
+          break;
 
-      // 2. 👊 + 拇指伸出 -> 切换颜色
-      else if (gesture === 'FIST_THUMB') {
-        this.trySwitchTheme(now);
-      }
+        case 'FIST_THUMB':  // 👍 切换颜色 (点赞触发，比拳头带拇指更明确)
+          this.trySwitchTheme(now);
+          break;
 
-      // 3. 🖐 星云形态
-      else if (gesture === 'OPEN_FULL') {
-        this.triggerEvent('mode', 'scatter');
-        
-        // 计算旋转
-        // 增加死区 (Deadzone)，中间区域不旋转
-        let rotRaw = (0.5 - this.interaction.handPos.x) * 4.0;
-        if (Math.abs(rotRaw) < 0.2) rotRaw = 0; 
-        this.interaction.rotationFactor = rotRaw;
-        
-        // 计算缩放
-        const targetScale = 1.6 - this.interaction.handPos.y; 
-        this.interaction.scaleFactor += (targetScale - this.interaction.scaleFactor) * 0.1;
-      }
+        case 'OPEN_FULL':   // 🖐 星云 & 操控
+          this.triggerEvent('mode', 'scatter');
+          // 增加死区
+          let rotRaw = (0.5 - this.interaction.handPos.x) * 4.0;
+          this.interaction.rotationFactor = Math.abs(rotRaw) < 0.25 ? 0 : rotRaw;
+          
+          const targetScale = 1.6 - this.interaction.handPos.y; 
+          this.interaction.scaleFactor += (targetScale - this.interaction.scaleFactor) * 0.1;
+          break;
 
-      // 4. 🖐 + 拇指收起 -> 备选切换
-      else if (gesture === 'OPEN_NO_THUMB') {
-        this.trySwitchTheme(now);
-      }
+        case 'POINTING':    // ✌️ 放大 (使用耶的手势，更不容易误触)
+          this.triggerEvent('mode', 'zoom');
+          break;
 
-      // 5. 👉 放大照片
-      else if (gesture === 'POINTING') {
-        this.triggerEvent('mode', 'zoom');
-      }
-
-      // 6. 👌 书信告白
-      else if (gesture === 'OK') {
-        // 要求更高的置信度才触发信件，防止误触
-        if (this.gesture.confidence > 800) { 
+        case 'OK':          // 👌 告白
+          if (this.gesture.confidence > 90) { // OK要求极高稳定性
             if (now - this.lastLetterTime > 3000) { 
-                this.triggerEvent('letter', true);
-                this.lastLetterTime = now;
+              this.triggerEvent('letter', true);
+              this.lastLetterTime = now;
             }
-        }
+          }
+          break;
+          
+        case 'OPEN_NO_THUMB': // ✋ 备选切换
+          this.trySwitchTheme(now);
+          break;
       }
     },
 

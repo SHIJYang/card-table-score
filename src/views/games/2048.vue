@@ -4,6 +4,7 @@
       <el-main class="game-container">
         <div class="game-info">
           <div class="title-box">2048</div>
+          <button class="restart-btn" @click="resetGame">🔄 重来</button>
           <div class="score-panel">
             <div class="score-box">
                 <span class="label">分数</span>
@@ -14,7 +15,7 @@
                 <span class="val">{{ highScore }}</span>
             </div>
           </div>
-          <button class="restart-btn" @click="resetGame">🔄 重来</button>
+          
         </div>
 
         <div class="game-board-outer">
@@ -501,8 +502,11 @@ onUnmounted(() => {
   font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
 }
 .game-info {
-    display: flex; justify-content: space-between; align-items: flex-start;
+  display: flex;
+    justify-content: space-evenly;
     margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 .title-box {
     font-size: 48px; font-weight: 900; color: var(--primary-color);
