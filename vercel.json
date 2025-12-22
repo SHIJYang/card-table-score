@@ -3,6 +3,10 @@
     {
       "source": "/picui-proxy/:path*",
       "destination": "https://free.picui.cn/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ],
   "headers": [
