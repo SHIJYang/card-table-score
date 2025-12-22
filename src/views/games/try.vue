@@ -1,15 +1,16 @@
 <template>
   <div class="common-layout">
-    <CardNav
+    <el-header class="header">
+      <CardNav
       :logo="logo"
       logoAlt="Site Logo"
       :items="navItems"
       baseColor="#fff"
       menuColor="#000"
-      buttonBgColor="#111"
-      buttonTextColor="#fff"
-      :buttonText="t('nav.login')" 
+      
     />
+    </el-header>
+    
     <el-container>
       <el-main class="error404">
         <FuzzyText
@@ -31,11 +32,15 @@
           :hover-intensity="0.8"
         />
 
-        <div class="action-area">
-            <button class="cartoon-btn" @click="goHome">
-                {{ t('nav.home') || 'Go Home' }}
-            </button>
-        </div>
+        <GestureRadio 
+      v-model="activeMode" 
+      :options="menuConfig" 
+    />
+
+    <div class="status-board">
+      <p>当前激活模式: <strong>{{ activeMode }}</strong></p>
+      <div class="color-preview" :style="{ background: `hsl(${activeHue}, 100%, 50%)` }"></div>
+    </div>
       </el-main>
     </el-container>
   </div>
@@ -83,8 +88,8 @@ const goHome = () => {
 const navItems = computed(() => [
   {
     label: t('nav.games'),
-    bgColor: "#0D0716",
-    textColor: "#fff",
+    bgColor: "var(--el-bg-color-page)",
+    textColor: "var(--text)",
     links: [
       { label: t('nav.score'), path: "/score" },
       { label: t('nav.gomoku'), path: "/gomoku" },
@@ -96,8 +101,8 @@ const navItems = computed(() => [
   },
   {
     label: t('nav.our'),
-    bgColor: "#170D27",
-    textColor: "#fff",
+    bgColor: "var(--el-bg-color-page)",
+    textColor: "var(--text)",
     links: [
       { label: t('nav.christmasTree'), path: "/our/tree" },
       { label: `${t('nav.christmasTree')} 2`, path: "/our/trees" }
@@ -105,8 +110,8 @@ const navItems = computed(() => [
   },
   {
     label: t('nav.settings'),
-    bgColor: "#271E37",
-    textColor: "#fff",
+    bgColor: "var(--el-bg-color-page)",
+    textColor: "var(--text)",
     links: [
       { label: t('nav.pictureSettings'), path: "/sets/picture" },
       { label: t('nav.habits'), path: "/sets/habits" },
@@ -114,9 +119,38 @@ const navItems = computed(() => [
     ]
   }
 ])
+
+const activeMode = ref('tree');
+
+const menuConfig = [
+  { 
+    
+    rgb: 'rgb(255, 71, 87)', // 鲜艳红
+    icon: '/icon/back.svg' 
+  },
+  { 
+     
+    rgb: 'rgb(255, 202, 58)', // 鲜艳黄
+    icon: '/icon/more.svg'
+  },
+  { 
+    
+    rgb: 'rgb(46, 213, 115)', // 鲜艳绿
+    icon: '/icon/enter.svg' 
+  },
+  { 
+    
+    rgb: 'rgb(55, 66, 250)', // 鲜艳蓝
+    icon: '/icon/close.svg' 
+  }
+];
+const activeHue = computed(() => {
+  return menuConfig.find(i => i.value === activeMode.value)?.hue || 0;
+});
 </script>
 
 <style scoped>
+  
   .common-layout{
     top: 80px;
   }
