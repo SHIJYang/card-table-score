@@ -2,7 +2,7 @@
 	<div class="top-nav-wrapper">
 		<el-menu mode="horizontal" :default-active="activeIndex" :ellipsis="false" router class="top-menu custom-menu">
 			<el-menu-item index="/" class="logo-item">
-				<img :src="logo" alt="Logo" class="logo" />
+				<CubeSpinner :size="20" color="#55aa00" :duration="3" />
 			</el-menu-item>
 			<div class="flex-grow" />
 			<el-sub-menu index="games" popper-class="theme-popper">
@@ -38,6 +38,7 @@
 	import { computed } from 'vue'
 	import { useI18n } from 'vue-i18n'
 	import { useRoute } from 'vue-router'
+	import CubeSpinner from '@/components/CubeSpinner.vue'
 	import logo from '../../assets/love-sign.svg'
 	
 	const route = useRoute()
@@ -64,6 +65,9 @@
 
 		.el-sub-menu .el-sub-menu__title {
 			border-bottom: 4px solid transparent;
+		}
+		.el-menu-item .is-active {
+			border-bottom: 0!important;
 		}
 	}
 
@@ -146,6 +150,6 @@
 	/* 子菜单激活时，父级标题状态 */
 	:deep(.el-sub-menu.is-active .el-sub-menu__title) {
 		color: var(--primary) !important;
-		border-bottom: none;
+		border-bottom: none !important;
 	}
 </style>
