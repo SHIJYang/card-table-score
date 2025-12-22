@@ -53,6 +53,7 @@ import { useRoute, useRouter } from 'vue-router' // 引入 useRouter
 import FuzzyText from "../../components/gsap/FuzzyText.vue";
 import logo from '../../assets/love-sign.svg'
 import CardNav from '../../components/gsap/CardNav.vue'
+import { label } from 'three/tsl';
 
 const route = useRoute()
 const router = useRouter()
@@ -120,26 +121,26 @@ const navItems = computed(() => [
   }
 ])
 
-const activeMode = ref('tree');
+const activeMode = ref('');
 
 const menuConfig = [
   { 
-    
+    value: '1',
     rgb: 'rgb(255, 71, 87)', // 鲜艳红
     icon: '/icon/back.svg' 
   },
   { 
-     
+    value: '2',
     rgb: 'rgb(255, 202, 58)', // 鲜艳黄
     icon: '/icon/more.svg'
   },
   { 
-    
+    value: '3',
     rgb: 'rgb(46, 213, 115)', // 鲜艳绿
     icon: '/icon/enter.svg' 
   },
   { 
-    
+    value: '4',
     rgb: 'rgb(55, 66, 250)', // 鲜艳蓝
     icon: '/icon/close.svg' 
   }

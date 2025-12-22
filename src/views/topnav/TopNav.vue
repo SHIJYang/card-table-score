@@ -38,7 +38,7 @@
 	import { computed } from 'vue'
 	import { useI18n } from 'vue-i18n'
 	import { useRoute } from 'vue-router'
-	import CubeSpinner from '@/components/CubeSpinner.vue'
+	import CubeSpinner from '@/components/box/CubeSpinner.vue'
 	import logo from '../../assets/love-sign.svg'
 	
 	const route = useRoute()

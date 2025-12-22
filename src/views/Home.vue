@@ -26,15 +26,39 @@
           </div>
         </div>
       </section>
+      <div class="loading-container">
+    <TowerLoader />
 
+    <TowerLoader :scale="1" />
+    
+    <TowerLoader 
+      :scale="2" 
+      style="--color-top: #ff9999; --color-left: #cc0000; --color-right: #ff0000;" 
+    />
+  </div>
       
-
+  <div class="showcase">
+    <div class="item">
+      <CubeLoader :scale="0.6" :hue="280" />
+      <CubeLoader :scale="0.6" :hue="320" />
+    </div>
+    <div class="item">
+     
+      <CubeLoader />
+    </div>
+    <div class="item">
+      <CubeLoader :scale="0.6" :hue="0" />
+      <CubeLoader :scale="0.6" :hue="48" />
+    </div>
+  </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import MatrixBackground from '@/components/MatrixBackground.vue'; 
+import TowerLoader from '@/components/box/TowerLoader.vue'
+import CubeLoader from '@/components/box/CubeLoader.vue'
 const gameCategories = [
   { id: 1, name: "计分板", icon: "🧩", color: "#409eff", link: "/score" },
   { id: 2, name: "五子棋", icon: "🎯", link: "/gomoku", color: "#f56c6c" },
@@ -50,6 +74,33 @@ const handleExplore = (url: string) => {
 </script>
 
 <style scoped>
+
+.loading-container {
+  display: flex;
+  gap: 50px;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+ 
+}
+.showcase {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 50px;
+  padding: 30px;
+  background-color: #040e29; /* 深色背景更能凸显发光效果 */
+  justify-content: center;
+  align-items: center;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 60px; /* 给下方阴影留出空间 */
+}
+
+
 /* --- 全局容器调整 --- */
 .game-homepage {
   min-height: calc(100vh - 60px);
