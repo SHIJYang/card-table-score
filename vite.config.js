@@ -1,28 +1,32 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
-
-// 👇 引入自动导入插件
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+// 👇 1. 引入压缩插件
+import viteCompression from 'vite-plugin-compression'
+// 👇 2. 引入打包分析插件 (仅在分析时启用)
+import { visualizer } from 'rollup-plugin-visualizer'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    // 👇 配置自动导入 (Element Plus 按需引入)
-    AutoImport({
-      resolvers: [ElementPlusResolver()],
+    AutoImport({ resolvers: [ElementPlusResolver()] }),
+    Components({ resolvers: [ElementPlusResolver()] }),
+    // 👇 开启 Gzip 压缩 (大幅减小网络传输体积)
+    viteCompression({
+      verbose: true,
+      disable: false,
+      threshold: 10240, // 大于 10kb 的文件才压缩
+      algorithm: 'gzip',
+      ext: '.gz',
     }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-    }),
+    // 👇 生成 stats.html 分析文件 (构建后在根目录查看)
+    visualizer({ open: false }) 
   ],
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   server: {
     port: 5173,
@@ -30,44 +34,33 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/picui-proxy/': {
-        // 目标服务器（图片托管的域名）
         target: 'https://free.picui.cn',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/picui-proxy/, '')
-        // 推荐在开发环境中禁用 SSL 证书检查，但请谨慎使用
-        // secure: false 
       }
     },
-    // 添加安全响应头
     configureServer: (server) => {
       server.middlewares.use((_req, res, next) => {
-        // 添加X-Content-Type-Options头，防止MIME类型嗅探攻击
         res.setHeader('X-Content-Type-Options', 'nosniff');
         next();
       });
     }
   },
-  // 👇 生产环境构建配置 (新增分包策略)
   build: {
-    chunkSizeWarningLimit: 1500, // 调高文件大小警告阈值 (1500kb)
+    target: 'esnext', // 支持高级语法，生成的包更小
+    minify: 'esbuild', // 构建速度更快
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        // 手动分包，解决 chunk 过大问题
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // 拆分 3D 库
-            if (id.includes('three')) {
-              return 'three';
-            }
-            // 拆分 AI 视觉库 (这个通常很大)
-            if (id.includes('@mediapipe') || id.includes('mediapipe')) {
-              return 'mediapipe';
-            }
-            // 拆分 UI 库
-            if (id.includes('element-plus')) {
-              return 'element-plus';
-            }
-            // 其他依赖
+            // 👇 进一步细化分包
+            if (id.includes('three')) return 'three';
+            if (id.includes('@mediapipe') || id.includes('mediapipe')) return 'mediapipe';
+            if (id.includes('element-plus')) return 'element-plus';
+            if (id.includes('lodash') || id.includes('axios')) return 'utils'; // 工具类
+            if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) return 'animation'; // 动画库
+            
             return 'vendor';
           }
         }
