@@ -7,40 +7,22 @@
       :items="navItems"
       baseColor="#fff"
       menuColor="#000"
-      
     />
     </el-header>
-    
     <el-container>
       <el-main class="error404">
         <FuzzyText
-          text="404"
-          :font-size="180"
-          font-weight="900"
-          :color="themeColor"
-          :enable-hover="true"
-          :base-intensity="0.2"
-          :hover-intensity="0.8"
-        />
-        <FuzzyText
-          text="oops!"
-          :font-size="80"
-          font-weight="900"
+          text="棒！"
+          :font-size="40"
           :color="secondaryColor"
           :enable-hover="true"
-          :base-intensity="0.2"
-          :hover-intensity="0.8"
+          :base-intensity="0.1"
+          :hover-intensity="0.3"
         />
-
         <GestureRadio 
-      v-model="activeMode" 
-      :options="menuConfig" 
-    />
-
-    <div class="status-board">
-      <p>当前激活模式: <strong>{{ activeMode }}</strong></p>
-      <div class="color-preview" :style="{ background: `hsl(${activeHue}, 100%, 50%)` }"></div>
-    </div>
+        v-model="activeMode" 
+        :options="menuConfig" 
+        />
       </el-main>
     </el-container>
   </div>
@@ -49,10 +31,11 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router' // 引入 useRouter
+import { useRoute, useRouter } from 'vue-router' 
 import FuzzyText from "../../components/gsap/FuzzyText.vue";
 import logo from '../../assets/love-sign.svg'
 import CardNav from '../../components/gsap/CardNav.vue'
+import GestureRadio from "../../components/GestureRadio.vue"
 import { label } from 'three/tsl';
 
 const route = useRoute()
@@ -145,9 +128,7 @@ const menuConfig = [
     icon: '/icon/close.svg' 
   }
 ];
-const activeHue = computed(() => {
-  return menuConfig.find(i => i.value === activeMode.value)?.hue || 0;
-});
+
 </script>
 
 <style scoped>
@@ -156,7 +137,7 @@ const activeHue = computed(() => {
     top: 80px;
   }
 .error404 {
-  height: calc(80vh - 60px);
+  
   display: flex;
   flex-direction: column;
   justify-content: center;

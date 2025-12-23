@@ -124,95 +124,118 @@ export const useCamerasStore = defineStore('camera', {
 
     // --- 核心手势算法 (逻辑修复版) ---
     processGesture(lm, now) {
-      // 1. 检查是否处于锁定冷却期 (防止触发后误判)
+      // 1. 冷却逻辑
       if (this.gesture.isLocked) {
-         // 1秒后自动解锁
-         if (now - this.lastLetterTime > 1000) { 
-             this.gesture.isLocked = false;
-         } else {
-             return; // 还在冷却中，跳过检测
-         }
-      }
-
-      const dist = (i, j) => Math.hypot(lm[i].x - lm[j].x, lm[i].y - lm[j].y);
-      const palmSize = dist(0, 9); 
-
-      // 2. 手指伸直判定
-      const isExtended = (tip, pip) => dist(0, tip) > dist(0, pip) * 1.1;
-      
-      const f1 = isExtended(8, 6);   // 食指
-      const f2 = isExtended(12, 10); // 中指
-      const f3 = isExtended(16, 14); // 无名指
-      const f4 = isExtended(20, 18); // 小指
-      
-      // 3. 拇指判定
-      const thumbExtended = dist(4, 17) > palmSize * 1.0; 
-      // 拇指向上 (Y越小越高)
-      const thumbUp = lm[4].y < lm[3].y && lm[4].y < lm[5].y && !f1 && !f2 && !f3 && !f4;
-      
-      // 4. OK 判定 (捏合)
-      const pinchDist = dist(4, 8);
-      const isPinch = pinchDist < palmSize * 0.25; 
-      
-      const extendedCount = [f1, f2, f3, f4].filter(Boolean).length;
-
-      let currentGesture = 'UNKNOWN';
-
-      // --- 手势状态机 (优先级判定) ---
-
-      // 👌 OK 手势：最高优先级
-      // 必须满足：捏合 + 中指/无名指伸直 (避免握拳误判)
-      if (isPinch && f2 && f3) {
-        currentGesture = 'OK';
-      } 
-      // ✌️ 耶 / V手势
-      else if (f1 && f2 && !f3 && !f4) {
-        currentGesture = 'POINTING'; 
-      }
-      // 🖐 全张开
-      else if (extendedCount === 4 && thumbExtended) {
-        currentGesture = 'OPEN_FULL';
-      }
-      // 👍 点赞
-      else if (thumbUp) {
-        currentGesture = 'FIST_THUMB';
-      }
-      // ✊ 握拳 (必须没有捏合)
-      else if (extendedCount === 0 && !isPinch) {
-        currentGesture = 'FIST_CLOSED';
-      }
-      // ✋ 四指开但拇指收
-      else if (extendedCount === 4 && !thumbExtended) {
-        currentGesture = 'OPEN_NO_THUMB';
-      }
-
-      // --- 粘性防抖逻辑 ---
-      if (currentGesture === this.gesture.name) {
-        // 匹配成功，增加信心 (OK加得快一点)
-        const increment = currentGesture === 'OK' ? 30 : 20;
-        this.gesture.confidence = Math.min(this.gesture.confidence + increment, 100);
-      } else {
-        // 不匹配，减少信心
-        this.gesture.confidence = Math.max(this.gesture.confidence - 20, 0);
-        // 信心归零才切换状态
-        if (this.gesture.confidence === 0) {
-          this.gesture.name = currentGesture;
-          this.gesture.confidence = 10; // 初始信心
+        if (now - this.lastLetterTime > 1000) {
+          this.gesture.isLocked = false;
+        } else {
+          return;
         }
       }
 
-      // 触发业务逻辑 (阈值设为 75)
-      if (this.gesture.confidence > 75) {
+      // --- 基础几何计算 ---
+      // 计算两点距离
+      const getDist = (i, j) => Math.hypot(lm[i].x - lm[j].x, lm[i].y - lm[j].y);
+      
+      // 手掌基准大小 (手腕到中指根部)，用于归一化距离，适应不同远近
+      const palmBaseSize = getDist(0, 9); 
+
+      // 辅助函数：判断手指是否伸直
+      // 逻辑：指尖到手腕的距离 > 指关节到手腕的距离 * 阈值
+      const isStraight = (tipIdx, pipIdx) => getDist(0, tipIdx) > getDist(0, pipIdx) * 1.2;
+
+      // 2. 获取五个手指的状态 (True=伸直, False=弯曲)
+      // 拇指逻辑特殊：比较指尖和指根到小指根部(17)的距离，或者简单的张开角度
+      const thumbOpen = getDist(4, 17) > palmBaseSize * 1.1; 
+      const indexOpen = isStraight(8, 6);
+      const middleOpen = isStraight(12, 10);
+      const ringOpen = isStraight(16, 14);
+      const pinkyOpen = isStraight(20, 18);
+
+      // 3. 特殊特征计算
+      // 捏合检测 (拇指尖-食指尖)
+      const pinchDist = getDist(4, 8);
+      const isPinch = pinchDist < palmBaseSize * 0.3; // 阈值可微调
+
+      // 拇指向上逻辑 (不仅看Y轴，还要确保拇指伸直且其他手指弯曲)
+      // 修正：使用相对坐标判断拇指是否在上方 (y更小)
+      const isThumbUpward = lm[4].y < lm[3].y && lm[4].y < lm[17].y;
+
+      // 统计伸直的手指数量 (不含拇指)
+      const fingersCount = [indexOpen, middleOpen, ringOpen, pinkyOpen].filter(Boolean).length;
+
+      // --- 4. 手势状态机 (严格优先级) ---
+      let detected = 'UNKNOWN';
+
+      // 🟢 [OK 手势]
+      // 核心特征：拇指食指捏合 + 中指/无名指/小指必须伸直 (这是为了和握拳区分的关键)
+      if (isPinch && middleOpen && ringOpen) {
+        detected = 'OK';
+      }
+      
+      // 🟢 [FIST_CLOSED 握拳]
+      // 核心特征：所有手指(除拇指外)弯曲 + 没有捏合(或者捏合了但其他手指没伸直)
+      // 放宽条件：允许拇指随意，只要其他四指紧握
+      else if (fingersCount === 0) {
+         // 细分：如果是竖起大拇指
+         if (thumbOpen && isThumbUpward) {
+            detected = 'FIST_THUMB'; // 👍 点赞
+         } else {
+            detected = 'FIST_CLOSED'; // 👊 纯握拳
+         }
+      }
+
+      // 🟢 [POINTING 剪刀手/指引]
+      // 核心特征：食指(或加中指)伸直 + 无名指小指弯曲
+      else if (indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
+        detected = 'POINTING';
+      }
+      else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+        detected = 'POINTING'; // 单指也算
+      }
+
+      // 🟢 [OPEN_FULL 张开手掌]
+      // 核心特征：至少4指伸直
+      else if (fingersCount >= 4) {
+        if (thumbOpen) {
+           detected = 'OPEN_FULL'; // 🖐 全开
+        } else {
+           detected = 'OPEN_NO_THUMB'; // ✋ 四指开
+        }
+      }
+
+      // --- 5. 粘性防抖 (Confidence System) ---
+      this.updateGestureConfidence(detected);
+
+      // --- 6. 触发业务逻辑 ---
+      if (this.gesture.confidence > 70) {
         this.handleLogic(this.gesture.name, lm, now);
       }
+    },
+
+    // 抽离出来的防抖逻辑
+    updateGestureConfidence(currentGesture) {
+       // 如果检测结果变化，迅速降低当前置信度
+       if (currentGesture !== this.gesture.name) {
+          this.gesture.confidence -= 20;
+          if (this.gesture.confidence <= 0) {
+             // 信心归零，切换手势
+             this.gesture.name = currentGesture;
+             this.gesture.confidence = 0;
+          }
+       } else {
+          // 如果检测结果一致，增加置信度
+          // OK 手势因为动作精细，增加得慢一点，防止误触
+          const step = currentGesture === 'OK' ? 15 : 25;
+          this.gesture.confidence = Math.min(this.gesture.confidence + step, 100);
+       }
     },
 
     handleLogic(gesture, lm, now) {
       const center = lm[9]; 
       const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
       
-      // 【优化】只有在非离散手势下才更新位置
-      // 防止做 OK/点赞手势时，手指运动导致画面坐标乱飘
+      
       if (gesture === 'OPEN_FULL' || gesture === 'POINTING' || gesture === 'FIST_CLOSED') {
           this.interaction.handPos.x = lerp(this.interaction.handPos.x, center.x, 0.2);
           this.interaction.handPos.y = lerp(this.interaction.handPos.y, center.y, 0.2);
