@@ -15,6 +15,7 @@
 				<el-menu-item index="/snake">{{ t('nav.snake') }}</el-menu-item>
 				<el-menu-item index="/2048">{{ t('nav.2048') }}</el-menu-item>
 				<el-menu-item index="/try">{{ t('nav.try') }}</el-menu-item>
+				<el-menu-item index="/dog">{{ t('nav.dog') }}</el-menu-item>
 			</el-sub-menu>
 			<el-sub-menu index="our" popper-class="theme-popper">
 				<template #title>

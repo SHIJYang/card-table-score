@@ -12,8 +12,8 @@ import request from './utils/request'
 import setupMock from './mock'
 import { initTheme } from './theme/index.js'
 
-// 独立的 i18n 插件
 import i18n from './plugins/i18n'
+import Tres from '@tresjs/core'
 
 // 创建应用
 const app = createApp(App)
@@ -21,6 +21,8 @@ const app = createApp(App)
 // 使用 Pinia（必须在 Mock 前）
 const pinia = createPinia()
 app.use(pinia)
+
+app.use(Tres)
 
 // 初始化 Mock
 setupMock(request)
@@ -30,10 +32,10 @@ initTheme()
 
 // 使用其他插件
 app.use(router)
+
 app.use(i18n)
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
- 
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
