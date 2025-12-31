@@ -9,7 +9,7 @@
 
 
         <!-- 禁止缩放,禁止平移-->
-        <!-- <OrbitControls :enable-zoom="false" :enable-pan="false" /> -->
+        <OrbitControls :enable-zoom="false" :enable-pan="false" />
 
         <!-- 基础照明:环境光 -->
         <TresAmbientLight :intensity="1.2" />
@@ -17,7 +17,7 @@
         <!-- 基础照明: 平行光 -->
         <TresDirectionalLight :position="[2, 5, 5]" :intensity="1" />
 
-        <TresGroup :position="[1.5, 1.3, 0]"  :rotation-y="-0.2" >
+        <TresGroup :position="[0, 0, 0]"  :rotation-y="-0.2" >
         <LineDog />
       </TresGroup>
 
