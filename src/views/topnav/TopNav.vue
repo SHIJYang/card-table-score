@@ -15,14 +15,15 @@
 				<el-menu-item index="/snake">{{ t('nav.snake') }}</el-menu-item>
 				<el-menu-item index="/2048">{{ t('nav.2048') }}</el-menu-item>
 				<el-menu-item index="/try">{{ t('nav.try') }}</el-menu-item>
-				<el-menu-item index="/dog">{{ t('nav.dog') }}</el-menu-item>
+				
 			</el-sub-menu>
 			<el-sub-menu index="our" popper-class="theme-popper">
 				<template #title>
 					<span>{{ t('nav.our') }}</span>
 				</template>
-				<el-menu-item index="/our/tree">{{ t('nav.christmasTree') }}</el-menu-item>
-				<el-menu-item index="/our/trees">{{ t('nav.christmasTree') }}2</el-menu-item>
+				<el-menu-item index="/tree">{{ t('nav.christmasTree') }}</el-menu-item>
+				<el-menu-item index="/trees">{{ t('nav.christmasTree') }}2</el-menu-item>
+				<el-menu-item index="/dog">{{ t('nav.dog') }}</el-menu-item>
 			</el-sub-menu>
 			<el-sub-menu index="settings" popper-class="theme-popper">
 				<template #title>
@@ -30,7 +31,7 @@
 				</template>
 				<el-menu-item index="/sets/picture">{{ t('nav.pictureSettings') }}</el-menu-item>
 				<el-menu-item index="/sets/habits">{{ t('nav.habits') }}</el-menu-item>
-				<el-menu-item index="/sets/GameHistory">{{ t('nav.gameHistory') }}</el-menu-item>
+				
 			</el-sub-menu>
 		</el-menu>
 	</div>

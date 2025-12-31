@@ -8,8 +8,8 @@ import './index.css'
 
 import router from './router'
 import App from './App.vue'
-import request from './utils/request'
-import setupMock from './mock'
+
+
 import { initTheme } from './theme/index.js'
 
 import i18n from './plugins/i18n'
@@ -24,8 +24,7 @@ app.use(pinia)
 
 app.use(Tres)
 
-// 初始化 Mock
-setupMock(request)
+
 
 // 初始化主题
 initTheme()

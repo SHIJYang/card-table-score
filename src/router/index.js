@@ -40,35 +40,21 @@ const routes = [
     {
         path: '/dog',
         name: 'Dog',
-        component: () => import('../views/games/dog.vue')
+        component: () => import('../views/our/dog.vue')
     },
     {
         path: '/img',
         name: 'Img',
         component: () => import('../views/sets/picture.vue')
     },
+    
     {
-        path: '/examples/store',
-        name: 'StoreExample',
-        component: () => import('../examples/StoreExample.vue')
-    },
-    {
-        path: '/examples/api',
-        name: 'ApiExample',
-        component: () => import('../examples/ApiExample.vue')
-    },
-    {
-        path: '/examples/quickstart',
-        name: 'QuickStart',
-        component: () => import('../examples/QuickStart.vue')
-    },
-    {
-        path: '/our/tree',
+        path: '/tree',
         name: 'Tree',
         component: () => import('../views/our/tree.vue')
     },
     {
-        path: '/our/trees',
+        path: '/trees',
         name: 'Trees',
         component: () => import('../views/our/trees.vue')
     },
@@ -77,11 +63,7 @@ const routes = [
         name: 'picture',
         component: () => import('../views/sets/picture.vue')
     },
-     {
-        path: '/sets/GameHistory',
-        name: 'GameHistory',
-        component: () => import('../views/sets/GameHistory.vue')
-    },
+   
     {
         path: '/sets/habits',
         name: 'habits',

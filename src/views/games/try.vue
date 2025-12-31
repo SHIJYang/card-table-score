@@ -36,7 +36,7 @@ import FuzzyText from "../../components/gsap/FuzzyText.vue";
 import logo from '../../assets/love-sign.svg'
 import CardNav from '../../components/gsap/CardNav.vue'
 import GestureRadio from "../../components/GestureRadio.vue"
-import { label } from 'three/tsl';
+
 
 const route = useRoute()
 const router = useRouter()
@@ -65,9 +65,7 @@ onUnmounted(() => {
 });
 // --------------------
 
-const goHome = () => {
-    router.push('/');
-}
+
 
 const navItems = computed(() => [
   {
@@ -88,8 +86,9 @@ const navItems = computed(() => [
     bgColor: "var(--el-bg-color-page)",
     textColor: "var(--text)",
     links: [
-      { label: t('nav.christmasTree'), path: "/our/tree" },
-      { label: `${t('nav.christmasTree')} 2`, path: "/our/trees" }
+      { label: t('nav.christmasTree'), path: "/tree" },
+      { label: `${t('nav.christmasTree')} 2`, path: "/trees" },
+      { label: `${t('nav.dog')} 2`, path: "/dog" }
     ]
   },
   {
@@ -99,7 +98,7 @@ const navItems = computed(() => [
     links: [
       { label: t('nav.pictureSettings'), path: "/sets/picture" },
       { label: t('nav.habits'), path: "/sets/habits" },
-      { label: t('nav.gameHistory'), path: "/sets/GameHistory" }
+  
     ]
   }
 ])
@@ -181,13 +180,5 @@ const menuConfig = [
     box-shadow: 0px 0px 0px var(--text-color); /* 点击时的按压效果 */
 }
 
-@media (max-width: 768px) {
-  .error404 :deep(.fuzzy-text) { font-size: 120px !important; }
-  .error404 :deep(.fuzzy-text:nth-child(2)) { font-size: 60px !important; }
-  
-  .cartoon-btn {
-      padding: 10px 24px;
-      font-size: 1rem;
-  }
-}
+
 </style>

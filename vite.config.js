@@ -11,7 +11,16 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
   plugins: [
-    vue(),
+    vue({
+      // 添加这个 template 配置
+      template: {
+        compilerOptions: {
+          // 告诉 Vue：只要是 Tres 开头的标签，就当做自定义元素处理，忽略警告
+          // 注意：TresCanvas 是真正的 Vue 组件，所以要排除它
+          isCustomElement: (tag) => tag.startsWith('Tres') && tag !== 'TresCanvas',
+        },
+      },
+    }),
     AutoImport({ resolvers: [ElementPlusResolver()] }),
     Components({ resolvers: [ElementPlusResolver()] }),
     // 👇 开启 Gzip 压缩 (大幅减小网络传输体积)
