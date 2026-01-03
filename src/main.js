@@ -13,7 +13,7 @@ import App from './App.vue'
 import { initTheme } from './theme/index.js'
 
 import i18n from './plugins/i18n'
-import Tres from '@tresjs/core'
+
 
 // 创建应用
 const app = createApp(App)
@@ -22,7 +22,6 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-app.use(Tres)
 
 
 

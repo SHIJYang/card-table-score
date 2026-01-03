@@ -1,42 +1,99 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+
+// 自动化插件
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-// 👇 1. 引入压缩插件
+import Icons from 'unplugin-icons/vite'
+import IconsResolver from 'unplugin-icons/resolver'
+
+// 优化插件
 import viteCompression from 'vite-plugin-compression'
-// 👇 2. 引入打包分析插件 (仅在分析时启用)
 import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
   plugins: [
     vue({
-      // 添加这个 template 配置
       template: {
         compilerOptions: {
-          // 告诉 Vue：只要是 Tres 开头的标签，就当做自定义元素处理，忽略警告
-          // 注意：TresCanvas 是真正的 Vue 组件，所以要排除它
-          isCustomElement: (tag) => tag.startsWith('Tres') && tag !== 'TresCanvas',
+         
+          isCustomElement: (tag) => 
+            (tag.startsWith('Tres') && tag !== 'TresCanvas') || tag === 'primitive',
         },
       },
     }),
-    AutoImport({ resolvers: [ElementPlusResolver()] }),
-    Components({ resolvers: [ElementPlusResolver()] }),
-    // 👇 开启 Gzip 压缩 (大幅减小网络传输体积)
+
+    // 👇 1. API 自动导入 (核心自动化)
+    // 让你不再需要写: import { ref, computed, watch } from 'vue'
+    // 也不需要写: import { useRoute, useRouter } from 'vue-router'
+    AutoImport({
+      // 自动导入 Vue, Vue-Router, Pinia 的核心 API
+      imports: ['vue', 'vue-router', 'pinia'],
+      // 自动导入 /src/store 下的模块（例如 const userStore = useUserStore()）
+      dirs: ['./src/store'], 
+      resolvers: [
+        ElementPlusResolver(),
+        // 自动导入图标组件的解析器
+        IconsResolver({ prefix: 'Icon' }), 
+      ],
+      // 生成类型声明文件，解决 ESLint/TS 报错（根目录下会生成 auto-imports.d.ts）
+      dts: 'auto-imports.d.ts', 
+      eslintrc: {
+        enabled: true, // 1. 改为 true 用于生成 .eslintrc-auto-import.json
+      },
+    }),
+
+    // 👇 2. 组件自动注册
+    // 让你不再需要手动 import MyComponent form './components/MyComponent.vue'
+    Components({
+      // 指定组件位置，默认为 src/components
+      dirs: ['src/components'],
+      // 允许子目录作为组件的命名空间
+      directoryAsNamespace: true,
+      resolvers: [
+        // Element Plus 组件自动按需引入
+        ElementPlusResolver(),
+        // 👇 3. 图标组件自动引入
+        // 使用方式: <i-ep-edit /> (ep 代表 element-plus set)
+        IconsResolver({ 
+          enabledCollections: ['ep'],
+        }),
+      ],
+      dts: 'components.d.ts',
+    }),
+
+    // 👇 4. 图标自动加载引擎
+    Icons({
+      autoInstall: true, // 如果检测到未安装的图标集，自动尝试安装
+    }),
+
     viteCompression({
       verbose: true,
       disable: false,
-      threshold: 10240, // 大于 10kb 的文件才压缩
+      threshold: 10240,
       algorithm: 'gzip',
       ext: '.gz',
     }),
-    // 👇 生成 stats.html 分析文件 (构建后在根目录查看)
-    visualizer({ open: false }) 
+    visualizer({ open: false })
   ],
+
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+
+  css: {
+    // 👇 5. 全局样式自动化 (可选)
+    // 如果你有全局变量文件，配置在这里后，每个 SCSS 文件都会自动引入，无需 @use
+    preprocessorOptions: {
+      scss: {
+        // additionalData: `@use "@/assets/styles/variables.scss" as *;` 
+        api: 'modern-compiler', // 使用更快的 sass-embedded 编译器
+      }
+    }
+  },
+
   server: {
     port: 5173,
     open: true,
@@ -48,6 +105,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/picui-proxy/, '')
       }
     },
+    // 安全策略头
     configureServer: (server) => {
       server.middlewares.use((_req, res, next) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -55,21 +113,34 @@ export default defineConfig({
       });
     }
   },
+
   build: {
-    target: 'esnext', // 支持高级语法，生成的包更小
-    minify: 'esbuild', // 构建速度更快
+    target: 'esnext',
+    minify: 'esbuild',
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
+        // 👇 6. 优化分包策略
+        // 之前的逻辑很好，稍微做了整理，确保 three.js 生态不被打散导致加载错误
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // 👇 进一步细化分包
-            if (id.includes('three')) return 'three';
-            if (id.includes('@mediapipe') || id.includes('mediapipe')) return 'mediapipe';
+            // 3D 引擎及相关库（TresJS 基于 Three，通常建议打包在一起避免上下文丢失）
+            if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
+              return 'three-engine';
+            }
+            // 视觉识别大库
+            if (id.includes('@mediapipe') || id.includes('mediapipe')) {
+              return 'mediapipe';
+            }
+            // UI 库
             if (id.includes('element-plus')) return 'element-plus';
-            if (id.includes('lodash') || id.includes('axios')) return 'utils'; // 工具类
-            if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) return 'animation'; // 动画库
             
+            // 动画库
+            if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
+              return 'animation';
+            }
+
+            // 其他依赖归为 vendor
             return 'vendor';
           }
         }

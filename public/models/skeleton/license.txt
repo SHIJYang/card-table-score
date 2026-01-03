@@ -1,0 +1,11 @@
+Model Information:
+* title:	Free Animated Low Poly Cartoon Skeleton
+* source:	https://sketchfab.com/3d-models/free-animated-low-poly-cartoon-skeleton-9550b93d28354568adceb360981caa1b
+* author:	Overaction Game Studio (https://sketchfab.com/overactiongamestudio)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Free Animated Low Poly Cartoon Skeleton" (https://sketchfab.com/3d-models/free-animated-low-poly-cartoon-skeleton-9550b93d28354568adceb360981caa1b) by Overaction Game Studio (https://sketchfab.com/overactiongamestudio) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
