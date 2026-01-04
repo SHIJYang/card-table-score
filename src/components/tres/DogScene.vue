@@ -1,13 +1,8 @@
 <template>
   <TresGroup ref="groupRef">
-    
-    <TresGroup 
-      ref="headRef" 
-      :position="[0, 0.6, 0.3]"
-      @click.stop="triggerEarWiggle"
-      @pointer-enter="onPointerEnter"
-      @pointer-leave="onPointerLeave"
-    > 
+
+    <TresGroup ref="headRef" :position="[0, 0.6, 0.3]" @click.stop="triggerEarWiggle" @pointer-enter="onPointerEnter"
+      @pointer-leave="onPointerLeave">
       <TresMesh>
         <TresSphereGeometry :args="[0.8, 32, 32]" />
         <TresMeshToonMaterial :color="dogConfig.color" />
@@ -51,7 +46,7 @@
         <TresSphereGeometry :args="[0.05, 16, 16]" />
         <TresMeshBasicMaterial color="black" />
       </TresMesh>
-      
+
       <TresMesh :position="[-0.4, -0.1, 0.65]" :scale-z="0.5">
         <TresSphereGeometry :args="[0.08, 16, 16]" />
         <TresMeshBasicMaterial color="#ffb6c1" :transparent="true" :opacity="0.6" />
@@ -62,13 +57,9 @@
       </TresMesh>
     </TresGroup>
 
-    <TresGroup 
-      :position="[0, -0.5, -0.2]"
-      @click.stop="triggerJump"
-      @pointer-enter="onPointerEnter"
-      @pointer-leave="onPointerLeave"
-    > 
-      <TresMesh :scale="[0.9, 0.8, 1.3]"> 
+    <TresGroup :position="[0, -0.5, -0.2]" @click.stop="triggerJump" @pointer-enter="onPointerEnter"
+      @pointer-leave="onPointerLeave">
+      <TresMesh :scale="[0.9, 0.8, 1.3]">
         <TresSphereGeometry :args="[0.7, 32, 32]" />
         <TresMeshToonMaterial :color="dogConfig.color" />
       </TresMesh>
@@ -78,26 +69,21 @@
       </TresMesh>
     </TresGroup>
 
-    <TresGroup 
-      ref="tailRef" 
-      :position="[0, -0.2, -1.0]"
-      @click.stop="triggerSpin"
-      @pointer-enter="onPointerEnter"
-      @pointer-leave="onPointerLeave"
-    >
-      <TresGroup :rotation-x="-0.5"> 
-         <TresMesh :position="[0, 0.3, 0]"> 
-           <TresSphereGeometry :args="[0.2, 32, 32]" />
-           <TresMeshToonMaterial :color="dogConfig.color" />
-         </TresMesh>
-         <TresMesh :position="[0, 0.3, 0]">
-           <TresSphereGeometry :args="[0.2 * dogConfig.outlineWidth, 32, 32]" />
-           <TresMeshBasicMaterial :color="dogConfig.outlineColor" :side="THREE.BackSide" />
-         </TresMesh>
+    <TresGroup ref="tailRef" :position="[0, -0.2, -1.0]" @click.stop="triggerSpin" @pointer-enter="onPointerEnter"
+      @pointer-leave="onPointerLeave">
+      <TresGroup :rotation-x="-0.5">
+        <TresMesh :position="[0, 0.3, 0]">
+          <TresSphereGeometry :args="[0.2, 32, 32]" />
+          <TresMeshToonMaterial :color="dogConfig.color" />
+        </TresMesh>
+        <TresMesh :position="[0, 0.3, 0]">
+          <TresSphereGeometry :args="[0.2 * dogConfig.outlineWidth, 32, 32]" />
+          <TresMeshBasicMaterial :color="dogConfig.outlineColor" :side="THREE.BackSide" />
+        </TresMesh>
       </TresGroup>
     </TresGroup>
 
-    <TresGroup :position="[-0.4, -1.1, 0.2]">
+    <TresGroup :position="[-0.4, -1.1, 0.2]" @click.stop="triggerSpin">
       <TresMesh :scale-y="1.2">
         <TresSphereGeometry :args="[0.18, 32, 32]" />
         <TresMeshToonMaterial :color="dogConfig.color" />
@@ -108,7 +94,7 @@
       </TresMesh>
     </TresGroup>
 
-    <TresGroup :position="[0.4, -1.1, 0.2]">
+    <TresGroup :position="[0.4, -1.1, 0.2]" @click.stop="triggerSpin">
       <TresMesh :scale-y="1.2">
         <TresSphereGeometry :args="[0.18, 32, 32]" />
         <TresMeshToonMaterial :color="dogConfig.color" />
@@ -119,7 +105,7 @@
       </TresMesh>
     </TresGroup>
 
-    <TresGroup :position="[-0.45, -1.1, -0.7]">
+    <TresGroup :position="[-0.45, -1.1, -0.7]" @click.stop="triggerSpin">
       <TresMesh :scale-y="1.2">
         <TresSphereGeometry :args="[0.2, 32, 32]" />
         <TresMeshToonMaterial :color="dogConfig.color" />
@@ -130,7 +116,7 @@
       </TresMesh>
     </TresGroup>
 
-    <TresGroup :position="[0.45, -1.1, -0.7]">
+    <TresGroup :position="[0.45, -1.1, -0.7]" @click.stop="triggerSpin">
       <TresMesh :scale-y="1.2">
         <TresSphereGeometry :args="[0.2, 32, 32]" />
         <TresMeshToonMaterial :color="dogConfig.color" />
@@ -233,10 +219,10 @@ onBeforeRender(({ elapsed }) => {
 
   // --- [基础状态: 呼吸与悬浮] ---
   const breath = 1 + Math.sin(elapsed * 3) * 0.005
-  
+
   // 基础悬浮 Y 轴位置
   let posY = Math.sin(elapsed * 2) * 0.05
-  
+
   // 基础头部摆动
   let headRotZ = Math.sin(elapsed * 2) * 0.05
   let headRotY = Math.sin(elapsed * 1.5) * 0.05
@@ -251,7 +237,7 @@ onBeforeRender(({ elapsed }) => {
     // elapsed * 10 产生快速波形，Math.abs 让波形全在 0 以上
     const jumpHeight = Math.abs(Math.sin(elapsed * 10)) * 0.5
     posY += jumpHeight // 在基础悬浮上叠加跳跃高度
-    
+
     // 跳跃时稍微拉伸身体
     groupRef.value.scale.set(breath, breath, breath)
   } else {
@@ -261,13 +247,13 @@ onBeforeRender(({ elapsed }) => {
   // --- [动作叠加: 旋转] ---
   if (isSpinning.value) {
     // 快速自转
-    groupRef.value.rotation.y -= 0.05
+    groupRef.value.rotation.y -= 0.1
     // 旋转时尾巴摇得更快
-    tailSpeed = 5 
+    tailSpeed = 5
     tailAmp = 1.0
   } else {
     // === 修复后的复位逻辑 ===
-    
+
     // 1. 角度标准化：利用取余 (%) 把比如 -1000 的角度变成 -3.14 到 3.14 之间
     // 这样小狗就不需要“倒车”转几十圈才能回去，而是走最近的路
     let r = groupRef.value.rotation.y % (Math.PI * 2)
@@ -292,7 +278,7 @@ onBeforeRender(({ elapsed }) => {
     const wiggle = Math.sin(elapsed * 30) * 0.2
     leftEarRef.value.rotation.z = 0.5 + wiggle  // 初始角度 + 抖动
     rightEarRef.value.rotation.z = -0.5 - wiggle
-    
+
     // 抖耳朵时头也会跟着一点点晃
     headRotZ += wiggle * 0.2
   } else {
@@ -302,14 +288,14 @@ onBeforeRender(({ elapsed }) => {
   }
 
   // --- [应用最终计算结果] ---
-  
+
   // 应用位置 (基础悬浮 + 跳跃)
   groupRef.value.position.y = posY
-  
+
   // 应用头部旋转
   headRef.value.rotation.z = headRotZ
   headRef.value.rotation.y = headRotY
-  
+
   // 应用尾巴动画 (正常或加速)
   tailRef.value.rotation.z = Math.cos(elapsed * tailSpeed) * tailAmp
 })
