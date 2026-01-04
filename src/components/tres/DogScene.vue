@@ -147,7 +147,7 @@ const props = defineProps({
 const dogConfig = {
   get color() { return props.color }, // 动态获取 props 颜色
   outlineColor: '#000000',
-  outlineWidth: 1.05,
+  outlineWidth: 1.04,
 }
 
 // ==========================================

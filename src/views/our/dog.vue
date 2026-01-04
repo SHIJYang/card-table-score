@@ -10,7 +10,7 @@
 
 
       <!-- 禁止缩放,禁止平移-->
-      <!-- <OrbitControls :enable-zoom="true" :enable-pan="false" /> -->
+      <OrbitControls :enable-zoom="true" :enable-pan="false" />
 
       <!-- 基础照明:环境光 -->
       <TresAmbientLight :intensity="1.2" />
@@ -20,15 +20,13 @@
 
       <!-- <Stats /> -->
 
-      <!-- <TresGroup :position="[0, 0, 0]" :rotation-y="-0.2">
-        <LineDog />
-      </TresGroup> -->
 
 
-      <TresGroup :position="[1.5, 1.2, 0]" :rotation-y="-0.2" :scale="1.5">
+
+      <TresGroup :position="[1.5, 2, 0]" :rotation-y="-0.2" :scale="1.5">
         <LineDog cast-shadow />
       </TresGroup>
-      <TresGroup :position="[-1.5, 0, 0]" :rotation-y="0.2" :scale="1.5">
+      <TresGroup :position="[-1.5, 0, 0]" :rotation-y="0.2" :scale="1">
         <Suspense>
           <DogModelLocal :action-name="currentAnimation" />
 
@@ -46,8 +44,8 @@
 
 
 
-      <!-- <TresAxesHelper />
-        <TresGridHelper /> -->
+      <TresAxesHelper />
+      <TresGridHelper />
     </TresCanvas>
   </div>
 </template>
@@ -73,16 +71,14 @@ const activeMode = ref('1');
 
 // 菜单配置
 const menuConfig = [
-  { value: '1', rgb: 'rgb(255, 71, 87)', icon: '/icon/idle.svg' },   // 返回
-  { value: '2', rgb: 'rgb(255, 202, 58)', icon: '/icon/run.svg' },  // 更多
-  { value: '3', rgb: 'rgb(46, 213, 115)', icon: '/icon/attack.svg' }, // 确认
-  { value: '4', rgb: 'rgb(55, 66, 250)', icon: '/icon/spawn.svg' }   // 关闭
+  { value: '1', rgb: 'rgb(255, 71, 87)', icon: '/icon/idle.svg' },
+  { value: '2', rgb: 'rgb(215, 220, 98)', icon: '/icon/run.svg' },
+  { value: '3', rgb: 'rgb(46, 213, 115)', icon: '/icon/attack.svg' },
+  { value: '4', rgb: 'rgb(55, 66, 250)', icon: '/icon/spawn.svg' }
 ];
 
 
 const handleMenuClick = (value) => {
-  console.log('当前点击了:', value);
-
   switch (value) {
     case '1':
       currentAnimation.value = 'skeleton-skeleton|idle';
@@ -98,7 +94,7 @@ const handleMenuClick = (value) => {
       setTimeout(() => {
         activeMode.value = '1';
         currentAnimation.value = 'skeleton-skeleton|idle';
-      }, 1500);
+      }, 1400);
       break;
     default:
       console.warn('未知的操作类型:', value);

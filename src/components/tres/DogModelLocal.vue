@@ -44,7 +44,7 @@ watch(
     if (nextAction) {
       // --- 处理上一个动作 (如果存在) ---
       if (prevAction) {
-        // 使用 GSAP 将旧动作的权重从当前值降到 0
+
         gsap.to(prevAction, {
           duration: 0.5, // 过渡时间
           weight: 0,     // 目标权重为 0
@@ -53,6 +53,7 @@ watch(
             prevAction.stop() // 权重归零后停止播放，节省资源
           }
         })
+
       }
 
       // --- 处理新动作 ---
