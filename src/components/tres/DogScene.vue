@@ -134,7 +134,7 @@
 import { shallowRef, ref } from 'vue'
 import { useLoop } from '@tresjs/core'
 import * as THREE from 'three'
-import { TresGroup, TresMesh } from '@tresjs/core'
+
 
 // 接收外部传入的颜色 props
 const props = defineProps({
