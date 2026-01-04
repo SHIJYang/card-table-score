@@ -122,28 +122,28 @@ export default defineConfig({
       output: {
         // 👇 6. 优化分包策略
         // 之前的逻辑很好，稍微做了整理，确保 three.js 生态不被打散导致加载错误
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            // 3D 引擎及相关库（TresJS 基于 Three，通常建议打包在一起避免上下文丢失）
-            if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
-              return 'three-engine';
-            }
-            // 视觉识别大库
-            if (id.includes('@mediapipe') || id.includes('mediapipe')) {
-              return 'mediapipe';
-            }
-            // UI 库
-            if (id.includes('element-plus')) return 'element-plus';
+        // manualChunks(id) {
+        //   if (id.includes('node_modules')) {
+        //     // 3D 引擎及相关库（TresJS 基于 Three，通常建议打包在一起避免上下文丢失）
+        //     if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
+        //       return 'three-engine';
+        //     }
+        //     // 视觉识别大库
+        //     if (id.includes('@mediapipe') || id.includes('mediapipe')) {
+        //       return 'mediapipe';
+        //     }
+        //     // UI 库
+        //     if (id.includes('element-plus')) return 'element-plus';
             
-            // 动画库
-            if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
-              return 'animation';
-            }
+        //     // 动画库
+        //     if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
+        //       return 'animation';
+        //     }
 
-            // 其他依赖归为 vendor
-            return 'vendor';
-          }
-        }
+        //     // 其他依赖归为 vendor
+        //     return 'vendor';
+        //   }
+        // }
       }
     }
   }
