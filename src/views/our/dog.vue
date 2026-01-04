@@ -10,7 +10,7 @@
 
 
       <!-- 禁止缩放,禁止平移-->
-      <OrbitControls :enable-zoom="true" :enable-pan="false" />
+      <!-- <OrbitControls :enable-zoom="false" :enable-pan="false" /> -->
 
       <!-- 基础照明:环境光 -->
       <TresAmbientLight :intensity="1.2" />
@@ -23,10 +23,10 @@
 
 
 
-      <TresGroup :position="[1.5, 2, 0]" :rotation-y="-0.2" :scale="1.5">
+      <TresGroup :position="[0.5, 0.7, 0]" :rotation-y="-0.1" :scale="0.5">
         <LineDog cast-shadow />
       </TresGroup>
-      <TresGroup :position="[-1.5, 0, 0]" :rotation-y="0.2" :scale="1">
+      <TresGroup :position="[-0.5, 0, 0]" :rotation-y="0.1" :scale="1">
         <Suspense>
           <DogModelLocal :action-name="currentAnimation" />
 
