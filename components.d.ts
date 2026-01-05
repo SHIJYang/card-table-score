@@ -75,5 +75,6 @@ declare module 'vue' {
     TresDogModelNetwork: typeof import('./src/components/tres/DogModelNetwork.vue')['default']
     TresDogScene: typeof import('./src/components/tres/DogScene.vue')['default']
     TresFirstExperience: typeof import('./src/components/tres/FirstExperience.vue')['default']
+    TresSmallpeople: typeof import('./src/components/tres/smallpeople.vue')['default']
   }
 }

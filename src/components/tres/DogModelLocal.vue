@@ -22,7 +22,7 @@ console.log('加载完成了！', state)
 console.log('动画列表:', state.value?.animations)
 
 
-const animations = state.value?.animations
+const animations = shallowRef(state.value?.animations || [])
 const model = state.value?.scene
 
 // 3. 提取动画控制器
