@@ -21,6 +21,10 @@ export default defineConfig({
          
           isCustomElement: (tag) => 
             (tag.startsWith('Tres') && tag !== 'TresCanvas') || tag === 'primitive',
+          "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
         },
       },
     }),
