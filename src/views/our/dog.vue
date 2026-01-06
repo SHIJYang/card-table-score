@@ -6,7 +6,7 @@
     <TresCanvas shadows :clear-alpha="0" window-size>
 
       <!-- <相机 :位置="[0, 0, 14]" :看着="[0, 0, 0]" /> -->
-      <TresPerspectiveCamera :position="[0, 4, 16]" :look-at="[0, 2, 0]" />
+      <TresPerspectiveCamera :position="[0, 6, 16]" :look-at="[0, 4, 0]" />
 
 
       <!-- 禁止缩放,禁止平移-->
@@ -23,10 +23,10 @@
 
 
 
-      <TresGroup :position="[0.5, 0.7, 0]" :rotation-y="-0.1" :scale="0.5">
+      <TresGroup :position="[1, 0.7, 0]" :rotation-y="-0.1" :scale="0.5">
         <LineDog cast-shadow />
       </TresGroup>
-      <TresGroup :position="[-0.5, 0, 0]" :rotation-y="0.1" :scale="1">
+      <TresGroup :position="[-1, 0, 0]" :rotation-y="0.1" :scale="1">
         <Suspense>
           <DogModelLocal :action-name="currentAnimation" />
 
@@ -57,9 +57,9 @@ import { TresCanvas } from '@tresjs/core'
 import { Stats } from '@tresjs/cientos'
 import { OrbitControls } from '@tresjs/cientos'
 
-import LineDog from '@/components/tres/DogScene.vue'
-import DogModelLocal from '@/components/tres/DogModelLocal.vue'
-import DogModelNetwork from '@/components/tres/DogModelNetwork.vue'
+import LineDog from '../../components/tres/DogScene.vue'
+import DogModelLocal from '../../components/tres/DogModelLocal.vue'
+import DogModelNetwork from '../../components/tres/DogModelNetwork.vue'
 import GestureRadio from "../../components/GestureRadio.vue"
 const currentAnimation = ref('skeleton-skeleton|idle')
 

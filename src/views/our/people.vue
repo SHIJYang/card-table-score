@@ -25,7 +25,9 @@
     </div>
 
     <TresCanvas shadows :clear-alpha="0" window-size output-color-space="srgb">
-      <TresPerspectiveCamera :position="[0, 5, 12]" :look-at="[0, 2, 0]" />
+
+      <TresPerspectiveCamera :position="[0, 6, 16]" :look-at="[0, 4, 0]" />
+
       <!-- <Suspense>
         <Environment preset="city" :blur="1" background />
       </Suspense> -->
