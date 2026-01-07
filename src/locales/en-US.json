@@ -15,7 +15,8 @@
     "gameHistory": "Game History",
     "christmasTree": "Christmas Tree",
     "dog": "dog",
-    "people": "people"
+    "people": "people",
+    "player": "player"
   },
   "settings": {
     "title": "Settings",

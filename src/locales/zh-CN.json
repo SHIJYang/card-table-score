@@ -15,7 +15,8 @@
     "gameHistory": "游戏记录",
     "christmasTree": "圣诞树",
     "dog": "小狗",
-    "people": "小人"
+    "people": "小人",
+    "player": "玩家"
   },
   "settings": {
     "title": "设置",

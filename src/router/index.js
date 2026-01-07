@@ -48,6 +48,11 @@ const routes = [
         component: () => import('../views/our/dog.vue')
     },
     {
+        path: '/player',
+        name: 'Player',
+        component: () => import('../views/our/player.vue')
+    },
+    {
         path: '/img',
         name: 'Img',
         component: () => import('../views/sets/picture.vue')

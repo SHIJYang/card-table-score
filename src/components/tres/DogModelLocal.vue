@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { shallowRef, watch } from 'vue'
 import { useGLTF, useAnimations } from '@tresjs/cientos'
 import gsap from 'gsap'
 // 1. 定义 Props，让父组件告诉我们播放哪个动画
