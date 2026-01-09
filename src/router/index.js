@@ -53,6 +53,11 @@ const routes = [
         component: () => import('../views/our/player.vue')
     },
     {
+        path: '/waterer',
+        name: 'Waterer',
+        component: () => import('../views/our/waterer.vue')
+    },
+    {
         path: '/img',
         name: 'Img',
         component: () => import('../views/sets/picture.vue')

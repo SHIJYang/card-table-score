@@ -87,6 +87,7 @@ declare module 'vue' {
     PixelBlast: typeof import('./src/components/gsap/PixelBlast.vue')['default']
     PlayAttackButton: typeof import('./src/components/play/AttackButton.vue')['default']
     PlayerBaseCharacter: typeof import('./src/components/player/BaseCharacter.vue')['default']
+    PlayerWaterCharacter: typeof import('./src/components/player/waterCharacter.vue')['default']
     PlayJoystick: typeof import('./src/components/play/Joystick.vue')['default']
     PlayPlayers: typeof import('./src/components/play/players.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
@@ -104,6 +105,9 @@ declare module 'vue' {
     TresPlayers: typeof import('./src/components/tres/players.vue')['default']
     TresSmallpeople: typeof import('./src/components/tres/smallpeople.vue')['default']
     WorldCameraFollow: typeof import('./src/components/world/CameraFollow.vue')['default']
+    WorldGameCamera: typeof import('./src/components/world/GameCamera.vue')['default']
+    WorldInkFlowParticles: typeof import('./src/components/world/InkFlowParticles.vue')['default']
+    WorldInkWater: typeof import('./src/components/world/InkWater.vue')['default']
     WorldLevelGround: typeof import('./src/components/world/LevelGround.vue')['default']
     WorldPhysicsScene: typeof import('./src/components/world/PhysicsScene.vue')['default']
   }

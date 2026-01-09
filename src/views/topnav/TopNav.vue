@@ -26,6 +26,7 @@
 				<el-menu-item index="/dog">{{ t('nav.dog') }}</el-menu-item>
 				<el-menu-item index="/people">{{ t('nav.people') }}</el-menu-item>
 				<el-menu-item index="/player">{{ t('nav.player') }}</el-menu-item>
+				<el-menu-item index="/waterer">{{ t('nav.water') }}</el-menu-item>
 			</el-sub-menu>
 			<el-sub-menu index="settings" popper-class="theme-popper">
 				<template #title>
