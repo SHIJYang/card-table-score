@@ -107,6 +107,7 @@ declare module 'vue' {
     WorldCameraFollow: typeof import('./src/components/world/CameraFollow.vue')['default']
     WorldGameCamera: typeof import('./src/components/world/GameCamera.vue')['default']
     WorldInkFlowParticles: typeof import('./src/components/world/InkFlowParticles.vue')['default']
+    WorldInkRipple: typeof import('./src/components/world/InkRipple.vue')['default']
     WorldInkWater: typeof import('./src/components/world/InkWater.vue')['default']
     WorldLevelGround: typeof import('./src/components/world/LevelGround.vue')['default']
     WorldPhysicsScene: typeof import('./src/components/world/PhysicsScene.vue')['default']
