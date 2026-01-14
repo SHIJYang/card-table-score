@@ -1,18 +1,14 @@
 <template>
   <div class="game-homepage">
     <MatrixBackground />
-    
+
     <main class="main-content">
-      
       <div class="loading-container">
         <TowerLoader />
         <TowerLoader :scale="1" />
-        <TowerLoader 
-          :scale="2" 
-          style="--color-top: #ff9999; --color-left: #cc0000; --color-right: #ff0000;" 
-        />
+        <TowerLoader :scale="2" style="--color-top: #ff9999; --color-left: #cc0000; --color-right: #ff0000;" />
       </div>
-      
+
       <div class="showcase">
         <div class="item">
           <CubeLoader :scale="0.6" :hue="280" />
@@ -30,16 +26,18 @@
       <div class="page">
         <IsometricMatrix :count="4" :size="28" />
       </div>
-  
     </main>
+
+    <!-- <FloatingDog /> -->
   </div>
 </template>
 
 <script setup lang="ts">
-import MatrixBackground from '@/components/MatrixBackground.vue'; 
+import MatrixBackground from '@/components/MatrixBackground.vue';
 import TowerLoader from '@/components/box/TowerLoader.vue'
 import CubeLoader from '@/components/box/CubeLoader.vue'
 import IsometricMatrix from '@/components/box/IsometricMatrix.vue'
+import FloatingDog from '@/components/FloatingDog/FloatingDog.vue'
 </script>
 
 <style scoped>
@@ -47,35 +45,38 @@ import IsometricMatrix from '@/components/box/IsometricMatrix.vue'
 .game-homepage {
   min-height: 100vh;
   width: 100%;
-  color: var(--text-color, #fff); /* 添加默认白色兜底 */
+  color: var(--text-color, #fff);
   font-family: 'Inter', system-ui, sans-serif;
   position: relative;
   overflow-x: hidden;
 }
 
-/* 确保内容在背景之上 */
+/* 确保内容在背景之上，但在 Dog 之下 */
 .main-content {
   position: relative;
-  z-index: 1;
   padding: 50px 20px;
   display: flex;
   flex-direction: column;
-  gap: 60px; /* 各大板块之间的间距 */
+  gap: 60px;
+  z-index: 50;
+  /* 保持这个层级，Dog 的 9999 会覆盖它 */
+  /* pointer-events: none; */
+  /* 这里的 none 意味着鼠标事件会穿透到下层（或上层） */
+  align-items: center;
+  padding-top: 100px;
+  color: #333;
 }
 
-/* --- 区域布局样式 --- */
-
-/* 1. TowerLoader 容器 */
+/* 区域布局样式保持不变 */
 .loading-container {
   margin-top: 50px;
   display: flex;
   gap: 50px;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap; /* 防止小屏幕溢出 */
+  flex-wrap: wrap;
 }
 
-/* 2. CubeLoader 容器 */
 .showcase {
   display: flex;
   flex-wrap: wrap;
@@ -88,15 +89,13 @@ import IsometricMatrix from '@/components/box/IsometricMatrix.vue'
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 60px; /* 上下两个立方体的间距 */
+  gap: 60px;
 }
 
-/* 3. IsometricMatrix 容器 */
 .page {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
- 
 }
 </style>

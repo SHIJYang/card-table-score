@@ -65,6 +65,7 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     FirstExperience: typeof import('./src/components/tres/FirstExperience.vue')['default']
+    FloatingDogFloatingDog: typeof import('./src/components/FloatingDog/FloatingDog.vue')['default']
     FuzzyText: typeof import('./src/components/gsap/FuzzyText.vue')['default']
     GestureRadio: typeof import('./src/components/GestureRadio.vue')['default']
     GlassSegmentedControl: typeof import('./src/components/GlassSegmentedControl.vue')['default']

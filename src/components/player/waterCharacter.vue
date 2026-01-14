@@ -105,23 +105,7 @@ try {
   }
 
   if (finalScene) {
-    // 🔥 水墨风格化核心：创建纯黑材质
-    const inkMaterial = new THREE.MeshToonMaterial({
-      color: 0x111111, // 深墨色
-      side: THREE.FrontSide
-    })
 
-    if (typeof finalScene.traverse === 'function') {
-      finalScene.traverse((child: any) => {
-        if (child.isMesh) {
-          child.castShadow = true
-          child.receiveShadow = true
-
-          // 🔥 强制替换材质为水墨风格
-          child.material = inkMaterial
-        }
-      })
-    }
 
     modelScene.value = finalScene
     isModelLoaded.value = true

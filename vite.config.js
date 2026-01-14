@@ -18,13 +18,13 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-         
-          isCustomElement: (tag) => 
+
+          isCustomElement: (tag) =>
             (tag.startsWith('Tres') && tag !== 'TresCanvas') || tag === 'primitive',
           "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
+          "paths": {
+            "@/*": ["src/*"]
+          }
         },
       },
     }),
@@ -36,14 +36,14 @@ export default defineConfig({
       // 自动导入 Vue, Vue-Router, Pinia 的核心 API
       imports: ['vue', 'vue-router', 'pinia'],
       // 自动导入 /src/store 下的模块（例如 const userStore = useUserStore()）
-      dirs: ['./src/store'], 
+      dirs: ['./src/store'],
       resolvers: [
         ElementPlusResolver(),
         // 自动导入图标组件的解析器
-        IconsResolver({ prefix: 'Icon' }), 
+        IconsResolver({ prefix: 'Icon' }),
       ],
       // 生成类型声明文件，解决 ESLint/TS 报错（根目录下会生成 auto-imports.d.ts）
-      dts: 'auto-imports.d.ts', 
+      dts: 'auto-imports.d.ts',
       eslintrc: {
         enabled: true, // 1. 改为 true 用于生成 .eslintrc-auto-import.json
       },
@@ -61,7 +61,7 @@ export default defineConfig({
         ElementPlusResolver(),
         // 👇 3. 图标组件自动引入
         // 使用方式: <i-ep-edit /> (ep 代表 element-plus set)
-        IconsResolver({ 
+        IconsResolver({
           enabledCollections: ['ep'],
         }),
       ],
@@ -84,7 +84,9 @@ export default defineConfig({
   ],
 
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)),
+     
+     },
   },
 
   css: {
@@ -138,7 +140,7 @@ export default defineConfig({
         //     }
         //     // UI 库
         //     if (id.includes('element-plus')) return 'element-plus';
-            
+
         //     // 动画库
         //     if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
         //       return 'animation';

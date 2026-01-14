@@ -76,16 +76,12 @@ declare global {
   const useId: typeof import('vue').useId
   const useImageStore: typeof import('./src/store/index.js').useImageStore
   const useLink: typeof import('vue-router').useLink
-  const useLoader: typeof import('@tresjs/core').useLoader
   const useModel: typeof import('vue').useModel
-  const useRenderLoop: typeof import('@tresjs/core').useRenderLoop
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
   const useSettingsStore: typeof import('./src/store/index.js').useSettingsStore
   const useSlots: typeof import('vue').useSlots
   const useTemplateRef: typeof import('vue').useTemplateRef
-  const useTexture: typeof import('@tresjs/core').useTexture
-  const useTres: typeof import('@tresjs/core').useTres
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
