@@ -29,23 +29,21 @@ export default defineConfig({
       },
     }),
 
-    // 👇 1. API 自动导入 (核心自动化)
-    // 让你不再需要写: import { ref, computed, watch } from 'vue'
-    // 也不需要写: import { useRoute, useRouter } from 'vue-router'
+ 
     AutoImport({
-      // 自动导入 Vue, Vue-Router, Pinia 的核心 API
+      
       imports: ['vue', 'vue-router', 'pinia'],
-      // 自动导入 /src/store 下的模块（例如 const userStore = useUserStore()）
+      
       dirs: ['./src/store'],
       resolvers: [
         ElementPlusResolver(),
         // 自动导入图标组件的解析器
         IconsResolver({ prefix: 'Icon' }),
       ],
-      // 生成类型声明文件，解决 ESLint/TS 报错（根目录下会生成 auto-imports.d.ts）
+  
       dts: 'auto-imports.d.ts',
       eslintrc: {
-        enabled: true, // 1. 改为 true 用于生成 .eslintrc-auto-import.json
+        enabled: true, 
       },
     }),
 
@@ -90,12 +88,12 @@ export default defineConfig({
   },
 
   css: {
-    // 👇 5. 全局样式自动化 (可选)
-    // 如果你有全局变量文件，配置在这里后，每个 SCSS 文件都会自动引入，无需 @use
+    
     preprocessorOptions: {
       scss: {
-        // additionalData: `@use "@/assets/styles/variables.scss" as *;` 
-        api: 'modern-compiler', // 使用更快的 sass-embedded 编译器
+        additionalData: `@use "@/assets/styles/variables.scss" as *;`,
+        api: 'modern-compiler',
+        silenceDeprecations: ['legacy-js-api'],
       }
     }
   },
@@ -128,28 +126,30 @@ export default defineConfig({
       output: {
         // 👇 6. 优化分包策略
         // 之前的逻辑很好，稍微做了整理，确保 three.js 生态不被打散导致加载错误
-        // manualChunks(id) {
-        //   if (id.includes('node_modules')) {
-        //     // 3D 引擎及相关库（TresJS 基于 Three，通常建议打包在一起避免上下文丢失）
-        //     if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
-        //       return 'three-engine';
-        //     }
-        //     // 视觉识别大库
-        //     if (id.includes('@mediapipe') || id.includes('mediapipe')) {
-        //       return 'mediapipe';
-        //     }
-        //     // UI 库
-        //     if (id.includes('element-plus')) return 'element-plus';
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // 3D 引擎及相关库（TresJS 基于 Three，通常建议打包在一起避免上下文丢失）
+            if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
+              return 'three-engine';
+            }
+            // 视觉识别大库
+            if (id.includes('@mediapipe') || id.includes('mediapipe')) {
+              return 'mediapipe';
+            }
+            // UI 库
+            if (id.includes('element-plus')) return 'element-plus';
+// Vue 核心
+if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) {
+  return 'vue-core';
+}
+            // 动画库
+            if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
+              return 'animation';
+            }
 
-        //     // 动画库
-        //     if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
-        //       return 'animation';
-        //     }
-
-        //     // 其他依赖归为 vendor
-        //     return 'vendor';
-        //   }
-        // }
+            
+          }
+        }
       }
     }
   }
