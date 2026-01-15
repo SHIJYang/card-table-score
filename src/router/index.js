@@ -58,11 +58,6 @@ const routes = [
         component: () => import('../views/our/waterer.vue')
     },
     {
-        path: '/elf',
-        name: 'Elf',
-        component: () => import('../views/our/elf.vue') 
-    },
-    {
         path: '/img',
         name: 'Img',
         component: () => import('../views/sets/picture.vue')

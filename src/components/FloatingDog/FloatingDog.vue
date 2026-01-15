@@ -1,18 +1,17 @@
 <template>
-  <div ref="containerRef" class="tres-bg-container" style="touch-action: none; pointer-events: none;">
+  <div ref="containerRef" class="tres-bg-container">
     <TresCanvas alpha shadows :clear-alpha="0" window-size>
 
       <TresPerspectiveCamera ref="cameraRef" :position="[0, 0, 12]" :look-at="[0, 0, 0]" />
-
       <TresAmbientLight :intensity="1.2" />
       <TresDirectionalLight :position="[2, 5, 5]" :intensity="1" />
 
-      <TresMesh ref="floorRef" name="floor" :position="[0, 0, 0]" :scale="[100, 100, 1]" :visible="false">
+      <TresMesh ref="floorRef" :position="[0, 0, 0]" :scale="[100, 100, 1]" :visible="false">
         <TresPlaneGeometry />
         <TresMeshBasicMaterial :transparent="true" :opacity="0" :depth-write="false" />
       </TresMesh>
 
-      <TresGroup ref="moveGroupRef" :position="[1.5, -2, 0]" :scale="[0.5, 0.5, 0.5]">
+      <TresGroup ref="moveGroupRef" :position="[1.5, -2.5, 0]" :scale="[0.5, 0.5, 0.5]">
         <TresGroup ref="companionRef">
           <LineDog :color="isFocused ? '#ffffff' : '#999999'" />
         </TresGroup>
@@ -31,90 +30,92 @@ import LineDog from '../tres/DogScene.vue'
 // --- 引用 ---
 const containerRef = shallowRef<HTMLElement>()
 const cameraRef = shallowRef()
-const floorRef = shallowRef()
-const moveGroupRef = shallowRef() // 包含位置
-const companionRef = shallowRef() // 包含旋转(头部)
+const moveGroupRef = shallowRef()
+const companionRef = shallowRef()
 
 // --- 状态 ---
 const isDragging = ref(false)
 const isFocused = ref(false)
 
-// --- 核心工具 ---
+// --- 工具 ---
 const raycaster = new THREE.Raycaster()
+// 🔧 关键修复：设置线条检测阈值，让鼠标更容易“摸”到细线
+raycaster.params.Line.threshold = 5
+
 const mouse = new THREE.Vector2()
-const planeNormal = new THREE.Vector3(0, 0, 1) // 地板法线
-const plane = new THREE.Plane(planeNormal, 0)  // 数学平面，用于计算拖拽交点
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)
 
-// --- 事件处理逻辑 ---
-
-const updatePointerEvents = (forceEnable: boolean) => {
+// --- 交互切换逻辑 ---
+const updatePointerEvents = (enable: boolean) => {
   if (!containerRef.value) return
-  // 如果在拖拽中，或者鼠标悬停在狗狗身上，开启交互(auto)
-  // 否则关闭交互(none)，让点击穿透到底层网页
-  containerRef.value.style.pointerEvents = forceEnable ? 'auto' : 'none'
-  document.body.style.cursor = forceEnable ? (isDragging.value ? 'grabbing' : 'grab') : 'auto'
+  const newState = enable ? 'auto' : 'none'
+  // 只有状态改变时才操作 DOM，提升性能
+  if (containerRef.value.style.pointerEvents !== newState) {
+    containerRef.value.style.pointerEvents = newState
+  }
+  document.body.style.cursor = enable ? (isDragging.value ? 'grabbing' : 'grab') : 'auto'
 }
 
 const onWindowMouseMove = (event: MouseEvent) => {
   if (!cameraRef.value || !moveGroupRef.value || !companionRef.value) return
 
-  // 1. 归一化鼠标坐标 (-1 到 +1)
+  // 1. 归一化鼠标
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
 
-  // 2. 更新射线
+  // 2. 射线检测
   raycaster.setFromCamera(mouse, cameraRef.value)
 
-  // --- A. 头部跟随逻辑 (始终生效) ---
-  // 计算射线与 Z=0 平面的交点，让狗头看向那里
+  // 3. 计算平面交点 (用于拖拽和视线跟随)
   const target = new THREE.Vector3()
-  raycaster.ray.intersectPlane(plane, target)
-  // 修正：我们需要基于狗狗当前的位置来计算看向的目标
-  // 这里简化为：看向鼠标在 Z=0 平面上的投影点
-  // 为了让它看远一点，Z 设置为正值
-  const lookTarget = new THREE.Vector3(target.x, target.y, 10)
-  companionRef.value.lookAt(lookTarget)
+  raycaster.ray.intersectPlane(dragPlane, target)
 
-  // --- B. 拖拽逻辑 ---
+  // A. 拖拽模式：锁定交互，直接移动
   if (isDragging.value) {
-    // 拖拽模式：强制更新位置
     moveGroupRef.value.position.set(target.x, target.y, 0)
-    return // 拖拽中不需要进行悬停检测
+    companionRef.value.lookAt(target.x, target.y, 10)
+    return
   }
 
-  // --- C. 悬停检测 (智能穿透核心) ---
-  // 检测射线是否击中狗狗模型
-  // 注意：需要递归检测 (true)，因为 moveGroup 内部有很多子 Mesh
+  // B. 悬停检测
+  // 只检测狗狗 (moveGroupRef)，如果检测到说明鼠标在线条上
   const intersects = raycaster.intersectObject(moveGroupRef.value, true)
 
   if (intersects.length > 0) {
-    isFocused.value = true
-    updatePointerEvents(true) // 鼠标在狗身上 -> 阻挡点击，允许交互
+    // 摸到狗 -> 阻挡点击 (auto)
+    if (!isFocused.value) {
+      isFocused.value = true
+      updatePointerEvents(true)
+    }
+    companionRef.value.lookAt(target.x, target.y, 10)
   } else {
-    isFocused.value = false
-    updatePointerEvents(false) // 鼠标在空地 -> 允许穿透
+    // 没摸到 -> 允许穿透 (none)
+    if (isFocused.value) {
+      isFocused.value = false
+      updatePointerEvents(false)
+    }
+    // 没摸到也稍微看向鼠标
+    companionRef.value.lookAt(target.x, target.y, 10)
   }
 }
 
-const onWindowMouseDown = () => {
-  // 如果当前是 focused 状态（说明鼠标在狗身上），则开始拖拽
+const onWindowMouseDown = (event: MouseEvent) => {
+  // 只有悬停在狗上时，点击才生效
   if (isFocused.value) {
     isDragging.value = true
-    updatePointerEvents(true) // 锁死交互状态
+    updatePointerEvents(true)
+    event.stopPropagation() // 阻止冒泡，防止点到下面的网页
   }
 }
 
 const onWindowMouseUp = () => {
   isDragging.value = false
-  // 松开后，立刻重新检测一次悬停状态，决定是否允许穿透
-  // 这里简单处理：如果松开时还在狗身上，保持 auto，否则 none
-  // 由于 mousemove 会持续触发，这里只需重置状态即可
+  // 松开鼠标后，如果已经不在狗身上了，恢复穿透
   if (!isFocused.value) {
     updatePointerEvents(false)
   }
 }
 
-// --- 生命周期绑定 ---
 onMounted(() => {
   window.addEventListener('mousemove', onWindowMouseMove)
   window.addEventListener('mousedown', onWindowMouseDown)
@@ -136,9 +137,21 @@ onUnmounted(() => {
   width: 100vw;
   height: 100vh;
   z-index: 9999;
-  background-color: transparent;
   overflow: hidden;
-  /* 关键：默认不响应鼠标，由 JS 动态开启 */
+  background-color: transparent;
+  touch-action: none;
+
+  /* 默认：允许鼠标穿透 */
   pointer-events: none;
+}
+
+/* 🔥🔥 核心修复 🔥🔥
+  强制内部的 Canvas 继承父级的 pointer-events 属性。
+  如果父级是 none，Canvas 也是 none（穿透）。
+  如果父级是 auto，Canvas 也是 auto（阻挡）。
+  没有这行代码，Canvas 可能会自作主张挡住所有点击。
+*/
+.tres-bg-container :deep(canvas) {
+  pointer-events: inherit !important;
 }
 </style>

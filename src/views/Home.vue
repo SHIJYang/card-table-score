@@ -28,7 +28,7 @@
       </div>
     </main>
 
-    <!-- <FloatingDog /> -->
+    <FloatingDog />
   </div>
 </template>
 
@@ -62,6 +62,7 @@ import FloatingDog from '@/components/FloatingDog/FloatingDog.vue'
   /* 保持这个层级，Dog 的 9999 会覆盖它 */
   /* pointer-events: none; */
   /* 这里的 none 意味着鼠标事件会穿透到下层（或上层） */
+  pointer-events: auto;
   align-items: center;
   padding-top: 100px;
   color: #333;
