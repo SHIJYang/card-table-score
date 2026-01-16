@@ -4,6 +4,9 @@
 			<el-menu-item index="/" class="logo-item">
 				<CubeSpinner :size="20" color="#55aa00" :duration="3" />
 			</el-menu-item>
+			<el-menu-item index="/live">
+				<img :src="pic" class="custom-icon" alt="live" />
+			</el-menu-item>
 			<div class="flex-grow" />
 			<el-sub-menu index="games" popper-class="theme-popper">
 				<template #title>
@@ -17,14 +20,7 @@
 				<el-menu-item index="/try">{{ t('nav.try') }}</el-menu-item>
 
 			</el-sub-menu>
-			<el-sub-menu index="love" popper-class="theme-popper">
-				<template #title>
-					<span>{{ t('nav.love') }}</span>
-				</template>
-				<el-menu-item index="/live">{{ t('nav.live') }}</el-menu-item>
 
-
-			</el-sub-menu>
 			<el-sub-menu index="our" popper-class="theme-popper">
 				<template #title>
 					<span>{{ t('nav.our') }}</span>
@@ -53,6 +49,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import CubeSpinner from '@/components/box/CubeSpinner.vue'
+import pic from '../../assets/pic.svg'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -122,9 +119,13 @@ const activeIndex = computed(() => route.path || '/')
 	background: transparent !important;
 }
 
-.logo {
-	height: 30px;
-	vertical-align: middle;
+
+
+.custom-icon {
+	width: 24px;
+	/* 根据需要调整大小 */
+	height: 24px;
+	object-fit: contain;
 }
 
 .site-title {
