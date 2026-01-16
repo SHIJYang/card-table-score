@@ -17,6 +17,14 @@
 				<el-menu-item index="/try">{{ t('nav.try') }}</el-menu-item>
 
 			</el-sub-menu>
+			<el-sub-menu index="love" popper-class="theme-popper">
+				<template #title>
+					<span>{{ t('nav.love') }}</span>
+				</template>
+				<el-menu-item index="/live">{{ t('nav.live') }}</el-menu-item>
+
+
+			</el-sub-menu>
 			<el-sub-menu index="our" popper-class="theme-popper">
 				<template #title>
 					<span>{{ t('nav.our') }}</span>
@@ -45,7 +53,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import CubeSpinner from '@/components/box/CubeSpinner.vue'
-import logo from '../../assets/love-sign.svg'
 
 const route = useRoute()
 const { t } = useI18n()

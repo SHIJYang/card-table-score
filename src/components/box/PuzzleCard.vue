@@ -54,8 +54,8 @@ interface Props {
 // 设置默认宽高，保持原有比例
 const props = withDefaults(defineProps<Props>(), {
   puzzleNumber: '???',
-  width: '13.5em',
-  height: '19em',
+  width: '150px',
+  height: '200px',
   images: () => ({ A: '', B: '', C: '' })
 });
 

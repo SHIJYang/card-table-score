@@ -18,7 +18,9 @@
     "people": "people",
     "player": "player",
     "water": "water",
-    "elf": "elf"
+    "elf": "elf",
+    "love": "love",
+    "live": "live"
   },
   "settings": {
     "title": "Settings",

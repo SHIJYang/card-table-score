@@ -47,18 +47,13 @@ export default defineConfig({
       },
     }),
 
-    // 👇 2. 组件自动注册
-    // 让你不再需要手动 import MyComponent form './components/MyComponent.vue'
+    
     Components({
-      // 指定组件位置，默认为 src/components
+   
       dirs: ['src/components'],
-      // 允许子目录作为组件的命名空间
       directoryAsNamespace: true,
       resolvers: [
-        // Element Plus 组件自动按需引入
         ElementPlusResolver(),
-        // 👇 3. 图标组件自动引入
-        // 使用方式: <i-ep-edit /> (ep 代表 element-plus set)
         IconsResolver({
           enabledCollections: ['ep'],
         }),
@@ -91,7 +86,7 @@ export default defineConfig({
     
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "@/assets/styles/variables.scss" as *;`,
+       //additionalData: `@use "@/assets/styles/variables.scss" as *;`,
         api: 'modern-compiler',
         silenceDeprecations: ['legacy-js-api'],
       }
@@ -136,12 +131,7 @@ export default defineConfig({
             if (id.includes('@mediapipe') || id.includes('mediapipe')) {
               return 'mediapipe';
             }
-            // UI 库
-            if (id.includes('element-plus')) return 'element-plus';
-// Vue 核心
-if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) {
-  return 'vue-core';
-}
+          
             // 动画库
             if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
               return 'animation';
