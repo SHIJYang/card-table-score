@@ -3,13 +3,13 @@
     <MatrixBackground />
 
     <main class="main-content">
-      <div class="loading-container">
+      <!-- <div class="loading-container">
         <TowerLoader />
         <TowerLoader :scale="1" />
         <TowerLoader :scale="2" style="--color-top: #ff9999; --color-left: #cc0000; --color-right: #ff0000;" />
-      </div>
+      </div> -->
 
-      <div class="showcase">
+      <!-- <div class="showcase">
         <div class="item">
           <CubeLoader :scale="0.6" :hue="280" />
           <CubeLoader :scale="0.6" :hue="320" />
@@ -21,7 +21,7 @@
           <CubeLoader :scale="0.6" :hue="0" />
           <CubeLoader :scale="0.6" :hue="48" />
         </div>
-      </div>
+      </div> -->
 
       <div class="page">
         <IsometricMatrix :count="4" :size="28" />

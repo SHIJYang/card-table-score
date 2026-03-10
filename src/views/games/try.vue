@@ -8,27 +8,15 @@
         <FuzzyText text="棒！" :font-size="40" :color="secondaryColor" :enable-hover="true" :base-intensity="0.1"
           :hover-intensity="0.3" />
         <GestureRadio v-model="activeMode" :options="menuConfig" />
-        <PuzzleCard width="150px" height="200px" puzzle-number="031" :images="puzzleImages1">
-          <template #question>
-            <p>
-              Three boys are playing cards.<br>
-              Boy A: <i>"10 pairs."</i><br>
-              Boy B: <i>" 9 pairs."</i><br>
-              Boy C: <i>" 8 pairs."</i><br>
-              <b>Who is lying?</b>
-            </p>
-          </template>
-        </PuzzleCard>
+        <div class="puzzle-card">
+          <PuzzleCard v-for="puzzle in puzzleData" :key="puzzle.id" width="150px" height="200px"
+            :puzzle-number="puzzle.id" :images="puzzle.images">
+            <template #question>
+              <div v-html="puzzle.questionHtml"></div>
+            </template>
+          </PuzzleCard>
+        </div>
 
-        <PuzzleCard width="150px" height="200px" puzzle-number="032" :images="puzzleImages2">
-          <template #question>
-            <p>
-              Which direction does the<br>
-              <b>Sun</b> rise from?<br>
-              Select the correct photo.
-            </p>
-          </template>
-        </PuzzleCard>
       </el-main>
     </el-container>
   </div>
@@ -131,17 +119,164 @@ const menuConfig = [
 ];
 
 
-const puzzleImages1 = {
-  A: 'https://placehold.co/200x150/503c30/c9b28b?text=Liar+A',
-  B: 'https://placehold.co/200x150/306f7d/ffffff?text=Liar+B',
-  C: 'https://placehold.co/200x150/bd620a/ffffff?text=Liar+C'
-};
-
-const puzzleImages2 = {
-  A: 'https://placehold.co/200x150/orange/white?text=East',
-  B: 'https://placehold.co/200x150/blue/white?text=West',
-  C: 'https://placehold.co/200x150/red/white?text=North'
-};
+const puzzleData = [
+  {
+    id: "001",
+    questionHtml: `
+      <p>
+        三个嫌疑人谈论谁偷了蛋糕。<br>
+        A 说: <i>"不是我。"</i><br>
+        B 说: <i>"是 A 偷的。"</i><br>
+        C 说: <i>"不是 B。"</i><br>
+        已知只有一个人说了真话。<br>
+        <b>谁偷了蛋糕？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/503c30/c9b28b?text=Suspect+A',
+      B: 'https://placehold.co/200x150/306f7d/ffffff?text=Suspect+B',
+      C: 'https://placehold.co/200x150/bd620a/ffffff?text=Suspect+C'
+    }
+  },
+  {
+    id: "002",
+    questionHtml: `
+      <p>
+        在一次赛跑比赛中，<br>
+        如果你超过了<b>第二名</b>，<br>
+        请问你现在是第几名？
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/4a4a4a/ffffff?text=1st+Place',
+      B: 'https://placehold.co/200x150/4a4a4a/ffffff?text=2nd+Place',
+      C: 'https://placehold.co/200x150/4a4a4a/ffffff?text=3rd+Place'
+    }
+  },
+  {
+    id: "003",
+    questionHtml: `
+      <p>
+        汤姆的父亲有三个儿子。<br>
+        大儿子叫“大毛”，<br>
+        二儿子叫“二毛”。<br>
+        <b>三儿子叫什么名字？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/2e7d32/ffffff?text=SanMao',
+      B: 'https://placehold.co/200x150/1565c0/ffffff?text=Tom',
+      C: 'https://placehold.co/200x150/c62828/ffffff?text=XiaoMao'
+    }
+  },
+  {
+    id: "004",
+    questionHtml: `
+      <p>
+        一年有的月份有31天，<br>
+        有的月份有30天。<br>
+        <b>请问有多少个月份有28天？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/555/fff?text=1+Month',
+      B: 'https://placehold.co/200x150/555/fff?text=2+Months',
+      C: 'https://placehold.co/200x150/555/fff?text=12+Months'
+    }
+  },
+  {
+    id: "005",
+    questionHtml: `
+      <p>
+        如果不全是真话：<br>
+        1 = 5<br>
+        2 = 15<br>
+        3 = 215<br>
+        4 = 3215<br>
+        <b>5 = ?</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/333/fff?text=43215',
+      B: 'https://placehold.co/200x150/333/fff?text=1',
+      C: 'https://placehold.co/200x150/333/fff?text=5'
+    }
+  },
+  {
+    id: "006",
+    questionHtml: `
+      <p>
+        一列电动火车向北行驶，<br>
+        风向是向南吹的。<br>
+        <b>烟往哪个方向飘？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/607d8b/fff?text=South',
+      B: 'https://placehold.co/200x150/607d8b/fff?text=North',
+      C: 'https://placehold.co/200x150/607d8b/fff?text=No+Smoke'
+    }
+  },
+  {
+    id: "007",
+    questionHtml: `
+      <p>
+        桌上的篮子里有6个苹果。<br>
+        你拿走了4个。<br>
+        <b>现在你有几个苹果？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/d84315/fff?text=2+Apples',
+      B: 'https://placehold.co/200x150/d84315/fff?text=4+Apples',
+      C: 'https://placehold.co/200x150/d84315/fff?text=6+Apples'
+    }
+  },
+  {
+    id: "008",
+    questionHtml: `
+      <p>
+        红色的房子是用红砖盖的，<br>
+        蓝色的房子是用蓝砖盖的。<br>
+        <b>绿室 (Greenhouse) 是用什么盖的？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/2e7d32/fff?text=Green+Bricks',
+      B: 'https://placehold.co/200x150/81d4fa/000?text=Glass',
+      C: 'https://placehold.co/200x150/ffeb3b/000?text=Wood'
+    }
+  },
+  {
+    id: "009",
+    questionHtml: `
+      <p>
+        一个 3米 x 3米 x 3米 的坑里<br>
+        <b>有多少泥土？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/795548/fff?text=27+m3',
+      B: 'https://placehold.co/200x150/795548/fff?text=9+m3',
+      C: 'https://placehold.co/200x150/795548/fff?text=None'
+    }
+  },
+  {
+    id: "010",
+    questionHtml: `
+      <p>
+        医生给你 3 颗药丸，<br>
+        要你每半个小时吃一颗。<br>
+        <b>吃完需要多长时间？</b>
+      </p>
+    `,
+    images: {
+      A: 'https://placehold.co/200x150/673ab7/fff?text=1.5+Hours',
+      B: 'https://placehold.co/200x150/673ab7/fff?text=1+Hour',
+      C: 'https://placehold.co/200x150/673ab7/fff?text=2+Hours'
+    }
+  }
+];
 </script>
 
 <style scoped>
@@ -164,35 +299,12 @@ const puzzleImages2 = {
   background-size: 20px 20px;
 }
 
-.action-area {
-  margin-top: 30px;
-}
 
-/* 卡通风格按钮 */
-.cartoon-btn {
-  padding: 12px 36px;
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--bg-color);
-  background-color: var(--primary-color);
-  border: 3px solid var(--text-color);
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 6px 6px 0px var(--text-color);
-  /* 硬阴影，增强卡通感 */
-  transition: all 0.1s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.cartoon-btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0px var(--text-color);
-}
-
-.cartoon-btn:active {
-  transform: translate(4px, 4px);
-  box-shadow: 0px 0px 0px var(--text-color);
-  /* 点击时的按压效果 */
+.puzzle-card {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  justify-content: space-evenly;
+  gap: 20px;
 }
 </style>
