@@ -9,7 +9,7 @@
     "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
     "@tresjs/cientos": "^5.2.1",
     "@tresjs/core": "^5.2.1",
-    "@tresjs/post-processing": "^3.2.0",
+    "@tresjs/post-processing": "^3.5.0",
     "animate.css": "^4.1.1",
     "axios": "^1.13.2",
     "axios-mock-adapter": "^2.1.0",

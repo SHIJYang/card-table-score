@@ -1,0 +1,54 @@
+// 全局 SCSS 变量配置
+// 此文件会被 vite.config.js 自动注入到所有 SCSS 文件中
+
+// 颜色变量
+$primary-color: var(--el-color-primary);
+$success-color: var(--el-color-success);
+$warning-color: var(--el-color-warning);
+$danger-color: var(--el-color-danger);
+$info-color: var(--el-color-info);
+
+// 背景色
+$bg-color: var(--el-bg-color);
+$bg-color-page: var(--el-bg-color-page);
+$bg-color-overlay: var(--el-bg-color-overlay);
+
+// 文字颜色
+$text-color-primary: var(--el-text-color-primary);
+$text-color-regular: var(--el-text-color-regular);
+$text-color-secondary: var(--el-text-color-secondary);
+$text-color-placeholder: var(--el-text-color-placeholder);
+$text-color-disabled: var(--el-text-color-disabled);
+
+// 边框颜色
+$border-color: var(--el-border-color);
+$border-color-light: var(--el-border-color-light);
+$border-color-lighter: var(--el-border-color-lighter);
+$border-color-extra-light: var(--el-border-color-extra-light);
+
+// 圆角
+$border-radius-base: var(--el-border-radius-base);
+$border-radius-small: var(--el-border-radius-small);
+$border-radius-round: var(--el-border-radius-round);
+$border-radius-circle: var(--el-border-radius-circle);
+
+// 字体
+$font-family: var(--el-font-family);
+$font-size-extra-large: var(--el-font-size-extra-large);
+$font-size-large: var(--el-font-size-large);
+$font-size-medium: var(--el-font-size-medium);
+$font-size-base: var(--el-font-size-base);
+$font-size-small: var(--el-font-size-small);
+$font-size-extra-small: var(--el-font-size-extra-small);
+
+// 间距
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// 阴影
+$box-shadow-light: var(--el-box-shadow-light);
+$box-shadow: var(--el-box-shadow);
+$box-shadow-dark: var(--el-box-shadow-dark);
