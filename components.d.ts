@@ -26,6 +26,7 @@ declare module 'vue' {
     DogModelNetwork: typeof import('./src/components/tres/DogModelNetwork.vue')['default']
     DogScene: typeof import('./src/components/tres/DogScene.vue')['default']
     DotGrid: typeof import('./src/components/gsap/DotGrid.vue')['default']
+    ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']

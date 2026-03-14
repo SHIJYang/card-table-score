@@ -119,25 +119,22 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        // 👇 6. 优化分包策略
-        // 之前的逻辑很好，稍微做了整理，确保 three.js 生态不被打散导致加载错误
+        // 👇 优化分包策略：只有极耗内存的库才分包，其他都在主包
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // 3D 引擎及相关库（TresJS 基于 Three，通常建议打包在一起避免上下文丢失）
+            // 3D 引擎生态（Three.js + TresJS + OGL）- 极耗内存，必须分包
             if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
-              return 'three-engine';
+              return '3d-engine';
             }
-            // 视觉识别大库
+            // 视觉识别库（MediaPipe）- 模型文件巨大，必须分包
             if (id.includes('@mediapipe') || id.includes('mediapipe')) {
-              return 'mediapipe';
+              return 'vision-ai';
             }
-          
-            // 动画库
-            if (id.includes('gsap') || id.includes('motion') || id.includes('animate')) {
-              return 'animation';
+            // 物理引擎（Rapier3D）- WASM 文件很大，必须分包
+            if (id.includes('@dimforge/rapier3d') || id.includes('rapier')) {
+              return 'physics';
             }
-
-            
+            // 其他库（Vue、Element Plus、动画库等）都打包到主包，减少请求数
           }
         }
       }
