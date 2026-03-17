@@ -250,6 +250,43 @@ export const useImageStore = defineStore('image', () => {
     await fetchImages()
   }
 
+  // ========== 加载更多（追加模式）==========
+  async function loadMoreImages() {
+    const { current_page, last_page } = imagePagination.value
+    if (current_page >= last_page) return // 没有更多数据
+
+    setLoading('images', true)
+    try {
+      const nextPage = current_page + 1
+      const params = {
+        page: nextPage,
+        per_page: imagePagination.value.per_page,
+        q: searchKeyword.value,
+        permission: filterPermission.value,
+        album_id: filterAlbum.value,
+        order: sortOrder.value
+      }
+      const res = await getImageList(params)
+      const newImages = res.data?.data || []
+      const meta = res.data?.meta || {}
+
+      // 追加到现有列表
+      imageList.value.push(...newImages)
+
+      // 更新分页信息
+      imagePagination.value = {
+        current_page: meta.current_page ?? nextPage,
+        last_page: meta.last_page ?? last_page,
+        per_page: meta.per_page ?? imagePagination.value.per_page,
+        total: meta.total ?? imagePagination.value.total
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || '加载更多图片失败')
+    } finally {
+      setLoading('images', false)
+    }
+  }
+
   // ========== 批量删除 ==========
   async function removeSelectedImages() {
     if (selectedImages.value.length === 0) return
@@ -302,6 +339,7 @@ export const useImageStore = defineStore('image', () => {
     // 方法
     fetchProfile,
     fetchImages,
+    loadMoreImages,
     fetchAlbums,
     uploadImage,
     removeImage,

@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { TresCanvas } from '@tresjs/core';
 import * as THREE from 'three';
 import { useCameraStore, useImageStore } from '@/store';
@@ -60,7 +60,25 @@ import TreeExperience from './TreeExperience.vue';
 // 1. 初始化 Store
 const cameraStore = useCameraStore();
 const imageStore = useImageStore();
-const { imageList } = storeToRefs(imageStore);
+const { imageList, imagePagination } = storeToRefs(imageStore);
+
+// 加载更多相关计算属性
+const canLoadMore = computed(() => {
+  const { current_page, last_page } = imagePagination.value || {}
+  return current_page < last_page
+})
+
+// 自动加载更多照片 - 监听图片列表变化，加载完成后自动追加
+watch(imageList, async (newList, oldList) => {
+  // 如果当前不在加载中，且还有更多数据，且列表有变化
+  if (!imageStore.loading?.images && canLoadMore.value && newList?.length > 0) {
+    // 延迟一点再加载，避免频繁请求
+    await new Promise(resolve => setTimeout(resolve, 500))
+    if (imageStore.loadMoreImages) {
+      await imageStore.loadMoreImages()
+    }
+  }
+}, { immediate: false })
 
 // 2. 核心修复：在 JS 中获取 pixelRatio，并在模板中引用
 // 限制最大为 2.0，既保证清晰度又防止高分屏手机过热
