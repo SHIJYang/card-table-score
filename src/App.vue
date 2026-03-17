@@ -4,6 +4,7 @@
     <div class="page-content">
       <router-view />
     </div>
+    <SpeedInsights />
   </div>
 </template>
 
@@ -13,6 +14,7 @@ import { useSettingsStore } from '@/store'
 import { useI18n } from 'vue-i18n'
 import Topnav from './views/topnav/TopNav.vue'
 import { applyTheme, themes } from './theme/index.js'
+import { SpeedInsights } from '@vercel/speed-insights/vue'
 const settingsStore = useSettingsStore()
 const { locale } = useI18n()
 
