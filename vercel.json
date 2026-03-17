@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/picui-proxy/:path*",
-      "destination": "https://free.picui.cn/:path*"
+      "destination": "https://picui.cn/:path*"
     },
     {
       "source": "/(.*)",

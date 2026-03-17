@@ -257,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, onUnmounted } from "vue"
+import { ref, reactive, onMounted, computed, onUnmounted, watch } from "vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import {
   Plus, Refresh, Search, Delete, MoreFilled, Picture,
@@ -306,6 +306,28 @@ const formatStorageSize = (size) => {
 onMounted(async () => {
   await Promise.all([imageStore.fetchProfile(), imageStore.fetchAlbums()])
   await imageStore.fetchImages()
+})
+
+// 自动加载更多照片 - 递归加载所有页面
+const loadAllImages = async () => {
+  const { current_page, last_page } = imageStore.imagePagination || {}
+  if (current_page < last_page) {
+    const nextPage = current_page + 1
+    await imageStore.fetchImagesForPage(nextPage)
+    // 延迟后递归调用
+    setTimeout(loadAllImages, 300)
+  }
+}
+
+// 监听首次加载完成
+watch(() => imageStore.loading?.images, async (loading, oldLoading) => {
+  // 当从加载中变为非加载中，且是第一页数据加载完成
+  if (oldLoading === true && loading === false) {
+    const { current_page, last_page } = imageStore.imagePagination || {}
+    if (current_page === 1 && last_page > 1) {
+      setTimeout(loadAllImages, 500)
+    }
+  }
 })
 
 const refreshList = () => {

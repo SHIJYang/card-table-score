@@ -62,23 +62,38 @@ const cameraStore = useCameraStore();
 const imageStore = useImageStore();
 const { imageList, imagePagination } = storeToRefs(imageStore);
 
-// 加载更多相关计算属性
-const canLoadMore = computed(() => {
+// 自动加载更多照片 - 递归加载所有页面
+const loadAllImages = async () => {
   const { current_page, last_page } = imagePagination.value || {}
-  return current_page < last_page
-})
+  console.log('[loadAllImages] current_page:', current_page, 'last_page:', last_page)
 
-// 自动加载更多照片 - 监听图片列表变化，加载完成后自动追加
-watch(imageList, async (newList, oldList) => {
-  // 如果当前不在加载中，且还有更多数据，且列表有变化
-  if (!imageStore.loading?.images && canLoadMore.value && newList?.length > 0) {
-    // 延迟一点再加载，避免频繁请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-    if (imageStore.loadMoreImages) {
-      await imageStore.loadMoreImages()
+  if (current_page < last_page) {
+    const nextPage = current_page + 1
+    console.log('[loadAllImages] 加载第', nextPage, '页...')
+
+    // 直接调用 API，不通过 loadMoreImages
+    await imageStore.fetchImagesForPage(nextPage)
+
+    // 延迟后递归调用
+    setTimeout(loadAllImages, 300)
+  } else {
+    console.log('[loadAllImages] 全部加载完成')
+  }
+}
+
+// 监听首次加载完成
+watch(() => imageStore.loading?.images, async (loading, oldLoading) => {
+  console.log('[watch] loading 变化:', loading, 'old:', oldLoading)
+  // 当从加载中变为非加载中，且是第一页数据加载完成
+  if (oldLoading === true && loading === false) {
+    const { current_page, last_page } = imagePagination.value || {}
+    console.log('[watch] 首次加载完成, current_page:', current_page, 'last_page:', last_page)
+    if (current_page === 1 && last_page > 1) {
+      console.log('[watch] 开始自动加载所有页面')
+      setTimeout(loadAllImages, 500)
     }
   }
-}, { immediate: false })
+})
 
 // 2. 核心修复：在 JS 中获取 pixelRatio，并在模板中引用
 // 限制最大为 2.0，既保证清晰度又防止高分屏手机过热

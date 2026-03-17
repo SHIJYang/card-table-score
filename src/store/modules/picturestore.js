@@ -105,13 +105,14 @@ export const useImageStore = defineStore('image', () => {
         order: sortOrder.value
       }
       const res = await getImageList(params)
-      imageList.value = res.data?.data || []
-      const meta = res.data?.meta || {}
+      // API 返回结构: { status, message, data: { current_page, last_page, per_page, total, data: [...] } }
+      const responseData = res.data || {}
+      imageList.value = responseData.data || []
       imagePagination.value = {
-        current_page: meta.current_page ?? 1,
-        last_page: meta.last_page ?? 1,
-        per_page: meta.per_page ?? 20,
-        total: meta.total ?? 0
+        current_page: responseData.current_page ?? 1,
+        last_page: responseData.last_page ?? 1,
+        per_page: responseData.per_page ?? 20,
+        total: responseData.total ?? 0
       }
     } catch (err) {
       setError(err.response?.data?.message || '获取图片列表失败')
@@ -250,16 +251,15 @@ export const useImageStore = defineStore('image', () => {
     await fetchImages()
   }
 
-  // ========== 加载更多（追加模式）==========
-  async function loadMoreImages() {
-    const { current_page, last_page } = imagePagination.value
-    if (current_page >= last_page) return // 没有更多数据
+  // ========== 加载指定页（追加模式）==========
+  async function fetchImagesForPage(page) {
+    const { last_page } = imagePagination.value
+    if (page > last_page) return
 
     setLoading('images', true)
     try {
-      const nextPage = current_page + 1
       const params = {
-        page: nextPage,
+        page: page,
         per_page: imagePagination.value.per_page,
         q: searchKeyword.value,
         permission: filterPermission.value,
@@ -267,21 +267,21 @@ export const useImageStore = defineStore('image', () => {
         order: sortOrder.value
       }
       const res = await getImageList(params)
-      const newImages = res.data?.data || []
-      const meta = res.data?.meta || {}
+      const responseData = res.data || {}
+      const newImages = responseData.data || []
 
       // 追加到现有列表
       imageList.value.push(...newImages)
 
-      // 更新分页信息
+      // 更新分页信息 - current_page 设为请求的页码
       imagePagination.value = {
-        current_page: meta.current_page ?? nextPage,
-        last_page: meta.last_page ?? last_page,
-        per_page: meta.per_page ?? imagePagination.value.per_page,
-        total: meta.total ?? imagePagination.value.total
+        current_page: page,
+        last_page: responseData.last_page ?? last_page,
+        per_page: responseData.per_page ?? imagePagination.value.per_page,
+        total: responseData.total ?? imagePagination.value.total
       }
     } catch (err) {
-      setError(err.response?.data?.message || '加载更多图片失败')
+      setError(err.response?.data?.message || '加载图片失败')
     } finally {
       setLoading('images', false)
     }
@@ -339,7 +339,7 @@ export const useImageStore = defineStore('image', () => {
     // 方法
     fetchProfile,
     fetchImages,
-    loadMoreImages,
+    fetchImagesForPage,
     fetchAlbums,
     uploadImage,
     removeImage,

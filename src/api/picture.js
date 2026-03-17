@@ -22,7 +22,7 @@ export const uploadImage = (data, config) => {
 
 // 获取图片列表
 export const getImageList = (params) => {
-    return request.get('/images', params)
+    return request.get('/images', { params })
 }
 
 // 删除图片
@@ -36,7 +36,7 @@ export const deleteImage = (key) => {
 
 // 获取相册列表
 export const getAlbumList = (params) => {
-    return request.get('/albums', params)
+    return request.get('/albums', { params })
 }
 
 // 删除相册
@@ -50,7 +50,7 @@ export const deleteAlbum = (id) => {
 
 // 获取策略列表
 export const getStrategyList = (params) => {
-    return request.get('/strategies', params)
+    return request.get('/strategies', { params })
 }
 
 /**
