@@ -47,31 +47,23 @@ const routes = [
         name: 'People',
         component: () => import('../views/our/people.vue')
     },
-    {
-        path: '/dog',
-        name: 'Dog',
-        component: () => import('../views/our/dog.vue')
-    },
+    
     {
         path: '/player',
         name: 'Player',
         component: () => import('../views/our/player.vue')
     },
-    {
-        path: '/waterer',
-        name: 'Waterer',
-        component: () => import('../views/our/waterer.vue')
-    },
+    
     {
         path: '/img',
         name: 'Img',
         component: () => import('../views/sets/picture.vue')
     },
     
-    {
-        path: '/tree',
-        name: 'Tree',
-        component: () => import('../views/our/tree.vue')
+  {
+        path: '/music',
+        name: 'Music',
+        component: () => import('../views/games/music.vue')
     },
     {
         path: '/trees',

@@ -24,7 +24,7 @@
       </div> -->
 
       <div class="page">
-        <IsometricMatrix :count="4" :size="28" />
+        <IsometricMatrix :count="3" :size="38" />
       </div>
     </main>
 

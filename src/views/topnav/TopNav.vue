@@ -18,21 +18,14 @@
 				<el-menu-item index="/snake">{{ t('nav.snake') }}</el-menu-item>
 				<el-menu-item index="/2048">{{ t('nav.2048') }}</el-menu-item>
 				<el-menu-item index="/try">{{ t('nav.try') }}</el-menu-item>
-
-			</el-sub-menu>
-
-			<el-sub-menu index="our" popper-class="theme-popper">
-				<template #title>
-					<span>{{ t('nav.our') }}</span>
-				</template>
-				<el-menu-item index="/tree">{{ t('nav.christmasTree') }}</el-menu-item>
-				<el-menu-item index="/trees">{{ t('nav.christmasTree') }}2</el-menu-item>
-				<el-menu-item index="/dog">{{ t('nav.dog') }}</el-menu-item>
+				<el-menu-item index="/trees">{{ t('nav.christmasTree') }}</el-menu-item>
 				<el-menu-item index="/people">{{ t('nav.people') }}</el-menu-item>
 				<el-menu-item index="/player">{{ t('nav.player') }}</el-menu-item>
-				<el-menu-item index="/waterer">{{ t('nav.water') }}</el-menu-item>
+				<el-menu-item index="/music">{{ t('nav.music') }}</el-menu-item>
 
 			</el-sub-menu>
+
+
 			<el-sub-menu index="settings" popper-class="theme-popper">
 				<template #title>
 					<span>{{ t('nav.settings') }}</span>
