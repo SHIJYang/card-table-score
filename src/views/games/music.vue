@@ -348,18 +348,24 @@ function handleMouseDown(e) {
   e.preventDefault()
   // 恢复音频上下文（处理浏览器自动播放策略）
   audioEngine.resume()
-  const areaIndex = getAreaIndex(e.clientX, e.clientY)
+  const rect = canvas.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  const areaIndex = getAreaIndex(x, y)
   lastAreaIndex = areaIndex
-  trigger(areaIndex, e.clientX, e.clientY)
+  trigger(areaIndex, x, y)
 }
 
 function handleMouseMove(e) {
   // 恢复音频上下文（处理浏览器自动播放策略）
   audioEngine.resume()
-  const areaIndex = getAreaIndex(e.clientX, e.clientY)
+  const rect = canvas.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  const areaIndex = getAreaIndex(x, y)
   if (areaIndex !== lastAreaIndex) {
     lastAreaIndex = areaIndex
-    trigger(areaIndex, e.clientX, e.clientY)
+    trigger(areaIndex, x, y)
   }
 }
 
@@ -369,10 +375,13 @@ function handleTouchStart(e) {
   e.preventDefault()
   // 恢复音频上下文（处理浏览器自动播放策略）
   audioEngine.resume()
+  const rect = canvas.getBoundingClientRect()
   for (let i = 0; i < e.touches.length; i++) {
-    const areaIndex = getAreaIndex(e.touches[i].clientX, e.touches[i].clientY)
+    const x = e.touches[i].clientX - rect.left
+    const y = e.touches[i].clientY - rect.top
+    const areaIndex = getAreaIndex(x, y)
     lastAreaIndex = areaIndex
-    trigger(areaIndex, e.touches[i].clientX, e.touches[i].clientY)
+    trigger(areaIndex, x, y)
   }
 }
 
@@ -380,11 +389,14 @@ function handleTouchMove(e) {
   e.preventDefault()
   // 恢复音频上下文（处理浏览器自动播放策略）
   audioEngine.resume()
+  const rect = canvas.getBoundingClientRect()
   for (let i = 0; i < e.touches.length; i++) {
-    const areaIndex = getAreaIndex(e.touches[i].clientX, e.touches[i].clientY)
+    const x = e.touches[i].clientX - rect.left
+    const y = e.touches[i].clientY - rect.top
+    const areaIndex = getAreaIndex(x, y)
     if (areaIndex !== lastAreaIndex) {
       lastAreaIndex = areaIndex
-      trigger(areaIndex, e.touches[i].clientX, e.touches[i].clientY)
+      trigger(areaIndex, x, y)
     }
   }
 }
@@ -439,12 +451,12 @@ onMounted(() => {
 
   // 添加事件监听
   window.addEventListener('resize', resizeCanvas)
-  window.addEventListener('mousedown', handleMouseDown)
-  window.addEventListener('mousemove', handleMouseMove)
-  window.addEventListener('mouseup', handleMouseUp)
-  window.addEventListener('touchstart', handleTouchStart, { passive: false })
-  window.addEventListener('touchmove', handleTouchMove, { passive: false })
-  window.addEventListener('touchend', handleTouchEnd, { passive: false })
+  canvas.addEventListener('mousedown', handleMouseDown)
+  canvas.addEventListener('mousemove', handleMouseMove)
+  canvas.addEventListener('mouseup', handleMouseUp)
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
+  canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: false })
   window.addEventListener('keydown', handleKeyDown)
 })
 
@@ -455,12 +467,12 @@ onUnmounted(() => {
   if (animationId) cancelAnimationFrame(animationId)
   
   window.removeEventListener('resize', resizeCanvas)
-  window.removeEventListener('mousedown', handleMouseDown)
-  window.removeEventListener('mousemove', handleMouseMove)
-  window.removeEventListener('mouseup', handleMouseUp)
-  window.removeEventListener('touchstart', handleTouchStart)
-  window.removeEventListener('touchmove', handleTouchMove)
-  window.removeEventListener('touchend', handleTouchEnd)
+  canvas.removeEventListener('mousedown', handleMouseDown)
+  canvas.removeEventListener('mousemove', handleMouseMove)
+  canvas.removeEventListener('mouseup', handleMouseUp)
+  canvas.removeEventListener('touchstart', handleTouchStart)
+  canvas.removeEventListener('touchmove', handleTouchMove)
+  canvas.removeEventListener('touchend', handleTouchEnd)
   window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
@@ -479,7 +491,7 @@ onUnmounted(() => {
 
 .main-canvas {
   position: absolute;
-  top: 0;
+
   left: 0;
   width: 100%;
   height: 100%;
