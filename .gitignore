@@ -27,7 +27,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
-mikutap
 
 # system files
 .DS_Store
