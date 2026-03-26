@@ -24,6 +24,19 @@
       <el-form-item :label="$t('settings.music')">
         <el-switch v-model="settingsStore.musicEnabled" @change="settingsStore.setMusicEnabled" />
       </el-form-item>
+      <el-form-item label="音效包">
+        <el-select v-model="settingsStore.soundPack" @change="settingsStore.setSoundPack" placeholder="选择音效包">
+          <el-option v-for="(name, key) in settingsStore.soundPackOptions" :key="key" :label="name" :value="key" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="settingsStore.soundPack === 'custom'" label="音效包URL">
+        <el-input 
+          v-model="settingsStore.customSoundPackUrl" 
+          @change="settingsStore.setCustomSoundPackUrl" 
+          style="width: 440px" 
+          placeholder="请输入音效包 JSON 文件URL" 
+        />
+      </el-form-item>
       <el-form-item :label="$t('settings.volume')">
         <el-slider v-model="settingsStore.volume" :min="0" :max="100" @change="settingsStore.setVolume" />
       </el-form-item>

@@ -23,6 +23,28 @@ export const useSettingsStore = defineStore('settings', () => {
     large: '大'
   }
 
+  const MUSIC_OPTIONS = {
+    none: '无',
+    default: '默认',
+    peaceful: '宁静',
+    energetic: '活力',
+    mysterious: '神秘'
+  }
+
+  const SOUND_PACK_OPTIONS = {
+    none: '无（使用默认合成音效）',
+    mikutap_main: 'Mikutap主音效',
+    custom: '自定义音效包'
+  }
+
+  // 注意：使用动态导入时，路径需要是相对于项目根目录的完整路径
+  // 例如: () => import('@/assets/Mikutap.json')
+  const SOUND_PACK_IMPORTS = {
+    mikutap_main: () => import('@/assets/Mikutap.json')
+  }
+
+  const SOUND_FILE_COUNT = 30
+
   // ========== 状态 ==========
   const theme = ref(localStorage.getItem('theme') || 'light')
   const language = ref(localStorage.getItem('language') || 'zh-CN')
@@ -34,6 +56,10 @@ export const useSettingsStore = defineStore('settings', () => {
   const fontSize = ref(localStorage.getItem('fontSize') || 'medium')
   const imgapi = ref(localStorage.getItem('imgapi') || '')
   const autoSave = ref(localStorage.getItem('autoSave') !== 'false')
+  const music = ref(localStorage.getItem('music') || 'none')
+  const soundPack = ref(localStorage.getItem('soundPack') || 'none')
+  const soundPackSource = ref(localStorage.getItem('soundPackSource') || 'none')
+  const customSoundPackUrl = ref(localStorage.getItem('customSoundPackUrl') || '')
 
   // ========== 计算属性 ==========
   const isDarkTheme = computed(() => theme.value === 'dark')
@@ -47,12 +73,36 @@ export const useSettingsStore = defineStore('settings', () => {
     notificationEnabled: notificationEnabled.value,
     fontSize: fontSize.value,
     imgapi: imgapi.value,
-    autoSave: autoSave.value
+    autoSave: autoSave.value,
+    music: music.value,
+    soundPack: soundPack.value,
+    soundPackSource: soundPackSource.value,
+    customSoundPackUrl: customSoundPackUrl.value
   }))
 
   const themeOptions = computed(() => THEME_OPTIONS)
   const languageOptions = computed(() => LANGUAGE_OPTIONS)
   const fontSizeOptions = computed(() => FONT_SIZE_OPTIONS)
+  const musicOptions = computed(() => MUSIC_OPTIONS)
+  const soundPackOptions = computed(() => SOUND_PACK_OPTIONS)
+  const soundPackUrls = computed(() => SOUND_PACK_URLS)
+  const soundPackImports = computed(() => SOUND_PACK_IMPORTS)
+
+  // 获取当前音效包URL
+  const currentSoundPackUrl = computed(() => {
+    if (soundPack.value === 'custom') {
+      return customSoundPackUrl.value
+    }
+    return SOUND_PACK_URLS[soundPack.value] || null
+  })
+
+  // 获取当前音效包导入函数
+  const currentSoundPackImport = computed(() => {
+    if (soundPack.value === 'custom') {
+      return null
+    }
+    return SOUND_PACK_IMPORTS[soundPack.value] || null
+  })
 
   // ========== 辅助函数 ==========
   function saveToStorage(key, value) {
@@ -114,6 +164,28 @@ export const useSettingsStore = defineStore('settings', () => {
     ElMessage.success(`自动保存已${enabled ? '开启' : '关闭'}`)
   }
 
+  function setMusic(m) {
+    music.value = m
+    saveToStorage('music', m)
+    ElMessage.success(`背景音乐已切换为${MUSIC_OPTIONS[m]}`)
+  }
+
+  function setSoundPack(pack) {
+    soundPack.value = pack
+    saveToStorage('soundPack', pack)
+    ElMessage.success(`音效包已切换为${SOUND_PACK_OPTIONS[pack]}`)
+  }
+
+  function setSoundPackSource(source) {
+    soundPackSource.value = source
+    saveToStorage('soundPackSource', source)
+  }
+
+  function setCustomSoundPackUrl(url) {
+    customSoundPackUrl.value = url
+    saveToStorage('customSoundPackUrl', url)
+  }
+
   function resetSettings() {
     setTheme('light')
     setLanguage('zh-CN')
@@ -125,6 +197,10 @@ export const useSettingsStore = defineStore('settings', () => {
     setFontSize('medium')
     setImgapi('')
     setAutoSave(true)
+    setMusic('none')
+    setSoundPack('none')
+    setSoundPackSource('none')
+    setCustomSoundPackUrl('')
     ElMessage.success('设置已重置为默认值')
   }
 
@@ -140,6 +216,10 @@ export const useSettingsStore = defineStore('settings', () => {
     fontSize,
     imgapi,
     autoSave,
+    music,
+    soundPack,
+    soundPackSource,
+    customSoundPackUrl,
 
     // 计算属性
     isDarkTheme,
@@ -147,6 +227,12 @@ export const useSettingsStore = defineStore('settings', () => {
     themeOptions,
     languageOptions,
     fontSizeOptions,
+    musicOptions,
+    soundPackOptions,
+    soundPackUrls,
+    soundPackImports,
+    currentSoundPackUrl,
+    currentSoundPackImport,
 
     // 方法
     setTheme,
@@ -159,6 +245,10 @@ export const useSettingsStore = defineStore('settings', () => {
     setFontSize,
     setImgapi,
     setAutoSave,
+    setMusic,
+    setSoundPack,
+    setSoundPackSource,
+    setCustomSoundPackUrl,
     resetSettings
   }
 })
