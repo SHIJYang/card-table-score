@@ -8,13 +8,19 @@
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { watch, onMounted, onUnmounted } from 'vue'
 import { useSettingsStore } from '@/store'
 import { useI18n } from 'vue-i18n'
 import Topnav from './views/topnav/TopNav.vue'
 import { applyTheme, themes } from './theme/index.js'
+import { getBackgroundMusicManager } from './utils/audio/backgroundMusicManager.js'
+import trackData from './assets/track.json'
 const settingsStore = useSettingsStore()
 const { locale } = useI18n()
+const bgmManager = getBackgroundMusicManager()
+
+// 加载背景音乐数据
+bgmManager.loadTracks(trackData)
 
 // 语言切换
 watch(
@@ -36,6 +42,41 @@ watch(
   },
   { immediate: true }
 )
+
+// 音乐开关监听
+watch(
+  () => settingsStore.musicEnabled,
+  (enabled) => {
+    if (enabled) {
+      bgmManager.start()
+    } else {
+      bgmManager.stop()
+    }
+  },
+  { immediate: true }
+)
+
+// 音量监听
+watch(
+  () => settingsStore.volume,
+  (volume) => {
+    bgmManager.setVolume(volume / 100)
+  },
+  { immediate: true }
+)
+
+// 组件挂载
+onMounted(() => {
+  // 初始启动音乐
+  if (settingsStore.musicEnabled) {
+    bgmManager.start()
+  }
+})
+
+// 组件卸载
+onUnmounted(() => {
+  bgmManager.stop()
+})
 </script>
 
 <style>
