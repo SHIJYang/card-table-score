@@ -26,7 +26,7 @@ let texts = []
 let lastAreaIndex = -1
 
 // 背景颜色
-const BG_COLOR = '#8cc'
+const BG_COLOR = 'rgb(235, 248, 248)'
 
 // 获取Mikutap核心实例
 const mikutapCore = getMikutapCore()
@@ -106,10 +106,16 @@ function updateShapes() {
     s.vx *= 0.985
     s.vy *= 0.985
 
-    if (s.life <= 0 || s.scale < 0.01) return false
+    // 处理气泡的大小增长和透明度变化
+    if (s.type === 'circle' && s.sizeGrowth && s.alphaFade) {
+      s.size += s.sizeGrowth * s.size
+      s.alpha -= s.alphaFade
+    }
+
+    if (s.life <= 0 || s.scale < 0.01 || s.alpha <= 0) return false
 
     ctx.save()
-    ctx.globalAlpha = s.life * s.alpha
+    ctx.globalAlpha = s.life * (s.alpha || 1)
     ctx.translate(s.x, s.y)
     ctx.rotate(s.rotation)
     ctx.scale(s.scale, s.scale)
@@ -124,7 +130,32 @@ function updateShapes() {
       ctx.lineJoin = 'round'
     }
 
-    drawShape(ctx, s)
+    // 处理波浪效果
+    if (s.type === 'line' && s.waveAmplitude && s.waveFrequency) {
+      // 更新波浪相位
+      s.wavePhase = (s.wavePhase || 0) + 0.1
+      
+      // 绘制波浪线
+      ctx.beginPath()
+      const segments = 20
+      const segmentLength = (s.size * 2) / segments
+      
+      for (let i = 0; i <= segments; i++) {
+        const x = -s.size + (i * segmentLength)
+        const y = Math.sin(x * s.waveFrequency + s.wavePhase) * s.waveAmplitude
+        
+        if (i === 0) {
+          ctx.moveTo(x, y)
+        } else {
+          ctx.lineTo(x, y)
+        }
+      }
+      
+      ctx.stroke()
+    } else {
+      // 绘制普通形状
+      drawShape(ctx, s)
+    }
 
     ctx.restore()
     return true
@@ -332,7 +363,9 @@ async function executeVisualEffect(effectName, color) {
   } else if (paramCount === 3) {
     // 复合效果: (array1, array2, color)
     const nameLower = effectName.toLowerCase()
-    if (nameLower.includes('firework') || nameLower.includes('starfall') || nameLower.includes('bubble')) {
+    if (nameLower.includes('firework')) {
+      effectFn(particles, ripples, color)
+    } else if (nameLower.includes('starfall') || nameLower.includes('bubble')) {
       effectFn(shapes, particles, color)
     } else {
       effectFn(ripples, particles, color)
@@ -484,7 +517,7 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #8cc;
+  background: rgb(235, 248, 248);
   overflow: hidden;
   touch-action: none;
 }

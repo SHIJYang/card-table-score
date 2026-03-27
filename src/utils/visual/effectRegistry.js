@@ -105,9 +105,7 @@ export function executeEffect(name, context, color) {
     } else if (paramCount === 3) {
       // 复合效果: (array1, array2, color)
       const nameLower = name.toLowerCase()
-      if (nameLower.includes('firework') || nameLower.includes('starfall')) {
-        fn(shapes, particles, color)
-      } else if (nameLower.includes('bubble')) {
+      if (nameLower.includes('firework') || nameLower.includes('starfall') || nameLower.includes('bubble') || nameLower.includes('gsap')) {
         fn(shapes, particles, color)
       } else {
         fn(ripples, particles, color)
@@ -137,11 +135,11 @@ function initializeRegistry() {
 
   // 运动类效果
   registerEffect('spiral', motionEffects.effectSpiral, EffectCategories.MOTION, { description: '弹跳方块' })
-  registerEffect('wave', motionEffects.effectWave, EffectCategories.MOTION, { description: '横向扫描线' })
-  registerEffect('rain', motionEffects.effectRain, EffectCategories.MOTION, { description: '垂直下落' })
-  registerEffect('meteor', motionEffects.effectMeteor, EffectCategories.MOTION, { description: '流星' })
+  registerEffect('wave', motionEffects.effectWave, EffectCategories.MOTION, { description: '六边形旋转' })
+  registerEffect('rain', motionEffects.effectRain, EffectCategories.MOTION, { description: '放射圆环' })
+  registerEffect('meteor', motionEffects.effectMeteor, EffectCategories.MOTION, { description: '旋转星形' })
   registerEffect('vortex', motionEffects.effectVortex, EffectCategories.MOTION, { description: '漩涡' })
-  registerEffect('tornado', motionEffects.effectTornado, EffectCategories.MOTION, { description: '龙卷风' })
+  registerEffect('tornado', motionEffects.effectTornado, EffectCategories.MOTION, { description: '螺旋扩散' })
   registerEffect('pulse', motionEffects.effectPulse, EffectCategories.MOTION, { description: '脉冲' })
   registerEffect('spiral2', motionEffects.effectSpiral2, EffectCategories.MOTION, { description: '双螺旋' })
 
@@ -162,7 +160,8 @@ function initializeRegistry() {
   registerEffect('confetti', particleEffects.effectConfetti, EffectCategories.PARTICLE, { description: '彩纸' })
   registerEffect('pixel', particleEffects.effectPixel, EffectCategories.PARTICLE, { description: '像素' })
   registerEffect('starfall', particleEffects.effectStarfall, EffectCategories.PARTICLE, { description: '星落' })
-  registerEffect('lightning', particleEffects.effectLightning, EffectCategories.PARTICLE, { description: '闪电' })
+  registerEffect('lightning', particleEffects.effectLightning, EffectCategories.PARTICLE, { description: '菱形爆发' })
+  registerEffect('gsap', particleEffects.effectGSAP, EffectCategories.PARTICLE, { description: 'GSAP流畅动画' })
 
   console.log(`[EffectRegistry] 已注册 ${effectRegistry.size} 个视觉效果`)
 }

@@ -9,6 +9,7 @@
  * @param {string} color - 颜色
  */
 export function effectFlower(shapes, color) {
+  console.log('[动画效果] 开始执行花朵图案效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -34,6 +35,7 @@ export function effectFlower(shapes, color) {
       })
     }
   }
+  console.log('[动画效果] 花朵图案效果执行完成，创建了18个圆形')
 }
 
 /**
@@ -42,12 +44,15 @@ export function effectFlower(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectHex(shapes, color) {
+  console.log('[动画效果] 开始执行六边形阵列效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
+  let totalShapes = 0
   
   for (let ring = 0; ring < 3; ring++) {
     const count = 6 + ring * 6
     const radius = 40 + ring * 50
+    totalShapes += count
     
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 / count) * i
@@ -69,6 +74,7 @@ export function effectHex(shapes, color) {
       })
     }
   }
+  console.log('[动画效果] 六边形阵列效果执行完成，创建了', totalShapes, '个六边形')
 }
 
 /**
@@ -77,12 +83,15 @@ export function effectHex(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectTriangle(shapes, color) {
+  console.log('[动画效果] 开始执行三角形阵列效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
+  let totalShapes = 0
   
   for (let ring = 0; ring < 3; ring++) {
     const count = 6 + ring * 3
     const radius = 50 + ring * 60
+    totalShapes += count
     
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 / count) * i
@@ -104,6 +113,7 @@ export function effectTriangle(shapes, color) {
       })
     }
   }
+  console.log('[动画效果] 三角形阵列效果执行完成，创建了', totalShapes, '个三角形')
 }
 
 /**
@@ -112,12 +122,15 @@ export function effectTriangle(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectCircle(shapes, color) {
+  console.log('[动画效果] 开始执行圆环阵列效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
+  let totalShapes = 0
   
   for (let ring = 0; ring < 4; ring++) {
     const count = 8 + ring * 4
     const radius = 50 + ring * 50
+    totalShapes += count
     
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 / count) * i
@@ -139,6 +152,7 @@ export function effectCircle(shapes, color) {
       })
     }
   }
+  console.log('[动画效果] 圆环阵列效果执行完成，创建了', totalShapes, '个圆形')
 }
 
 /**
@@ -147,6 +161,7 @@ export function effectCircle(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectLine(shapes, color) {
+  console.log('[动画效果] 开始执行线条爆发效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -168,6 +183,7 @@ export function effectLine(shapes, color) {
       lineWidth: 5
     })
   }
+  console.log('[动画效果] 线条爆发效果执行完成，创建了10条线条')
 }
 
 /**
@@ -176,6 +192,7 @@ export function effectLine(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectArc(shapes, color) {
+  console.log('[动画效果] 开始执行弧线扩散效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -196,6 +213,7 @@ export function effectArc(shapes, color) {
       lineWidth: 5 - i * 0.4
     })
   }
+  console.log('[动画效果] 弧线扩散效果执行完成，创建了8条弧线')
 }
 
 /**
@@ -204,6 +222,7 @@ export function effectArc(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectRing(shapes, color) {
+  console.log('[动画效果] 开始执行圆环效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -223,6 +242,7 @@ export function effectRing(shapes, color) {
       lineWidth: 4
     })
   }
+  console.log('[动画效果] 圆环效果执行完成，创建了5个圆环')
 }
 
 /**
@@ -231,6 +251,7 @@ export function effectRing(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectFlash(shapes, color) {
+  console.log('[动画效果] 开始执行放射线效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -252,4 +273,5 @@ export function effectFlash(shapes, color) {
       lineWidth: 3
     })
   }
+  console.log('[动画效果] 放射线效果执行完成，创建了12条放射线条')
 }

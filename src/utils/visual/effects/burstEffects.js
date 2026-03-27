@@ -10,6 +10,7 @@
  * @param {string} color - 颜色
  */
 export function effectBurst(ripples, particles, color) {
+  console.log('[动画效果] 开始执行圆形扩散效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -37,6 +38,7 @@ export function effectBurst(ripples, particles, color) {
       life: 1
     })
   }
+  console.log('[动画效果] 圆形扩散效果执行完成，创建了5个涟漪和12个粒子')
 }
 
 /**
@@ -45,6 +47,7 @@ export function effectBurst(ripples, particles, color) {
  * @param {string} color - 颜色
  */
 export function effectExplosion(shapes, color) {
+  console.log('[动画效果] 开始执行爆炸效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -66,6 +69,7 @@ export function effectExplosion(shapes, color) {
       lineWidth: 4
     })
   }
+  console.log('[动画效果] 爆炸效果执行完成，创建了10个三角形')
 }
 
 /**
@@ -75,6 +79,7 @@ export function effectExplosion(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectScatter(ripples, particles, color) {
+  console.log('[动画效果] 开始执行散射效果，颜色:', color)
   for (let i = 0; i < 20; i++) {
     const x = Math.random() * window.innerWidth
     const y = Math.random() * window.innerHeight
@@ -97,6 +102,7 @@ export function effectScatter(ripples, particles, color) {
       life: 0.8
     })
   }
+  console.log('[动画效果] 散射效果执行完成，创建了20个涟漪和20个粒子')
 }
 
 /**
@@ -105,6 +111,7 @@ export function effectScatter(ripples, particles, color) {
  * @param {string} color - 颜色
  */
 export function effectDiamond(shapes, color) {
+  console.log('[动画效果] 开始执行菱形爆发效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -126,6 +133,7 @@ export function effectDiamond(shapes, color) {
       lineWidth: 4
     })
   }
+  console.log('[动画效果] 菱形爆发效果执行完成，创建了8个菱形')
 }
 
 /**
@@ -134,6 +142,7 @@ export function effectDiamond(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectCross(shapes, color) {
+  console.log('[动画效果] 开始执行十字爆发效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -155,6 +164,7 @@ export function effectCross(shapes, color) {
       lineWidth: 5
     })
   }
+  console.log('[动画效果] 十字爆发效果执行完成，创建了8个十字')
 }
 
 /**
@@ -163,6 +173,7 @@ export function effectCross(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectSquare(shapes, color) {
+  console.log('[动画效果] 开始执行方块爆发效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -184,6 +195,7 @@ export function effectSquare(shapes, color) {
       lineWidth: 4
     })
   }
+  console.log('[动画效果] 方块爆发效果执行完成，创建了10个方块')
 }
 
 /**
@@ -192,6 +204,7 @@ export function effectSquare(shapes, color) {
  * @param {string} color - 颜色
  */
 export function effectDot(particles, color) {
+  console.log('[动画效果] 开始执行点阵爆发效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
@@ -207,4 +220,5 @@ export function effectDot(particles, color) {
       life: 1
     })
   }
+  console.log('[动画效果] 点阵爆发效果执行完成，创建了20个粒子')
 }
