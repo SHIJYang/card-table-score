@@ -199,26 +199,36 @@ export function effectSquare(shapes, color) {
 }
 
 /**
- * 点阵爆发 - 从中心爆发的点
- * @param {Array} particles - 粒子数组
+ * 三角形爆发 - 从中心爆发的三角形
+ * @param {Array} shapes - 形状数组
  * @param {string} color - 颜色
  */
-export function effectDot(particles, color) {
-  console.log('[动画效果] 开始执行点阵爆发效果，颜色:', color)
+export function effectDot(shapes, color) {
+  console.log('[动画效果] 开始执行三角形爆发效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
   
-  for (let i = 0; i < 20; i++) {
-    const angle = Math.random() * Math.PI * 2
-    const speed = 3 + Math.random() * 4
-    particles.push({
-      x: cx, y: cy,
+  for (let i = 0; i < 18; i++) {
+    const angle = (Math.PI * 2 / 18) * i
+    const speed = 3 + Math.random() * 3
+    const size = 10 + Math.random() * 10
+    
+    shapes.push({
+      type: 'triangle',
+      x: cx + Math.cos(angle) * 20,
+      y: cy + Math.sin(angle) * 20,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      size: 3 + Math.random() * 5,
+      size,
+      rotation: angle,
+      rotationSpeed: (Math.random() - 0.5) * 0.15,
+      scale: 0.8 + Math.random() * 0.4,
       color,
-      life: 1
+      life: 1.5 + Math.random() * 0.5,
+      alpha: 0.7 + Math.random() * 0.3,
+      fill: Math.random() > 0.5,
+      lineWidth: 2 + Math.random() * 2
     })
   }
-  console.log('[动画效果] 点阵爆发效果执行完成，创建了20个粒子')
+  console.log('[动画效果] 三角形爆发效果执行完成，创建了18个三角形')
 }

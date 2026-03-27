@@ -274,7 +274,6 @@ function updateParticles() {
   particles = particles.filter(p => {
     p.x += p.vx * 0.7
     p.y += p.vy * 0.7
-    p.vy += 0.08
     p.vx *= 0.995
     p.vy *= 0.995
     p.life -= 0.008
@@ -355,8 +354,6 @@ async function executeVisualEffect(effectName, color) {
     const nameLower = effectName.toLowerCase()
     if (nameLower.includes('burst') || nameLower.includes('scatter') || nameLower.includes('pulse')) {
       effectFn(ripples, color)
-    } else if (nameLower.includes('dot')) {
-      effectFn(particles, color)
     } else {
       effectFn(shapes, color)
     }

@@ -131,7 +131,7 @@ function initializeRegistry() {
   registerEffect('diamond', burstEffects.effectDiamond, EffectCategories.BURST, { description: '菱形爆发' })
   registerEffect('cross', burstEffects.effectCross, EffectCategories.BURST, { description: '十字爆发' })
   registerEffect('square', burstEffects.effectSquare, EffectCategories.BURST, { description: '方块爆发' })
-  registerEffect('dot', burstEffects.effectDot, EffectCategories.BURST, { description: '点阵爆发' })
+  registerEffect('dot', burstEffects.effectDot, EffectCategories.BURST, { description: '三角形爆发' })
 
   // 运动类效果
   registerEffect('spiral', motionEffects.effectSpiral, EffectCategories.MOTION, { description: '弹跳方块' })

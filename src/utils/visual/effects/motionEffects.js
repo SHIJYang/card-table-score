@@ -151,37 +151,48 @@ export function effectVortex(shapes, color) {
   console.log('[动画效果] 开始执行漩涡效果，颜色:', color)
   const cx = window.innerWidth / 2
   const cy = window.innerHeight / 2
-  const baseOrbitSpeed = 0.02 // 整体旋转速度
+  const baseOrbitSpeed = 0.05
+  
+  // 随机选择起始角度（0 到 2π）
+  const startAngle = Math.random() * Math.PI * 2
   
   for (let i = 0; i < 20; i++) {
-    const angle = (Math.PI * i/ 20) * i
+    // 螺旋角度：从随机起始角度开始，向外螺旋
+    const angle = startAngle + (Math.PI * 2 / 20) * i
     const dist = 30 + i * 8
-    // 随机大号尺寸
+    
+    // 计算当前位置
+    const x = cx + Math.cos(angle) * dist
+    const y = cy + Math.sin(angle) * dist
+    
+    // 计算切向速度，确保平滑的圆周运动
+    // 速度方向垂直于径向方向，大小与距离成正比
+    const speedMagnitude = baseOrbitSpeed * dist
+    const vx = -Math.sin(angle) * speedMagnitude
+    const vy = Math.cos(angle) * speedMagnitude
+    
     const randomSize = 15 + Math.random() * 25
-    // 随机透明度
     const randomAlpha = 0.7 + Math.random() * 0.3
-    // 随机线宽
     const randomLineWidth = 4 + Math.random() * 6
     
     shapes.push({
       type: 'cross',
-      x: cx + Math.cos(angle) * dist,
-      y: cy + Math.sin(angle) * dist,
-      // 切向速度，实现围绕中心旋转
-      vx: -Math.sin(angle) * baseOrbitSpeed * dist,
-      vy: Math.cos(angle) * baseOrbitSpeed * dist,
+      x: x,
+      y: y,
+      vx: vx,
+      vy: vy,
       size: randomSize,
-      rotation: 0, // +本身不旋转
-      rotationSpeed: 0, // +本身不旋转
+      rotation: 0,
+      rotationSpeed: 0,
       scale: 1,
-      color,
+      color: color,
       life: 2,
       alpha: randomAlpha,
       fill: false,
       lineWidth: randomLineWidth
     })
   }
-  console.log('[动画效果] 漩涡效果执行完成，创建了20个随机加大号的+')
+  console.log('[动画效果] 漩涡效果执行完成，创建了20个随机加大号的+，起始角度:', startAngle)
 }
 
 /**

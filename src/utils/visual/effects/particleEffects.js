@@ -153,7 +153,7 @@ export function effectSnow(shapes, color) {
       type: 'star',
       x, y,
       vx: (Math.random() - 0.5) * 1,
-      vy: 1 + Math.random() * 2,
+      vy: (Math.random() - 0.5) * 1,
       size: 3 + Math.random() * 5,
       rotation: Math.random() * Math.PI,
       rotationSpeed: (Math.random() - 0.5) * 0.1,
@@ -249,8 +249,8 @@ export function effectStarfall(shapes, particles, color) {
   const cy = window.innerHeight / 2
   
   // 创建星星
-  for (let i = 0; i < 12; i++) {
-    const angle = (Math.PI * 2 / 12) * i
+  for (let i = 0; i < 15; i++) {
+    const angle = (Math.PI * 2 / 15) * i
     const dist = 50 + Math.random() * 100
     
     shapes.push({
@@ -258,33 +258,20 @@ export function effectStarfall(shapes, particles, color) {
       x: cx + Math.cos(angle) * dist,
       y: cy + Math.sin(angle) * dist,
       vx: Math.cos(angle + Math.PI / 2) * 3,
-      vy: Math.sin(angle + Math.PI / 2) * 3 + 2,
-      size: 6 + Math.random() * 8,
+      vy: Math.sin(angle + Math.PI / 2) * 3,
+      size: 15 + Math.random() * 12, // 增大星星尺寸
       rotation: angle,
       rotationSpeed: 0.1,
       scale: 1,
       color,
-      life: 1.2,
+      life: 1.5, // 延长生命周期
       alpha: 1,
       fill: true,
       lineWidth: 2
     })
   }
   
-  // 尾迹粒子
-  for (let i = 0; i < 20; i++) {
-    const angle = Math.random() * Math.PI * 2
-    const speed = 2 + Math.random() * 4
-    particles.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed + 3,
-      size: 2 + Math.random() * 3,
-      color,
-      life: 0.6
-    })
-  }
-  console.log('[动画效果] 星落效果执行完成，创建了12个星星和20个尾迹粒子')
+  console.log('[动画效果] 星落效果执行完成，创建了15个大型星星')
 }
 
 /**
