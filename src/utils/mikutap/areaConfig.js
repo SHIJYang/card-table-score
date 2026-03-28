@@ -15,11 +15,11 @@ export const GRID_CONFIG = {
 // 区域颜色数组 - 每个区域对应的独特颜色
 export const AREA_COLORS = [
   '#FF0000', '#FF4500', '#FF8C00', '#FFD700', '#FFFF00',  // 红橙黄渐变
-  '#ADFF2F', '#00FF00', '#00FA9A', '#00CED1', '#00BFFF',  // 绿青蓝渐变
+  '#ADFF2F', '#00FF00', '#00ff55ff', '#007bacea', '#01b0ebff',  // 绿青蓝渐变
   '#1E90FF', '#0000FF', '#8A2BE2', '#9400D3', '#FF00FF',  // 蓝紫粉渐变
   '#FF1493', '#FF69B4', '#DC143C', '#B22222', '#8B0000',  // 深粉红渐变
   '#FF6347', '#FF7F50', '#FFA07A', '#FFDAB9', '#FFE4B5',  // 暖色调渐变
-  '#E6E6FA', '#D8BFD8', '#DDA0DD', '#EE82EE', '#DA70D6',  // 紫丁香渐变
+  '#9898ffff', '#d46ed4ff', '#DDA0DD', '#fa5afaff', '#f762f2ff',  // 紫丁香渐变
 ]
 
 // 区域音符数组 - 每个区域对应的音频频率（Hz）

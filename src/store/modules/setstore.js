@@ -190,7 +190,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setTheme('light')
     setLanguage('zh-CN')
     setSoundEnabled(true)
-    setMusicEnabled(true)
+    setMusicEnabled(false)
     setVolume(50)
     setAnimationEnabled(true)
     setNotificationEnabled(true)
