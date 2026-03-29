@@ -9,7 +9,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const THEME_OPTIONS = {
       light: '亮色',
       dark: '暗色',
-      custom: '自定义' // 添加我们的自定义主题
+    
   }
 
   const LANGUAGE_OPTIONS = {

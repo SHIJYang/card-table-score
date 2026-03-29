@@ -4,9 +4,7 @@
 			<el-menu-item index="/" class="logo-item">
 				<CubeSpinner :size="20" color="#55aa00" :duration="3" />
 			</el-menu-item>
-			<el-menu-item index="/live">
-				<img :src="pic" class="custom-icon" alt="live" />
-			</el-menu-item>
+			
 			<div class="flex-grow" />
 			<el-sub-menu index="games" popper-class="theme-popper">
 				<template #title>
@@ -22,7 +20,7 @@
 				<el-menu-item index="/people">{{ t('nav.people') }}</el-menu-item>
 				<el-menu-item index="/player">{{ t('nav.player') }}</el-menu-item>
 				<el-menu-item index="/music">{{ t('nav.music') }}</el-menu-item>
-
+				<el-menu-item index="/live">{{ t('nav.live') }}</el-menu-item>
 			</el-sub-menu>
 
 
@@ -34,6 +32,9 @@
 				<el-menu-item index="/sets/habits">{{ t('nav.habits') }}</el-menu-item>
 
 			</el-sub-menu>
+			<el-menu-item index="">
+				<ThemeSwitch v-model="settingsStore.theme" />
+			</el-menu-item>
 		</el-menu>
 	</div>
 </template>
@@ -43,10 +44,12 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import CubeSpinner from '@/components/box/CubeSpinner.vue'
 import pic from '../../assets/pic.svg'
+import { useSettingsStore } from '@/store'
 
+import ThemeSwitch from '@/components/ThemeSwitch.vue'
 const route = useRoute()
 const { t } = useI18n()
-
+const settingsStore = useSettingsStore()
 // 计算当前激活的菜单项
 const activeIndex = computed(() => route.path || '/')
 </script>
@@ -103,6 +106,7 @@ const activeIndex = computed(() => route.path || '/')
 
 /* Logo 区域 */
 .logo-item {
+	width: 55px;
 	padding: 0 !important;
 	background: transparent !important;
 	opacity: 1 !important;

@@ -2,14 +2,7 @@
   <div class="settings-page">
     <h1>{{ $t("settings.title") }}</h1>
     <el-form label-position="left" label-width="120px" class="settings-form">
-      <el-form-item :label="$t('settings.mode') || '显示模式'">
-         <ThemeSwitch v-model="settingsStore.theme" />
-      </el-form-item>
-      <el-form-item :label="$t('settings.theme')">
-        <el-select v-model="settingsStore.theme" @change="settingsStore.setTheme" :placeholder="$t('settings.selectTheme')">
-          <el-option v-for="themeKey in ['light', 'dark', 'cartoon', 'custom']" :key="themeKey" :label="$t(`settings.themes.${themeKey}`)" :value="themeKey" />
-        </el-select>
-      </el-form-item>
+      
       <el-form-item :label="$t('settings.language')">
         <el-select v-model="settingsStore.language" @change="settingsStore.setLanguage" :placeholder="$t('settings.selectLanguage')">
           <el-option v-for="langKey in ['zh-CN', 'en-US']" :key="langKey" :label="$t(`settings.languages.${langKey}`)" :value="langKey" />

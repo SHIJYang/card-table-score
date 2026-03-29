@@ -43,7 +43,7 @@ import FloatingDog from '@/components/FloatingDog/FloatingDog.vue'
 <style scoped>
 /* --- 全局容器 --- */
 .game-homepage {
-  min-height: 100vh;
+  min-height: 95vh;
   width: 100%;
   color: var(--text-color, #fff);
   font-family: 'Inter', system-ui, sans-serif;

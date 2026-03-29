@@ -149,115 +149,6 @@ const baseTheme = {
           }
       },
   
-      // ==========================================
-      // 3. 糖果卡通 (多巴胺风格)
-      // 特点：高饱和度、粗边框、硬阴影、暖色背景
-      // ==========================================
-      cartoon: {
-          name: 'cartoon',
-          label: '多巴胺',
-          colors: {
-              // 使用更鲜艳的品牌色
-              primary: '#FF6B6B',
-              success: '#4ECDC4',
-              warning: '#FFE66D',
-              danger: '#FF4757',
-              info: '#45B7D1',
-              decoration: decorationColors,
-              
-              text: '#2d3436', 
-              textSecondary: '#636e72', 
-              textLight: '#b2bec3',
-              textDisabled: '#dfe6e9',
-              
-              bgPrimary: '#fff0f3',   // 极淡的粉白背景，增加温馨感
-              bgSecondary: '#ffffff', // 卡片纯白
-              bgDisabled: '#ffeaa7',  // 输入框用亮黄色，增加趣味
-              
-              border: '#2d3436',      // 黑色粗描边
-              borderLight: '#636e72',
-              borderLighter: '#b2bec3',
-              borderExtraLight: '#dfe6e9',
-              
-              headerBg: '#ffffff', 
-              selectBg: '#ffeaa7',    // 选中也是亮黄色
-              
-              // Element 覆盖
-              'el-color-primary': '#FF6B6B',
-              'el-color-success': '#4ECDC4',
-              'el-color-warning': '#FFE66D',
-              'el-color-danger': '#FF4757',
-              'el-color-info': '#45B7D1',
-              
-              // 卡通模式下 hover 颜色可以鲜艳一点
-              'el-color-primary-light-3': '#ff9f9f',
-              'el-color-primary-light-5': '#ffbdbd',
-              'el-color-primary-light-7': '#ffdcdc',
-              'el-color-primary-light-9': '#fff0f0',
-              
-              'el-bg-color': '#ffffff',
-              'el-bg-color-page': '#fff0f3',
-              'el-bg-color-overlay': '#ffffff',
-              'el-text-color-primary': '#2d3436',
-              'el-border-color': '#2d3436', // 强制黑色边框
-          },
-          variables: {
-              borderRadius: '12px', // 大圆角
-              transitionDuration: '0.2s', // 动画稍快，更有弹力感
-              // 硬阴影 (0px blur)
-              boxShadow: '4px 4px 0px 0px rgba(45, 52, 54, 1)', 
-              boxShadowHover: '6px 6px 0px 0px rgba(45, 52, 54, 1)'
-          }
-      },
-      
-      // ==========================================
-      // 4. 自定义主题 (紫色系)
-      // 特点：优雅、紫罗兰色调
-      // ==========================================
-      custom: {
-          name: 'custom',
-          label: '自定义主题',
-          colors: {
-              ...baseTheme.colors,
-              primary: '#9b59b6', // 紫色
-              'el-color-primary': '#9b59b6',
-              decoration: decorationColors,
-              
-              text: '#303133', 
-              textSecondary: '#606266', 
-              textLight: '#909399', 
-              textDisabled: '#c0c4cc',
-              
-              bgPrimary: '#f8f2fa', // 淡紫背景
-              bgSecondary: '#ffffff', 
-              bgDisabled: '#f3e5f5', 
-              
-              border: '#dcdfe6',
-              borderLight: '#e4e7ed',
-              borderLighter: '#ebeef5',
-              borderExtraLight: '#f2f6fc',
-              
-              headerBg: '#ffffff',
-              footerBg: '#f8f2fa', 
-              selectBg: '#f3e5f5',
-              
-              // 紫色系色阶
-              'el-color-primary-light-3': '#bfaac9', 
-              'el-color-primary-light-5': '#d5c7dd', 
-              'el-color-primary-light-7': '#eaddf0', 
-              'el-color-primary-light-9': '#f8f2fa', 
-              'el-color-primary-dark-2': '#763e8f',
-              
-              'el-bg-color': '#ffffff', 
-              'el-bg-color-page': '#f8f2fa', 
-              'el-bg-color-overlay': '#ffffff',
-              
-              'el-text-color-primary': '#303133',
-              'el-border-color': '#dcdfe6',
-              'el-box-shadow-base': '0 2px 12px 0 rgba(0, 0, 0, 0.1)'
-          },
-          variables: { ...baseTheme.variables, boxShadow: '0 8px 24px rgba(155, 89, 182, 0.15)' }
-      }
   };
   
   // 获取当前主题 (默认为 light)
@@ -329,6 +220,5 @@ const baseTheme = {
   export const THEME_NAMES = {
       LIGHT: 'light',
       DARK: 'dark',
-      CUSTOM: 'custom',
-      CARTOON: 'cartoon'
+   
   };

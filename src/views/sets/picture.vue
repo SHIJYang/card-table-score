@@ -117,7 +117,7 @@
                     <el-checkbox :value="image.key" class="image-checkbox" />
                   </div>
 
-                  <el-image :src="image.links?.thumbnail_url || image.links?.url" fit="cover" class="image-preview"
+                  <el-image :src="image.links?.url || ''" fit="cover" class="image-preview"
                     loading="lazy">
                     <template #error>
                       <div class="image-slot error"><el-icon>
@@ -366,14 +366,12 @@ const handleDeleteImage = (key) => {
     }
     )
     .then(() => {
-      if (action === 'confirm') {
-        try {
-          imageStore.removeImage(key)
-          ElMessage.success("删除成功")
+      try {
+        imageStore.removeImage(key)
+        ElMessage.success("删除成功")
 
-        } catch (error) {
-          console.error(error)
-        }
+      } catch (error) {
+        console.error(error)
       }
     })
     .catch(() => {
