@@ -2,8 +2,6 @@
   <div class="app-container">
     <div class="game-layout">
       <div class="board-section">
-
-
         <div class="grid-container">
           <div class="grid-wrapper">
             <div class="pixel-grid" :style="gridStyle">
@@ -13,13 +11,16 @@
                   width: cellSize + 'px',
                   height: cellSize + 'px'
                 }" @click="paintCell(index)" @contextmenu.prevent="eraseCell(index)"
-                @mouseenter="handleDragPaint($event, index)" @mousedown="startDragPaint(index)"></div>
+                @mouseenter="handleDragPaint($event, index)" @mousedown="startDragPaint(index)"
+                @touchstart="handleTouchStart($event, index)" @touchmove="handleTouchMove" @touchend="stopDragPaint">
+              </div>
             </div>
           </div>
         </div>
 
         <div class="board-footer">
           <span>🖱️ 左键绘制 | 右键擦除 | 按住拖动连续绘制</span>
+          <span class="mobile-hint">📱 手指滑动连续绘制</span>
         </div>
       </div>
 
@@ -30,10 +31,9 @@
             {{ currentColorName }}
           </div>
 
-
-          <el-input-number v-model="gridSize" :min="8" :max="64" :step="8" size="small" @change="resizeBoard" />
-
-
+          <div class="size-controls">
+            <el-input-number v-model="gridSize" :min="8" :max="64" :step="8" size="small" @change="resizeBoard" />
+          </div>
         </div>
 
         <el-tabs v-model="activeCategory" class="color-categories">
@@ -118,6 +118,8 @@ const colorCategories = [
 
 // 拖动绘制状态
 const isDragging = ref(false);
+// 触摸设备最后位置
+const lastTouchIndex = ref(null);
 
 // 扁平化画板用于渲染
 const flatBoard = computed(() => board.value.flat());
@@ -181,12 +183,17 @@ const resizeBoard = (newSize) => {
 
 // 自适应单元格大小
 const adjustCellSize = (size) => {
-  const maxWidth = window.innerWidth * 0.6;
-  const maxHeight = window.innerHeight * 0.6;
+  const maxWidth = window.innerWidth * 0.9; // 手机端使用更大比例
+  const maxHeight = window.innerHeight * 0.9;
+
+  // 根据设备类型调整基准大小
+  const isMobile = window.innerWidth <= 640;
+  const baseSize = isMobile ? 24 : 32;
+
   const maxCellByWidth = Math.floor((maxWidth - 40) / size);
   const maxCellByHeight = Math.floor((maxHeight - 40) / size);
-  const optimalSize = Math.min(maxCellByWidth, maxCellByHeight, 32);
-  cellSize.value = Math.max(8, Math.min(optimalSize, 40));
+  const optimalSize = Math.min(maxCellByWidth, maxCellByHeight, baseSize);
+  cellSize.value = Math.max(isMobile ? 6 : 8, Math.min(optimalSize, isMobile ? 24 : 40));
 };
 
 // 选择颜色
@@ -208,6 +215,7 @@ const getRowCol = (index) => {
 
 // 绘制单元格
 const paintCell = (index) => {
+  if (index < 0 || index >= flatBoard.value.length) return;
   const { row, col } = getRowCol(index);
   const newBoard = board.value.map(r => [...r]);
   if (newBoard[row] && newBoard[row][col] !== undefined) {
@@ -218,6 +226,7 @@ const paintCell = (index) => {
 
 // 擦除单元格
 const eraseCell = (index) => {
+  if (index < 0 || index >= flatBoard.value.length) return;
   const { row, col } = getRowCol(index);
   const newBoard = board.value.map(r => [...r]);
   if (newBoard[row] && newBoard[row][col] !== undefined) {
@@ -231,6 +240,7 @@ const startDragPaint = (index) => {
   isDragging.value = true;
   paintCell(index);
   document.body.style.userSelect = 'none';
+  document.body.style.webkitUserSelect = 'none'; // iOS Safari
 };
 
 // 处理拖动绘制
@@ -243,7 +253,36 @@ const handleDragPaint = (event, index) => {
 // 停止拖动
 const stopDragPaint = () => {
   isDragging.value = false;
+  lastTouchIndex.value = null;
   document.body.style.userSelect = '';
+  document.body.style.webkitUserSelect = '';
+};
+
+// 触摸开始处理
+const handleTouchStart = (event, index) => {
+  event.preventDefault();
+  isDragging.value = true;
+  paintCell(index);
+  lastTouchIndex.value = index;
+};
+
+// 触摸移动处理
+const handleTouchMove = (event) => {
+  if (!isDragging.value) return;
+  event.preventDefault();
+
+  const touch = event.touches[0];
+  const element = document.elementFromPoint(touch.clientX, touch.clientY);
+  const pixelCell = element?.closest('.pixel-cell');
+
+  if (pixelCell) {
+    const allCells = document.querySelectorAll('.pixel-cell');
+    const newIndex = Array.from(allCells).indexOf(pixelCell);
+    if (newIndex !== -1 && newIndex !== lastTouchIndex.value) {
+      paintCell(newIndex);
+      lastTouchIndex.value = newIndex;
+    }
+  }
 };
 
 // 清空画板
@@ -369,6 +408,12 @@ onMounted(() => {
   adjustCellSize(gridSize.value);
   window.addEventListener('resize', handleResize);
   window.addEventListener('mouseup', stopDragPaint);
+  // 防止触摸时页面滚动
+  document.body.addEventListener('touchmove', (e) => {
+    if (isDragging.value) {
+      e.preventDefault();
+    }
+  }, { passive: false });
 });
 
 onUnmounted(() => {
@@ -400,7 +445,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px;
+
   box-sizing: border-box;
 }
 
@@ -417,10 +462,45 @@ onUnmounted(() => {
 @media (max-width: 900px) {
   .game-layout {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .palette-section {
     order: -1;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+}
+
+@media (max-width: 640px) {
+  .game-layout {
+    gap: 12px;
+  }
+
+  .board-section {
+    padding: 12px;
+  }
+
+  .palette-section {
+    padding: 12px;
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-layout {
+    gap: 8px;
+  }
+
+  .board-section {
+    padding: 8px;
+  }
+
+  .palette-section {
+    padding: 8px;
   }
 }
 
@@ -429,7 +509,7 @@ onUnmounted(() => {
   background: var(--card-bg);
   backdrop-filter: blur(20px);
   border-radius: 10px;
-  padding: 24px;
+  padding: 10px;
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
@@ -480,18 +560,19 @@ onUnmounted(() => {
   background: var(--grid-bg);
   padding: 12px;
   box-shadow: inset 0 0 0 2px var(--grid-line);
+  -webkit-overflow-scrolling: touch;
 }
 
 .pixel-grid {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   width: fit-content;
   margin: 0 auto;
 }
 
 .pixel-cell {
   background-color: #f9f3ea;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
   transition: var(--transition);
   position: relative;
@@ -499,10 +580,25 @@ onUnmounted(() => {
   box-shadow: inset 0 0 0 1px rgba(150, 120, 80, 0.2);
 }
 
-.pixel-cell:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.8);
-  z-index: 10;
+/* 移动端触摸反馈优化 */
+@media (max-width: 768px) {
+  .pixel-cell {
+    cursor: none;
+    touch-action: none;
+  }
+
+  .pixel-cell:active {
+    transform: scale(1.05);
+  }
+}
+
+/* 桌面端悬停效果保留 */
+@media (min-width: 769px) {
+  .pixel-cell:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.8);
+    z-index: 10;
+  }
 }
 
 .pixel-cell.filled {
@@ -514,6 +610,23 @@ onUnmounted(() => {
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+.mobile-hint {
+  display: none;
+  font-size: 0.75rem;
+  margin-left: 8px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .board-footer span:first-child {
+    display: none;
+  }
+
+  .mobile-hint {
+    display: inline-block;
+  }
 }
 
 /* 右侧面板 */
@@ -528,6 +641,13 @@ onUnmounted(() => {
   top: 20px;
 }
 
+@media (max-width: 900px) {
+  .palette-section {
+    position: relative;
+    top: 0;
+  }
+}
+
 .current-color {
   display: flex;
   align-items: center;
@@ -535,7 +655,16 @@ onUnmounted(() => {
   background: #f5efe6;
   padding: 12px 16px;
   border-radius: 10px;
-  margin-bottom: 5px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .current-color {
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+  }
 }
 
 .color-preview {
@@ -547,14 +676,23 @@ onUnmounted(() => {
   transition: var(--transition);
 }
 
+@media (max-width: 480px) {
+  .color-preview {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+}
+
 .color-name {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 1rem;
+  flex: 1;
 }
 
 .color-categories {
-  margin: 5px;
+  margin: 0;
 }
 
 :deep(.el-tabs__content) {
@@ -563,11 +701,27 @@ onUnmounted(() => {
 
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 6px;
   max-height: 300px;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .color-grid {
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+    max-height: 200px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .color-grid {
+    grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+    max-height: 160px;
+    gap: 3px;
+  }
 }
 
 .color-grid::-webkit-scrollbar {
@@ -581,19 +735,34 @@ onUnmounted(() => {
 
 .color-swatch {
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: var(--transition);
   border: 2px solid transparent;
-  margin: 5px;
+  margin: 2px;
   position: relative;
   box-shadow: var(--shadow-sm);
 }
 
-.color-swatch:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: white;
+@media (max-width: 640px) {
+  .color-swatch {
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .color-swatch {
+    border-radius: 6px;
+  }
+}
+
+/* 桌面端悬停效果，移动端无悬停 */
+@media (min-width: 769px) {
+  .color-swatch:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: white;
+  }
 }
 
 .color-swatch.active {
@@ -617,6 +786,13 @@ onUnmounted(() => {
   margin-top: 16px;
 }
 
+@media (max-width: 480px) {
+  .tool-buttons {
+    gap: 6px;
+    margin-top: 12px;
+  }
+}
+
 .quick-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -624,22 +800,33 @@ onUnmounted(() => {
   margin-top: 12px;
 }
 
+@media (max-width: 480px) {
+  .quick-actions {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .quick-actions .el-button {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+}
+
 @media (max-width: 640px) {
-  .game-layout {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .size-controls .el-input-number {
+    width: 100px;
+  }
+}
+
+/* 按钮移动端优化 */
+@media (max-width: 640px) {
+  .el-button {
+    min-height: 44px;
+    font-size: 0.85rem;
   }
 
-  .palette-section {
-    position: static;
-  }
-
-  .board-section {
-    padding: 16px;
-  }
-
-  .color-grid {
-    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  .el-button--small {
+    min-height: 36px;
   }
 }
 
