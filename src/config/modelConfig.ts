@@ -270,4 +270,5 @@ export const modelList: ModelConfig[] = [
     texturePath: '/mannequin.png',
     scale: 1.2
   },
+  
 ];

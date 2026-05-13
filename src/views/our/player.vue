@@ -15,7 +15,7 @@
           <PhysicsScene>
             <LevelGround :width="100" :length="100" color="#44aa44" />
 
-            <BaseCharacter ref="playerRef" model-path="/models/skeleton/scene.gltf" :position="[0, 5, 0]" />
+            <BaseCharacter ref="playerRef" model-path="/models/huohuo/scene.gltf" :position="[0, 5, 0]" />
 
             <CameraFollow :target="playerRef" />
 

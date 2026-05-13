@@ -47,6 +47,11 @@ const routes = [
         name: 'People',
         component: () => import('../views/our/people.vue')
     },
+    {
+        path: '/dog',
+        name: 'Dog',
+        component: () => import('../views/our/dog.vue')
+    },
     
     {
         path: '/player',
@@ -71,11 +76,16 @@ const routes = [
         component: () => import('../views/our/trees.vue')
     },
     {
+        path: '/spindou',
+        name: 'Spindou',
+        component: () => import('../views/our/spindou.vue')
+    },
+    {
         path: '/sets/picture',
         name: 'picture',
         component: () => import('../views/sets/picture.vue')
     },
-   
+
     {
         path: '/sets/habits',
         name: 'habits',

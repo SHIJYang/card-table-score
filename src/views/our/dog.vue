@@ -23,9 +23,11 @@
 
 
 
-      <TresGroup :position="[1, 0.7, 0]" :rotation-y="-0.1" :scale="0.5">
+      <!-- <TresGroup :position="[1, 0.7, 0]" :rotation-y="-0.1" :scale="0.5">
         <LineDog cast-shadow />
-      </TresGroup>
+      </TresGroup> -->
+
+
       <TresGroup :position="[-1, 0, 0]" :rotation-y="0.1" :scale="1">
         <Suspense>
           <DogModelLocal :action-name="currentAnimation" />

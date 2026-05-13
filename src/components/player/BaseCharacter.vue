@@ -119,11 +119,16 @@ try {
     isModelLoaded.value = true
 
     if (finalAnimations && finalAnimations.length > 0) {
+      console.log('[动画] 加载到的动画数量:', finalAnimations.length)
+      console.log('[动画] 动画名称:', finalAnimations.map((anim: any) => anim.name))
+      
       const animsRef = shallowRef(finalAnimations)
       const { actions: newActions, mixer: newMixer } = useAnimations(animsRef, finalScene) as any
 
       actions.value = newActions
       mixer.value = newMixer.value
+      
+      console.log('[动画] 可用的动作:', Object.keys(newActions))
 
       playAnim(animNames.spawn, false)
     }

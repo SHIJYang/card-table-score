@@ -4,7 +4,7 @@
 			<el-menu-item index="/" class="logo-item">
 				<CubeSpinner :size="20" color="#55aa00" :duration="3" />
 			</el-menu-item>
-			
+
 			<div class="flex-grow" />
 			<el-sub-menu index="games" popper-class="theme-popper">
 				<template #title>
@@ -21,6 +21,7 @@
 				<el-menu-item index="/player">{{ t('nav.player') }}</el-menu-item>
 				<el-menu-item index="/music">{{ t('nav.music') }}</el-menu-item>
 				<el-menu-item index="/live">{{ t('nav.live') }}</el-menu-item>
+				<el-menu-item index="/spindou">{{ t('nav.spindou') }}</el-menu-item>
 			</el-sub-menu>
 
 

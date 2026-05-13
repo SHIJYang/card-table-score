@@ -13,7 +13,7 @@ const props = defineProps<{
   actionName: string | 'skeleton-skeleton|run'
 }>()
 
-const path = '/models/skeleton/scene.gltf'
+const path = '/models/huohuo/scene.gltf'
 
 // 2. 加载模型
 const { state } = await useGLTF(path, { draco: true })
