@@ -37,8 +37,7 @@ export const useSettingsStore = defineStore('settings', () => {
     custom: '自定义音效包'
   }
 
-  // 注意：使用动态导入时，路径需要是相对于项目根目录的完整路径
-  // 例如: () => import('@/assets/Mikutap.json')
+
   const SOUND_PACK_IMPORTS = {
     mikutap_main: () => import('@/assets/Mikutap.json')
   }
