@@ -18,7 +18,6 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-
           isCustomElement: (tag) =>
             (tag.startsWith('Tres') && tag !== 'TresCanvas') || tag === 'primitive',
           "baseUrl": ".",
@@ -29,27 +28,20 @@ export default defineConfig({
       },
     }),
 
- 
     AutoImport({
-      
       imports: ['vue', 'vue-router', 'pinia'],
-      
       dirs: ['./src/store'],
       resolvers: [
         ElementPlusResolver(),
-        // 自动导入图标组件的解析器
         IconsResolver({ prefix: 'Icon' }),
       ],
-  
       dts: 'auto-imports.d.ts',
       eslintrc: {
-        enabled: true, 
+        enabled: true,
       },
     }),
 
-    
     Components({
-   
       dirs: ['src/components'],
       directoryAsNamespace: true,
       resolvers: [
@@ -61,9 +53,8 @@ export default defineConfig({
       dts: 'components.d.ts',
     }),
 
-    // 👇 4. 图标自动加载引擎
     Icons({
-      autoInstall: true, // 如果检测到未安装的图标集，自动尝试安装
+      autoInstall: true,
     }),
 
     viteCompression({
@@ -73,20 +64,60 @@ export default defineConfig({
       algorithm: 'gzip',
       ext: '.gz',
     }),
-    visualizer({ open: false })
+    visualizer({ open: false }),
+
+    // 🚀 通用图片代理插件（作为 Vite 插件，configureServer 钩子会正确注册）
+    {
+      name: 'image-proxy',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (!req.url?.startsWith('/proxy-img/')) {
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            return next();
+          }
+
+          const rawPath = req.url.split('?')[0].replace('/proxy-img/', '');
+          const originalUrl = decodeURIComponent(rawPath);
+
+          fetch(originalUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Referer': 'https://picui.cn/',
+              'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            },
+            redirect: 'follow',
+          })
+            .then(async (resp) => {
+              if (!resp.ok) throw new Error('HTTP ' + resp.status);
+              const ct = resp.headers.get('content-type') || 'application/octet-stream';
+              const buf = await resp.arrayBuffer();
+              res.writeHead(200, {
+                'Content-Type': ct,
+                'Content-Length': buf.byteLength,
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=31536000, immutable',
+              });
+              res.end(Buffer.from(buf));
+            })
+            .catch((err) => {
+              console.error('[proxy-img] Error:', err.message);
+              if (!res.headersSent) {
+                res.writeHead(502, { 'Content-Type': 'text/plain' });
+              }
+              res.end('Proxy error: ' + err.message);
+            });
+        });
+      }
+    },
   ],
 
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)),
-     
-     },
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
 
   css: {
-    
     preprocessorOptions: {
       scss: {
-       //additionalData: `@use "@/assets/styles/variables.scss" as *;`,
         api: 'modern-compiler',
         silenceDeprecations: ['legacy-js-api'],
       }
@@ -103,13 +134,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/picui-proxy/, '')
       }
-    },
-    // 安全策略头
-    configureServer: (server) => {
-      server.middlewares.use((_req, res, next) => {
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        next();
-      });
     }
   },
 
@@ -119,22 +143,17 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        // 👇 优化分包策略：只有极耗内存的库才分包，其他都在主包
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // 3D 引擎生态（Three.js + TresJS + OGL）- 极耗内存，必须分包
             if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
               return '3d-engine';
             }
-            // 视觉识别库（MediaPipe）- 模型文件巨大，必须分包
             if (id.includes('@mediapipe') || id.includes('mediapipe')) {
               return 'vision-ai';
             }
-            // 物理引擎（Rapier3D）- WASM 文件很大，必须分包
             if (id.includes('@dimforge/rapier3d') || id.includes('rapier')) {
               return 'physics';
             }
-            // 其他库（Vue、Element Plus、动画库等）都打包到主包，减少请求数
           }
         }
       }

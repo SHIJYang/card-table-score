@@ -66,6 +66,89 @@ export const useImageStore = defineStore('image', () => {
     return Math.round((used / total) * 100)
   })
 
+  // ========== 🚀 新增：内存 LRU 缓存 ==========
+  const imageCache = new Map()
+  const MAX_CACHE = 300
+
+  function getCached(page) {
+    return imageCache.get(String(page))
+  }
+
+  function setCached(page, data) {
+    const key = String(page)
+    // LRU：删除最旧的
+    if (imageCache.size >= MAX_CACHE) {
+      const firstKey = imageCache.keys().next().value
+      imageCache.delete(firstKey)
+    }
+    imageCache.set(key, data)
+  }
+
+  function clearCache() {
+    imageCache.clear()
+  }
+
+  // ========== 🚀 新增：请求去重 Map ==========
+  const pendingRequests = new Map()
+
+  function dedupKey(params) {
+    return JSON.stringify({ url: '/images', params })
+  }
+
+  async function dedupedFetch(key, fetcher) {
+    // 相同 key 正在请求中 → 复用那个 Promise
+    if (pendingRequests.has(key)) {
+      return pendingRequests.get(key)
+    }
+    const promise = fetcher().finally(() => {
+      pendingRequests.delete(key)
+    })
+    pendingRequests.set(key, promise)
+    return promise
+  }
+
+  // ========== 🚀 新增：预加载计时器 ==========
+  let preloadTimer = null
+
+  function schedulePreload() {
+    if (preloadTimer) clearTimeout(preloadTimer)
+    preloadTimer = setTimeout(() => {
+      const { current_page, last_page } = imagePagination.value
+      if (current_page < last_page) {
+        // 静默预加载下一页（不触发 loading 动画）
+        const nextPage = current_page + 1
+        // 用内部方法，不带 loading 状态
+        _fetchPageSilent(nextPage)
+      }
+    }, 800)
+  }
+
+  async function _fetchPageSilent(page) {
+    const cached = getCached(page)
+    if (cached) return cached
+
+    try {
+      const params = {
+        page,
+        per_page: imagePagination.value.per_page,
+        q: searchKeyword.value,
+        permission: filterPermission.value,
+        album_id: filterAlbum.value,
+        order: sortOrder.value
+      }
+      const res = await dedupedFetch(dedupKey(params), () => getImageList(params))
+      const responseData = res.data || {}
+      const newItems = responseData.data || []
+
+      // 缓存
+      setCached(page, newItems)
+
+      return { items: newItems, pagination: responseData }
+    } catch {
+      return null
+    }
+  }
+
   // ========== 工具方法 ==========
   function setLoading(key, value) {
     if (key in loading.value) loading.value[key] = Boolean(value)
@@ -104,16 +187,27 @@ export const useImageStore = defineStore('image', () => {
         album_id: filterAlbum.value,
         order: sortOrder.value
       }
-      const res = await getImageList(params)
+
+      const dk = dedupKey(params)
+      const res = await dedupedFetch(dk, () => getImageList(params))
+
       // API 返回结构: { status, message, data: { current_page, last_page, per_page, total, data: [...] } }
       const responseData = res.data || {}
-      imageList.value = responseData.data || []
+      const newItems = responseData.data || []
+
+      // ✅ 更新缓存
+      setCached(imagePagination.value.current_page, newItems)
+
+      imageList.value = newItems
       imagePagination.value = {
         current_page: responseData.current_page ?? 1,
         last_page: responseData.last_page ?? 1,
         per_page: responseData.per_page ?? 20,
         total: responseData.total ?? 0
       }
+
+      // 🚀 触发预加载
+      schedulePreload()
     } catch (err) {
       setError(err.response?.data?.message || '获取图片列表失败')
     } finally {
@@ -137,6 +231,12 @@ export const useImageStore = defineStore('image', () => {
       const newImage = res.data
       imageList.value.unshift({ ...newImage })
 
+      // 缓存第一页也要更新
+      const page1 = getCached(1)
+      if (page1) {
+        setCached(1, [{ ...newImage }, ...page1])
+      }
+
       if (userProfile.value && typeof newImage.size === 'number') {
         userProfile.value.size += newImage.size
       } else {
@@ -159,6 +259,10 @@ export const useImageStore = defineStore('image', () => {
       await deleteImage(key)
       imageList.value = imageList.value.filter(img => img.key !== key)
       selectedImages.value = selectedImages.value.filter(k => k !== key)
+
+      // 清缓存 — 简单处理，全部失效
+      clearCache()
+
       await fetchProfile()
     } catch (err) {
       setError(err.response?.data?.message || '删除失败')
@@ -206,21 +310,25 @@ export const useImageStore = defineStore('image', () => {
   function setSearchKeyword(val) {
     searchKeyword.value = val
     imagePagination.value.current_page = 1
+    clearCache() // 搜索条件变了，缓存全失效
   }
 
   function setFilterPermission(val) {
     filterPermission.value = val
     imagePagination.value.current_page = 1
+    clearCache()
   }
 
   function setFilterAlbum(val) {
     filterAlbum.value = val
     imagePagination.value.current_page = 1
+    clearCache()
   }
 
   function setSortOrder(val) {
     sortOrder.value = val
     imagePagination.value.current_page = 1
+    clearCache()
   }
 
   function toggleSelected(key) {
@@ -248,43 +356,46 @@ export const useImageStore = defineStore('image', () => {
   async function handleSizeChange(size) {
     imagePagination.value.per_page = size
     imagePagination.value.current_page = 1
+    clearCache()
     await fetchImages()
   }
 
-  // ========== 加载指定页（追加模式）==========
+  // ========== 🚀 优化：加载指定页（追加模式，带缓存）==========
   async function fetchImagesForPage(page) {
     const { last_page } = imagePagination.value
     if (page > last_page) return
 
     setLoading('images', true)
     try {
-      const params = {
-        page: page,
-        per_page: imagePagination.value.per_page,
-        q: searchKeyword.value,
-        permission: filterPermission.value,
-        album_id: filterAlbum.value,
-        order: sortOrder.value
-      }
-      const res = await getImageList(params)
-      const responseData = res.data || {}
-      const newImages = responseData.data || []
+      const result = await _fetchPageSilent(page)
+      if (!result) return
+
+      const newImages = result.items || []
+      const responseData = result.pagination || {}
 
       // 追加到现有列表
       imageList.value.push(...newImages)
 
-      // 更新分页信息 - current_page 设为请求的页码
+      // 更新分页信息
       imagePagination.value = {
         current_page: page,
         last_page: responseData.last_page ?? last_page,
         per_page: responseData.per_page ?? imagePagination.value.per_page,
         total: responseData.total ?? imagePagination.value.total
       }
+
+      // 🚀 预加载下一页
+      schedulePreload()
     } catch (err) {
       setError(err.response?.data?.message || '加载图片失败')
     } finally {
       setLoading('images', false)
     }
+  }
+
+  // ========== 返回缓存页数据（供组件读取，无需再请求）==========
+  function getCachedPage(page) {
+    return getCached(page) || []
   }
 
   // ========== 批量删除 ==========
@@ -311,6 +422,7 @@ export const useImageStore = defineStore('image', () => {
     imagePagination.value = { current_page: 1, last_page: 1, per_page: 20, total: 0 }
     albumPagination.value = { current_page: 1, last_page: 1, per_page: 20, total: 0 }
     loading.value = { profile: false, images: false, albums: false, upload: false, action: false }
+    clearCache()
   }
 
   // ========== 返回 ==========
@@ -360,6 +472,10 @@ export const useImageStore = defineStore('image', () => {
     // 工具
     reset,
     clearError,
+
+    // 🚀 新增
+    getCachedPage,
+    clearCache,
 
     // 纯状态设置（供测试）
     setUserProfile: (profile) => { userProfile.value = profile ? { ...profile } : null },

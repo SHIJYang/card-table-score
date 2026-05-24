@@ -249,15 +249,18 @@ onBeforeUnmount(() => {
 });
 
 // 监听图片列表变化，自动添加新照片
-watch(imageList, (newImages) => {
-  if (newImages?.length) {
-    newImages.forEach(imgData => {
-      const key = imgData.key || imgData.id;
-      const url = imgData.links?.url || imgData.url;
-      if (url && key) addPhotoMesh(url, key);
-    });
-  }
-}, { deep: true, immediate: true });
+// 延迟到 addPhotoMesh 定义之后（避免 TDZ ReferenceError）
+const _startWatch = () => {
+  watch(imageList, (newImages) => {
+    if (newImages?.length) {
+      newImages.forEach(imgData => {
+        const key = imgData.key || imgData.id;
+        const url = imgData.links?.url || imgData.url;
+        if (url && key) addPhotoMesh(url, key);
+      });
+    }
+  }, { deep: true, immediate: true });
+};
 
 // 监听手势指令（来自 cameraStore.trigger）
 watch(() => cameraStore.trigger.timestamp, () => {
@@ -328,13 +331,13 @@ const forceNextTheme = () => {
 
 // ========== 5. Three.js 核心 ==========
 
-// 图片代理（绕过 CORS）
+// 图片代理（绕过 CORS）—— 将所有外部图片通过 Vite dev server 中转
 const convertToProxyUrl = (url) => {
   if (!url) return '';
-  const targetDomain = 'https://free.picui.cn';
-  const proxyPrefix = '/picui-proxy';
-  if (url.includes(targetDomain)) return url.replace(targetDomain, proxyPrefix);
-  return url;
+  // 已经是同域路径（proxy 或 data: 或 blob:）
+  if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  // 通过 Vite 代理路径转发，避免 Three.js WebGL 纹理的 CORS 限制
+  return `/proxy-img/${encodeURIComponent(url)}`;
 };
 
 // 在球面上生成随机点（用于散开模式）
@@ -351,14 +354,21 @@ const addPhotoMesh = (url, key) => {
   if (ctx.loadedPhotoKeys.has(key)) return;
   const proxyUrl = convertToProxyUrl(url);
 
-  ctx.textureLoader.load(proxyUrl, (tex) => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    ctx.loadedPhotoKeys.add(key);
+  ctx.textureLoader.load(
+    proxyUrl,
+    // onLoad
+    (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      ctx.loadedPhotoKeys.add(key);
 
-    const img = tex.image;
-    const ratio = img.width / img.height;
-    const w = ratio >= 1 ? 5 : 5 * ratio;
-    const h = ratio >= 1 ? 5 / ratio : 5;
+      const img = tex.image;
+      if (!img || !img.width || !img.height) {
+        console.warn('[trees] 图片纹理无效:', proxyUrl);
+        return;
+      }
+      const ratio = img.width / img.height;
+      const w = ratio >= 1 ? 5 : 5 * ratio;
+      const h = ratio >= 1 ? 5 / ratio : 5;
 
     // 创建照片平面
     const geometry = new THREE.PlaneGeometry(w, h);
@@ -402,10 +412,20 @@ const addPhotoMesh = (url, key) => {
       scatterRot: new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, 0)
     };
 
-    ctx.mainGroup.add(group);
-    ctx.photoMeshes.push(group);
-  });
+      ctx.mainGroup.add(group);
+      ctx.photoMeshes.push(group);
+    },
+    // onProgress
+    undefined,
+    // onError
+    (err) => {
+      console.warn('[trees] 图片加载失败:', proxyUrl, err?.message || err);
+    }
+  );
 };
+
+// 延迟启动图片监听（addPhotoMesh 已定义，不会 TDZ）
+_startWatch();
 
 // 初始化 Three.js 场景
 const initScene = () => {

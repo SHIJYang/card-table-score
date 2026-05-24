@@ -8,13 +8,16 @@ const request = axios.create({
     timeout: 10000,
 })
 
+// 不需要时间戳的 API 路径（图片资源自带 key 版本，不需要防缓存）
+const NO_CACHE_BUST = ['/images', '/profile', '/albums', '/strategies']
+
 // 请求拦截器
 request.interceptors.request.use(
     (config) => {
         // 在拦截器中动态获取 store 值
         const settingsStore = useSettingsStore();
         const API_TOKEN = settingsStore.imgapi || '';
-        
+
         // 设置 Authorization 头
         config.headers = {
             'Accept': 'application/json',
@@ -22,8 +25,10 @@ request.interceptors.request.use(
             ...config.headers
         }
 
-        // 添加时间戳防止缓存（仅对 GET 请求）
-        if (config.method === 'get') {
+        // ✅ _t 时间戳只加在不影响缓存的 API 请求上
+        // 图片 URL（/images 返回的 links.url）本身不含时间戳，
+        // 但在接口层加 _t 会导致每次请求都不同 → URL 不一致 → 浏览器 CDN/304 全失效
+        if (config.method === 'get' && !NO_CACHE_BUST.includes(config.url)) {
             config.params = {
                 ...config.params,
                 _t: Date.now()

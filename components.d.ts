@@ -74,6 +74,7 @@ declare module 'vue' {
     GsapTextPressure: typeof import('./src/components/gsap/TextPressure.vue')['default']
     GsapTiltedCard: typeof import('./src/components/gsap/TiltedCard.vue')['default']
     MatrixBackground: typeof import('./src/components/MatrixBackground.vue')['default']
+    PicImage: typeof import('./src/components/PicImage.vue')['default']
     PlayAttackButton: typeof import('./src/components/play/AttackButton.vue')['default']
     PlayerBaseCharacter: typeof import('./src/components/player/BaseCharacter.vue')['default']
     PlayerWaterCharacter: typeof import('./src/components/player/waterCharacter.vue')['default']

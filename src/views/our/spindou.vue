@@ -79,6 +79,27 @@
         </div>
       </div>
     </div>
+
+    <!-- 导出预览（兜底：移动端长按保存到相册） -->
+    <teleport to="body">
+      <transition name="fade">
+        <div v-if="showExportPreview" class="export-overlay" @click="showExportPreview = false">
+          <div class="export-preview-card" @click.stop>
+            <img :src="exportedImageUrl" class="export-preview-img" alt="拼豆像素画" />
+            <p class="export-hint">
+              <template v-if="isMobile">
+                馃憢 长按图片选择「保存到相册」<br>
+                <span class="export-hint-sub">或点击空白处关闭</span>
+              </template>
+              <template v-else>
+                馃憢 右键点击选择「保存图片」<br>
+                <span class="export-hint-sub">或点击空白处关闭</span>
+              </template>
+            </p>
+          </div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
@@ -195,6 +216,8 @@ const adjustCellSize = (size) => {
   const optimalSize = Math.min(maxCellByWidth, maxCellByHeight, baseSize);
   cellSize.value = Math.max(isMobile ? 6 : 8, Math.min(optimalSize, isMobile ? 24 : 40));
 };
+
+const updateIsMobile = () => { isMobile.value = window.innerWidth <= 768; };
 
 // 选择颜色
 const selectColor = (color) => {
@@ -347,9 +370,12 @@ const mirrorHorizontal = () => {
 };
 
 // 导出图片
-const exportImage = () => {
-  const scale = 2; // 导出放大倍数
-  const canvas = document.createElement('canvas');
+const exportedImageUrl = ref('')
+const showExportPreview = ref(false)
+const isMobile = ref(window.innerWidth <= 768)
+
+function drawPixelArt(canvas) {
+  const scale = 2;
   canvas.width = gridSize.value * cellSize.value * scale;
   canvas.height = gridSize.value * cellSize.value * scale;
   const ctx = canvas.getContext('2d');
@@ -382,20 +408,83 @@ const exportImage = () => {
         ctx.closePath();
         ctx.fill();
 
-        // 添加阴影效果
         ctx.strokeStyle = 'rgba(0,0,0,0.1)';
         ctx.lineWidth = scale;
         ctx.stroke();
       }
     }
   }
+}
 
-  // 下载
-  const link = document.createElement('a');
-  link.download = `拼豆像素画-${gridSize.value}x${gridSize.value}-${new Date().getTime()}.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-};
+async function exportImage() {
+  const canvas = document.createElement('canvas');
+  drawPixelArt(canvas);
+
+  // 尝试保存到相册
+  const saved = await trySaveToAlbum(canvas);
+  if (saved) return;
+
+  // 尝试 Web Share API（带图片文件）
+  const shared = await tryWebShare(canvas);
+  if (shared) return;
+
+  // 兜底：显示预览，用户长按保存
+  showExportPreviewImage(canvas);
+}
+
+async function trySaveToAlbum(canvas) {
+  try {
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return false;
+
+    // 方案A: Web Share API with files（Android/iOS 15+）
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], `pixel-art-${Date.now()}.png`, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: '拼豆像素画' });
+        return true;
+      }
+    }
+
+    // 方案B: 下载到本地
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `拼豆像素画-${gridSize.value}x${gridSize.value}.png`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return true;
+  } catch (e) {
+    if (e.name !== 'AbortError') console.warn('[export] 保存失败:', e);
+    return false;
+  }
+}
+
+async function tryWebShare(canvas) {
+  try {
+    // 不含文件的 Web Share（iOS 12+ 支持）
+    if (navigator.share && !navigator.canShare) {
+      const url = canvas.toDataURL('image/png');
+      await navigator.share({
+        title: '拼豆像素画',
+        text: `${gridSize.value}x${gridSize.value} 拼豆像素画`,
+        url: url,
+      });
+      return true;
+    }
+    return false;
+  } catch (e) {
+    if (e.name !== 'AbortError') console.warn('[export] WebShare失败:', e);
+    return false;
+  }
+}
+
+function showExportPreviewImage(canvas) {
+  exportedImageUrl.value = canvas.toDataURL('image/png');
+  showExportPreview.value = true;
+}
 
 // 窗口大小调整
 const handleResize = () => {
@@ -407,6 +496,7 @@ onMounted(() => {
   initBoard();
   adjustCellSize(gridSize.value);
   window.addEventListener('resize', handleResize);
+  window.addEventListener('resize', updateIsMobile);
   window.addEventListener('mouseup', stopDragPaint);
   // 防止触摸时页面滚动
   document.body.addEventListener('touchmove', (e) => {
@@ -418,6 +508,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('resize', updateIsMobile);
   window.removeEventListener('mouseup', stopDragPaint);
 });
 </script>
@@ -832,5 +923,64 @@ onUnmounted(() => {
 
 .el-button+.el-button {
   margin-left: 0px;
+}
+
+/* 导出预览覆盖层 */
+.export-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.export-preview-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.export-preview-img {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 8px;
+  -webkit-user-select: all;
+  user-select: all;
+  -webkit-touch-callout: default;
+}
+
+.export-hint {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.export-hint-sub {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 淡入淡出过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

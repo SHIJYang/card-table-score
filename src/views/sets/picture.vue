@@ -117,26 +117,23 @@
                     <el-checkbox :value="image.key" class="image-checkbox" />
                   </div>
 
-                  <el-image :src="image.links?.url || ''" fit="cover" class="image-preview"
-                    loading="lazy">
-                    <template #error>
-                      <div class="image-slot error"><el-icon>
-                          <Picture />
-                        </el-icon></div>
-                    </template>
-                    <template #placeholder>
-                      <div class="image-slot loading"><el-icon class="is-loading">
-                          <Loading />
-                        </el-icon></div>
-                    </template>
-                  </el-image>
+                  <!-- ✅ 优化：El-Image 保留原生 lazy，加 thumbnail_url 做模糊背景占位 -->
+                  <div class="image-wrapper">
+                    <img v-if="image.links?.thumbnail_url" :src="image.links.thumbnail_url" class="blur-bg" alt="" loading="lazy" />
+                    <el-image :src="image.links?.url || ''" fit="cover" class="image-preview" loading="lazy">
+                      <template #error>
+                        <div class="image-slot error"><el-icon><Picture /></el-icon></div>
+                      </template>
+                      <template #placeholder>
+                        <div class="image-slot loading"><el-icon class="is-loading"><Loading /></el-icon></div>
+                      </template>
+                    </el-image>
+                  </div>
 
                   <div class="image-actions" @click.stop>
                     <el-dropdown trigger="click" @command="(cmd) => handleCommand(cmd, image)">
                       <div class="action-btn-wrapper">
-                        <el-icon>
-                          <MoreFilled />
-                        </el-icon>
+                        <el-icon><MoreFilled /></el-icon>
                       </div>
                       <template #dropdown>
                         <el-dropdown-menu class="mobile-dropdown">
@@ -151,9 +148,7 @@
 
                   <div class="image-overlay">
                     <span v-if="image.permission !== 1" class="lock-icon">
-                      <el-icon>
-                        <Lock />
-                      </el-icon>
+                      <el-icon><Lock /></el-icon>
                     </span>
                   </div>
                 </div>
@@ -173,7 +168,7 @@
       <div v-if="imageStore.imagePagination.total > 0" class="pagination">
         <el-pagination v-model:current-page="imageStore.imagePagination.current_page"
           :page-size="imageStore.imagePagination.per_page" :total="imageStore.imagePagination.total"
-          layout="prev, pager, next" :pager-count="5" @current-change="imageStore.handlePageChange" background small />
+          layout="prev, pager, next" :pager-count="5" @current-change="imageStore.handlePageChange" background size="small" />
       </div>
     </div>
 
@@ -242,9 +237,7 @@
 
     <div class="bottom-action-bar safe-area-bottom">
       <div class="left-action" @click="showAlbumDialog = true">
-        <el-icon>
-          <Folder />
-        </el-icon>
+        <el-icon><Folder /></el-icon>
         <span>相册 ({{ imageStore.albumList.length }})</span>
       </div>
       <div class="right-stats">
@@ -256,14 +249,13 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive, onMounted, computed, onUnmounted, watch } from "vue"
+<script setup>
+import { ref, reactive, onMounted, computed, onUnmounted } from "vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import {
   Plus, Refresh, Search, Delete, MoreFilled, Picture,
   UploadFilled, Loading, Folder, ArrowUp, ArrowDown, Lock
 } from "@element-plus/icons-vue"
-import type { Action } from 'element-plus'
 import { useImageStore } from "@/store"
 
 const imageStore = useImageStore()
@@ -308,36 +300,16 @@ onMounted(async () => {
   await imageStore.fetchImages()
 })
 
-// 自动加载更多照片 - 递归加载所有页面
-const loadAllImages = async () => {
-  const { current_page, last_page } = imageStore.imagePagination || {}
-  if (current_page < last_page) {
-    const nextPage = current_page + 1
-    await imageStore.fetchImagesForPage(nextPage)
-    // 延迟后递归调用
-    setTimeout(loadAllImages, 300)
-  }
-}
-
-// 监听首次加载完成
-watch(() => imageStore.loading?.images, async (loading, oldLoading) => {
-  // 当从加载中变为非加载中，且是第一页数据加载完成
-  if (oldLoading === true && loading === false) {
-    const { current_page, last_page } = imageStore.imagePagination || {}
-    if (current_page === 1 && last_page > 1) {
-      setTimeout(loadAllImages, 500)
-    }
-  }
-})
+// 🚀 移除：递归 loadAllImages（不再一口气加载所有页面）
+// 改为依赖 Store 层的 schedulePreload() 静默预加载下一页
 
 const refreshList = () => {
-  imageStore.fetchImages()
+  imageStore.handleSearch()
   ElMessage.success("已刷新")
 }
 
 // 预览逻辑
 const handlePreview = (image) => {
-  // 生成预览列表
   const list = imageStore.imageList.map(img => img.links?.url)
   const index = imageStore.imageList.findIndex(img => img.key === image.key)
   previewList.value = list
@@ -349,27 +321,21 @@ const handlePreview = (image) => {
 const handleCommand = (command, image) => {
   if (command === 'delete') {
     handleDeleteImage(image.key)
-
-
   } else {
     handleCopyLink(command, image)
   }
 }
 
 const handleDeleteImage = (key) => {
-  ElMessageBox.confirm
-    ('确定永久删除这张图片吗？', '删除确认', {
-      confirmButtonText: 'OK',
-      cancelButtonText: 'Cancel',
-
-      center: true,
-    }
-    )
+  ElMessageBox.confirm('确定永久删除这张图片吗？', '删除确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    center: true,
+  })
     .then(() => {
       try {
         imageStore.removeImage(key)
         ElMessage.success("删除成功")
-
       } catch (error) {
         console.error(error)
       }
@@ -377,10 +343,9 @@ const handleDeleteImage = (key) => {
     .catch(() => {
       ElMessage({
         type: 'info',
-        message: 'Delete canceled',
+        message: '已取消删除',
       })
     })
-
 }
 
 const handleBatchDelete = async () => {
@@ -403,7 +368,7 @@ const handleBatchDelete = async () => {
   } catch { }
 }
 
-// 上传 & 相册逻辑 (保持原有逻辑)
+// 上传逻辑
 const handleFileChange = (file, list) => {
   uploadFiles.value = list.filter(f => f.status === "ready").map(f => f.raw)
 }
@@ -479,7 +444,6 @@ const refreshAlbumList = async () => {
   margin: 0 auto;
   min-height: 100vh;
   padding-bottom: 70px;
-  /* 底部留白 */
   background-color: var(--app-bg);
 }
 
@@ -606,14 +570,13 @@ html.dark .action-bar {
   margin-bottom: 8px;
 }
 
-/* 3. 图片网格 (核心优化) */
+/* 3. 图片网格 */
 .image-list-wrapper {
   margin-bottom: 10px;
 }
 
 .image-grid {
   display: grid;
-  /* PC端默认 */
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
 }
@@ -626,14 +589,42 @@ html.dark .action-bar {
   transition: all 0.2s;
 }
 
+/* 馃殌 鍏抽敭锛氭祻瑙堝櫒鍘熺敓璺宠繃绐楀彛澶栧厓绱犵殑缁樼敾/Layout/Paint */
+.image-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 200px 200px;
+}
+
 .image-container {
   position: relative;
   aspect-ratio: 1;
   background: var(--el-fill-color-light);
   cursor: pointer;
+  overflow: hidden;
+}
+
+/* ✅ 优化：图片外层容器 + 模糊缩略图背景 */
+.image-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.blur-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(16px) brightness(0.85);
+  transform: scale(1.15);
+  z-index: 1;
+  /* thumbnail 很小，下载极快，渲染原图时遮在后面 */
 }
 
 .image-preview {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
   display: block;
@@ -701,33 +692,22 @@ html.dark .action-bar {
   margin-top: 2px;
 }
 
-/* === 移动端特别适配 (Max Width 768px) === */
+/* === 移动端特别适配 === */
 @media (max-width: 768px) {
-
-  /* 布局改为 3 列 */
   .image-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 2px;
-    /* 极窄间距，最大化图片 */
   }
-
-  /* 移除卡片圆角和阴影，打造纯相册感 */
   .image-card {
     border-radius: 0;
     box-shadow: none;
   }
-
-  /* 隐藏底部文字信息，只看图 */
   .desktop-only {
     display: none;
   }
-
-  /* 调整 Checkbox 样式，使其不那么突兀 */
   .checkbox-wrapper {
     padding: 4px;
   }
-
-  /* 选中状态给个遮罩，而不是边框 */
   .image-card.is-selected .image-preview {
     opacity: 0.6;
   }
@@ -764,7 +744,6 @@ html.dark .action-bar {
   color: var(--el-text-color-secondary);
 }
 
-/* 占位图居中 */
 .image-slot {
   display: flex;
   justify-content: center;
@@ -776,35 +755,23 @@ html.dark .action-bar {
 </style>
 
 <style>
-/* 移动端删除弹窗优化 - 必须放在无 scoped 的 style 中 */
 @media (max-width: 768px) {
   .mobile-delete-confirm {
     width: 80% !important;
     max-width: 320px;
     padding-bottom: 20px;
-
-    /* === 核心修复：强制加上背景色和边框 === */
     background-color: var(--el-bg-color-overlay) !important;
-    /* 使用弹窗专用背景变量 */
     border: 1px solid var(--el-border-color-lighter) !important;
     border-radius: 12px !important;
-    /* 更圆润的角 */
     box-shadow: var(--el-box-shadow) !important;
     overflow: hidden;
-    /* 防止子元素溢出圆角 */
   }
-
-  /* 修复头部样式，避免太拥挤 */
   .mobile-delete-confirm .el-message-box__header {
     padding: 10px 10px;
   }
-
-  /* 修复内容区域 */
   .mobile-delete-confirm .el-message-box__content {
     padding: 10px 10px;
   }
-
-  /* 让按钮更容易点 */
   .mobile-delete-confirm .el-button {
     padding: 8px 20px;
     margin-left: 10px;
