@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/proxy-img/:path*",
+      "destination": "/api/proxy-img?url=:path*"
+    },
+    {
       "source": "/picui-proxy/:path*",
       "destination": "https://picui.cn/:path*"
     },
@@ -10,6 +14,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/proxy-img/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
     {
       "source": "/picui-proxy/:path*",
       "headers": [
