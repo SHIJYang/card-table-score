@@ -16,7 +16,6 @@
                       <el-input
                         v-model="newPlayerName"
                         placeholder="新玩家名字"
-                        size="small"
                         class="cartoon-input"
                         @keyup.enter="handleAddPlayer"
                       />
@@ -26,7 +25,7 @@
                     </div>
                   </div>
                 </template>
-                
+
                 <el-empty v-if="players.length === 0" description="还没人来玩呢~" :image-size="120">
                     <el-button type="primary" class="cartoon-btn" @click="newPlayerName='玩家1';handleAddPlayer()">添加示例</el-button>
                 </el-empty>
@@ -34,27 +33,15 @@
                 <div v-else class="players-list">
                     <div v-for="(player, index) in players" :key="index" class="player-card">
                         <div class="player-info">
-                        
-                            <div class="name-section">
-                                <span v-if="!player.isEditing" class="name-text">{{ player.name }}</span>
-                                <el-input v-else v-model="player.editingName" size="small" class="edit-input" />
-                                <div class="edit-actions">
-                                    <el-button v-if="!player.isEditing" link @click="startEditName(player)"><el-icon><Edit /></el-icon></el-button>
-                                    <template v-else>
-                                        <el-button link type="success" @click="finishEditName(player)"><el-icon><Check /></el-icon></el-button>
-                                        <el-button link type="danger" @click="cancelEditName(player)"><el-icon><Close /></el-icon></el-button>
-                                    </template>
-                                </div>
-                            </div>
+                            <span class="name-text">{{ player.name }}</span>
                         </div>
-                        
+
                         <div class="score-display" :class="getScoreClass(player.score)">
                             {{ player.score }}
                         </div>
 
                         <div class="control-panel">
                             <el-button class="cartoon-icon-btn minus" @click="minusScore(player)">-</el-button>
-                            <el-input-number v-model="player.scoreInput" :min="1" :max="100" size="small" :controls="false" class="step-input" />
                             <el-button class="cartoon-icon-btn plus" @click="addScore(player)">+</el-button>
                             <el-button type="danger" circle plain size="small" @click="removePlayer(index)" class="delete-btn"><el-icon><Delete /></el-icon></el-button>
                         </div>
@@ -97,10 +84,10 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { Plus, Minus, Trophy, Timer, Edit, Delete, Check, Close, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { Trophy, Timer, Delete, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 
-const players = ref([{ name: "玩家1", score: 0, scoreInput: 10, isEditing: false, editingName: "" }]);
+const players = ref([{ name: "玩家1", score: 0 }]);
 const history = ref([]);
 const newPlayerName = ref("");
 const isHistoryCollapsed = ref(false);
@@ -111,27 +98,24 @@ const loadData = () => {
     const saved = localStorage.getItem("scoreData");
     if (saved) {
       const data = JSON.parse(saved);
-      if (data.players) players.value = data.players.map(p => ({...p, scoreInput: Number(p.scoreInput) || 10, isEditing: false}));
+      if (data.players) players.value = data.players.map(p => ({ name: p.name, score: Number(p.score) || 0 }));
       if (data.history) history.value = data.history;
     }
   } catch (error) {}
 };
 const saveData = () => {
-    localStorage.setItem("scoreData", JSON.stringify({ players: players.value.map(({isEditing, editingName, ...r}) => r), history: history.value }));
+    localStorage.setItem("scoreData", JSON.stringify({ players: players.value, history: history.value }));
 };
 
 const handleAddPlayer = () => {
   if (!newPlayerName.value.trim()) return ElMessage.warning("名字不能为空哦");
-  players.value.push({ name: newPlayerName.value, score: 0, scoreInput: 10, isEditing: false, editingName: "" });
+  players.value.push({ name: newPlayerName.value, score: 0 });
   addHistory(`🎉 欢迎新朋友 ${newPlayerName.value}`);
   newPlayerName.value = ""; saveData();
 };
 
-const addScore = (p) => { p.score += p.scoreInput; addHistory(`${p.name} 加了 ${p.scoreInput} 分! 🚀`); saveData(); };
-const minusScore = (p) => { p.score -= p.scoreInput; addHistory(`${p.name} 扣了 ${p.scoreInput} 分... 😢`); saveData(); };
-const startEditName = (p) => { p.editingName = p.name; p.isEditing = true; };
-const finishEditName = (p) => { if(p.editingName) { p.name = p.editingName; p.isEditing = false; saveData(); } };
-const cancelEditName = (p) => { p.isEditing = false; };
+const addScore = (p) => { p.score += 1; addHistory(`${p.name} 加了 1 分! 🚀`); saveData(); };
+const minusScore = (p) => { p.score -= 1; addHistory(`${p.name} 扣了 1 分... 😢`); saveData(); };
 const removePlayer = (i) => { players.value.splice(i, 1); saveData(); };
 const addHistory = (content) => history.value.unshift({ time: new Date().toLocaleString(), content });
 
@@ -145,7 +129,7 @@ onMounted(loadData);
 <style scoped>
 .score-system { width: 100%; max-width: 800px; margin: 0 auto; }
 .main-card, .history-card {
- 
+
   border-radius: var(--border-radius);
   background: var(--bg-secondary);
   overflow: visible;
@@ -175,12 +159,7 @@ onMounted(loadData);
     transition: transform 0.2s;
 }
 
-
-.player-info { display: flex; align-items: center; gap: 10px; flex: 1; }
-.rank-num {
-    width: 24px; height: 24px; background: var(--border-color); color: white;
-    border-radius: 50%; text-align: center; line-height: 24px; font-weight: bold; font-size: 12px;
-}
+.player-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .name-text { font-weight: bold; font-size: 1.1rem; }
 
 .score-display {
@@ -197,12 +176,13 @@ onMounted(loadData);
     width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-color);
     font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: all 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .cartoon-icon-btn.plus { background: var(--success-color); color: white; }
 .cartoon-icon-btn.minus { background: var(--warning-color); color: var(--text-color); }
-.step-input { width: 50px; }
-.delete-btn { margin-left: 10px; }
+.delete-btn { margin-left: 6px; }
 
 .score-summary {
     margin-top: 20px; padding: 15px;
@@ -219,4 +199,21 @@ onMounted(loadData);
     display: flex; gap: 10px; font-size: 0.9rem;
 }
 .history-row .time { color: var(--text-color-secondary); font-family: monospace; }
+
+/* 手机端适配：去掉步长输入框后单行即可放下，只做尺寸收紧 */
+@media (max-width: 600px) {
+  .card-header { flex-wrap: wrap; gap: 8px; }
+  .add-player-form { flex: 1 1 100%; }
+  .add-player-form .cartoon-input { flex: 1; }
+
+  .player-card { padding: 10px 8px; gap: 8px; }
+  .name-text { font-size: 1rem; }
+  .score-display { width: auto; min-width: 52px; font-size: 1.3rem; }
+  .control-panel { gap: 6px; }
+  .cartoon-icon-btn { width: 38px; height: 38px; font-size: 16px; }
+  .delete-btn { margin-left: 2px; }
+
+  .score-summary { flex-wrap: wrap; gap: 10px; justify-content: flex-start; padding: 12px; }
+  .summary-item { font-size: 1rem; }
+}
 </style>

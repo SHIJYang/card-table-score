@@ -535,7 +535,7 @@ onUnmounted(() => {
     box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
     position: relative;
 }
-.game-board { outline: none; }
+.game-board { outline: none; touch-action: none; user-select: none; -webkit-user-select: none; }
 .grid-cell { display: flex; gap: 10px; margin-bottom: 10px; }
 .grid-cell:last-child { margin-bottom: 0; }
 
@@ -571,4 +571,20 @@ onUnmounted(() => {
     backdrop-filter: blur(4px); border-radius: 8px;
 }
 .overlay h3 { font-size: 40px; color: var(--text-color); margin: 0 0 20px 0; }
+
+/* 手机端适配：压缩标题与间距，数字字号随格子收缩 */
+@media (max-width: 480px) {
+  .game-container { padding: 10px; }
+  .game-info { margin-bottom: 12px; gap: 8px; }
+  .title-box { font-size: 30px; text-shadow: 2px 2px 0 var(--border-color); }
+  .score-box { min-width: 52px; padding: 4px 10px; }
+  .score-box .val { font-size: 16px; }
+  .restart-btn { padding: 8px 10px; font-size: 14px; touch-action: manipulation; }
+  .game-board-outer { padding: 6px; border-width: 3px; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); }
+  .grid-cell { gap: 6px; margin-bottom: 6px; }
+  .cell { border-radius: 6px; font-size: 22px; }
+  .cell-128, .cell-256, .cell-512 { font-size: 18px; }
+  .cell-1024, .cell-2048 { font-size: 15px; }
+  .overlay h3 { font-size: 26px; margin-bottom: 12px; }
+}
 </style>

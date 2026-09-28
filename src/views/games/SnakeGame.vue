@@ -13,7 +13,11 @@
           
 
           <div class="game-container">
-            <div class="game-board-wrapper">
+            <div
+              class="game-board-wrapper"
+              @touchstart.passive="handleTouchStart"
+              @touchend.passive="handleTouchEnd"
+            >
               <div class="game-board" ref="gameBoardRef" id="game-board">
                 <div v-for="y in gridRows" :key="`row-${y}`" class="grid-row">
                   <div
@@ -164,6 +168,21 @@ const handleKeyPress = (e) => {
     const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
     if(map[e.key]) changeDirection(map[e.key]);
 };
+
+// 手机端：在棋盘上滑动即可转向
+let touchStartX = 0, touchStartY = 0;
+const handleTouchStart = (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+};
+const handleTouchEnd = (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const minSwipeDistance = 24;
+    if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) return;
+    if (Math.abs(dx) > Math.abs(dy)) changeDirection(dx > 0 ? 'right' : 'left');
+    else changeDirection(dy > 0 ? 'down' : 'up');
+};
 onMounted(() => window.addEventListener('keydown', handleKeyPress));
 onUnmounted(() => { window.removeEventListener('keydown', handleKeyPress); clearInterval(gameInterval); });
 </script>
@@ -202,6 +221,10 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeyPress); clear
       border-radius: 8px;
       padding: 4px;
       box-shadow: inset 4px 4px 10px rgba(0,0,0,0.1);
+      /* 手机端在棋盘上滑动转向，不触发页面滚动/下拉刷新 */
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
   }
   .game-board {
       display: flex; 
@@ -210,9 +233,9 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeyPress); clear
   .grid-row { display: flex; }
   
   .grid-cell { 
-      /* 手机端适配：30格 x 11px = 330px，适配大多数屏幕 */
-      width: 11px; 
-      height: 11px; 
+      /* 手机端适配：格子随屏幕宽度收缩，30格 + 边框留白后正好占满一屏 */
+      width: min(calc((100vw - 64px) / 30), 11px); 
+      height: min(calc((100vw - 64px) / 30), 11px); 
       box-sizing: border-box; 
       /* 关键：添加极淡的边框实现网格可视，不使用新变量 */
       border: 1px solid rgba(0, 0, 0, 0.05); 
@@ -274,6 +297,8 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeyPress); clear
       box-shadow: 0 5px 0 var(--border-color); /* 增加厚度 */
       transition: all 0.1s;
       display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation; /* 防止快速连点触发双击缩放 */
+      -webkit-tap-highlight-color: transparent;
   }
   
   .action-btn {
