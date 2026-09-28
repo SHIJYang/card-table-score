@@ -5,10 +5,6 @@
       "destination": "/api/proxy-img?url=:path*"
     },
     {
-      "source": "/picui-proxy/:path*",
-      "destination": "https://picui.cn/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/$1"
     }
@@ -16,15 +12,6 @@
   "headers": [
     {
       "source": "/proxy-img/:path*",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
-      ]
-    },
-    {
-      "source": "/picui-proxy/:path*",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",

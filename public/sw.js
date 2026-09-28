@@ -1,7 +1,7 @@
 // public/sw.js
 const CACHE_NAME = 'mediapipe-hand-v1'
 const MEDIAPIPE_URLS = [
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm/',
+  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm/',
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
 ]
 

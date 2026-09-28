@@ -18,12 +18,9 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
+          // TresJS 的自定义元素（TresCanvas 除外）与 three 原生 primitive 标签
           isCustomElement: (tag) =>
             (tag.startsWith('Tres') && tag !== 'TresCanvas') || tag === 'primitive',
-          "baseUrl": ".",
-          "paths": {
-            "@/*": ["src/*"]
-          }
         },
       },
     }),
@@ -36,9 +33,6 @@ export default defineConfig({
         IconsResolver({ prefix: 'Icon' }),
       ],
       dts: 'auto-imports.d.ts',
-      eslintrc: {
-        enabled: true,
-      },
     }),
 
     Components({
@@ -59,14 +53,13 @@ export default defineConfig({
 
     viteCompression({
       verbose: true,
-      disable: false,
       threshold: 10240,
       algorithm: 'gzip',
       ext: '.gz',
     }),
-    visualizer({ open: false }),
+    visualizer({ open: false, filename: 'stats.html' }),
 
-    // 🚀 通用图片代理插件（作为 Vite 插件，configureServer 钩子会正确注册）
+    // 🚀 通用图片代理（仅开发环境；生产环境由 Vercel Serverless api/proxy-img.js 提供）
     {
       name: 'image-proxy',
       configureServer(server) {
@@ -119,7 +112,6 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         api: 'modern-compiler',
-        silenceDeprecations: ['legacy-js-api'],
       }
     }
   },
@@ -128,13 +120,6 @@ export default defineConfig({
     port: 5173,
     open: true,
     cors: true,
-    proxy: {
-      '/picui-proxy/': {
-        target: 'https://free.picui.cn',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/picui-proxy/, '')
-      }
-    }
   },
 
   build: {
@@ -145,13 +130,10 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('@tresjs') || id.includes('ogl')) {
+            if (id.includes('three') || id.includes('@tresjs')) {
               return '3d-engine';
             }
-            if (id.includes('@mediapipe') || id.includes('mediapipe')) {
-              return 'vision-ai';
-            }
-            if (id.includes('@dimforge/rapier3d') || id.includes('rapier')) {
+            if (id.includes('@dimforge/rapier3d')) {
               return 'physics';
             }
           }

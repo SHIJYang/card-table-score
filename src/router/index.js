@@ -24,8 +24,8 @@ const routes = [
     },
     {
         path: '/2048',
-        name: '2048',
-        component: () => import('../views/games/2048.vue')
+        name: 'Game2048',
+        component: () => import('../views/games/Game2048.vue')
     },
     {
         path: '/score',
@@ -35,63 +35,55 @@ const routes = [
     {
         path: '/try',
         name: 'Try',
-        component: () => import('../views/games/try.vue')
+        component: () => import('../views/games/Try.vue')
     },
     {
         path: '/live',
         name: 'Love',
-        component: () => import('../views/love/live.vue')
+        component: () => import('../views/love/Live.vue')
     },
     {
         path: '/people',
         name: 'People',
-        component: () => import('../views/our/people.vue')
+        component: () => import('../views/our/People.vue')
     },
     {
         path: '/dog',
         name: 'Dog',
-        component: () => import('../views/our/dog.vue')
+        component: () => import('../views/our/Dog.vue')
     },
-    
     {
         path: '/player',
         name: 'Player',
-        component: () => import('../views/our/player.vue')
+        component: () => import('../views/our/Player.vue')
     },
-    
     {
-        path: '/img',
-        name: 'Img',
-        component: () => import('../views/sets/picture.vue')
-    },
-    
-  {
         path: '/music',
         name: 'Music',
-        component: () => import('../views/games/music.vue')
+        component: () => import('../views/games/Music.vue')
     },
     {
         path: '/trees',
         name: 'Trees',
-        component: () => import('../views/our/trees.vue')
+        component: () => import('../views/our/Trees.vue')
     },
     {
         path: '/spindou',
         name: 'Spindou',
-        component: () => import('../views/our/spindou.vue')
+        component: () => import('../views/our/Spindou.vue')
     },
     {
         path: '/sets/picture',
-        name: 'picture',
-        component: () => import('../views/sets/picture.vue')
+        name: 'Picture',
+        component: () => import('../views/sets/Picture.vue')
     },
-
     {
         path: '/sets/habits',
-        name: 'habits',
-        component: () => import('../views/sets/habits.vue')
+        name: 'Habits',
+        component: () => import('../views/sets/Habits.vue')
     },
-
+    // 旧路径兼容重定向
+    { path: '/img', redirect: '/sets/picture' },
 ]
 
 const router = createRouter({

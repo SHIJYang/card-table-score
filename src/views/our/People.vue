@@ -35,7 +35,7 @@
       <TresAmbientLight :intensity="1.2" />
       <TresGroup :position="[0, 0, 0]" :rotation-y="-0.2">
         <Suspense>
-          <smallpeople :key="currentModelId" :model-path="currentModelConfig.modelPath"
+          <SmallPeople :key="currentModelId" :model-path="currentModelConfig.modelPath"
             :texture-path="currentModelConfig.texturePath" :scale="currentModelConfig.scale" @loaded="onModelLoaded" />
 
           <template #fallback>
@@ -55,7 +55,7 @@
 import { ref, computed } from 'vue'
 import { TresCanvas } from '@tresjs/core'
 import { Environment } from '@tresjs/cientos'
-import smallpeople from "../../components/tres/smallpeople.vue"
+import SmallPeople from "../../components/tres/SmallPeople.vue"
 import { OrbitControls } from '@tresjs/cientos'
 import { modelList, actionNameMap } from '../../config/modelConfig'
 
