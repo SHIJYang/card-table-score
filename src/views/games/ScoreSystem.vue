@@ -41,7 +41,7 @@
                         </div>
 
                         <div class="control-panel">
-                            <el-button class="cartoon-icon-btn minus" @click="minusScore(player)">-</el-button>
+                            <el-button class="cartoon-icon-btn minus" @click="minusScore(player)">−</el-button>
                             <el-button class="cartoon-icon-btn plus" @click="addScore(player)">+</el-button>
                             <el-button type="danger" circle plain size="small" @click="removePlayer(index)" class="delete-btn"><el-icon><Delete /></el-icon></el-button>
                         </div>
@@ -173,8 +173,9 @@ onMounted(loadData);
 
 .control-panel { display: flex; align-items: center; gap: 8px; }
 .cartoon-icon-btn {
-    width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-color);
-    font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border-color);
+    font-size: 26px; line-height: 1; font-weight: bold; padding: 0;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: all 0.1s;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -210,7 +211,7 @@ onMounted(loadData);
   .name-text { font-size: 1rem; }
   .score-display { width: auto; min-width: 52px; font-size: 1.3rem; }
   .control-panel { gap: 6px; }
-  .cartoon-icon-btn { width: 38px; height: 38px; font-size: 16px; }
+  .cartoon-icon-btn { width: 48px; height: 48px; font-size: 30px; }
   .delete-btn { margin-left: 2px; }
 
   .score-summary { flex-wrap: wrap; gap: 10px; justify-content: flex-start; padding: 12px; }
