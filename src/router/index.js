@@ -82,6 +82,11 @@ const routes = [
         name: 'Habits',
         component: () => import('../views/sets/Habits.vue')
     },
+    {
+        path: '/garden',
+        name: 'Garden',
+        component: () => import('../views/our/Garden.vue')
+    },
     // 旧路径兼容重定向
     { path: '/img', redirect: '/sets/picture' },
 ]
