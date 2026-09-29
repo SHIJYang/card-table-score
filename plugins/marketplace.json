@@ -1,0 +1,18 @@
+{
+  "name": "dev-card-table-score-d1207402",
+  "plugins": [
+    {
+      "name": "picui-image-host",
+      "source": "./picui-image-host",
+      "version": "0.1.0",
+      "description": "Connect ZCode to the picui.cn image-hosting API: view profile/storage usage, list and upload images, manage albums, delete with explicit confirmation.",
+      "displayName": "PicUI Image Host",
+      "displayName_i18n": {
+        "zh-CN": "PicUI 图床"
+      },
+      "description_i18n": {
+        "zh-CN": "让 ZCode 通过 MCP 直连 picui.cn 图床：查看账号容量、列出/上传图片、删除图片与相册（删除需显式确认）。需先配置图床 Token。"
+      }
+    }
+  ]
+}

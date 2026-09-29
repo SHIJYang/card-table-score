@@ -1,16 +1,20 @@
 <template>
-  <div id="app">
-    <Topnav />
-    <div class="page-content">
-      <router-view />
+  <el-config-provider :locale="epLocale">
+    <div id="app">
+      <Topnav />
+      <div class="page-content">
+        <router-view />
+      </div>
     </div>
-  </div>
+  </el-config-provider>
 </template>
 
 <script setup>
-import { watch, onMounted, onUnmounted } from 'vue'
+import { computed, watch, onMounted, onUnmounted } from 'vue'
 import { useSettingsStore } from '@/store'
 import { useI18n } from 'vue-i18n'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import enUs from 'element-plus/es/locale/lang/en'
 import Topnav from './views/topnav/TopNav.vue'
 import { applyTheme, themes } from './theme/index.js'
 import { getBackgroundMusicManager } from './utils/audio/backgroundMusicManager.js'
@@ -21,6 +25,10 @@ const bgmManager = getBackgroundMusicManager()
 
 // 加载背景音乐数据
 bgmManager.loadTracks(trackData)
+
+// Element Plus 内置文案跟随应用语言
+const EP_LOCALES = { 'zh-CN': zhCn, 'en-US': enUs }
+const epLocale = computed(() => EP_LOCALES[settingsStore.language] || zhCn)
 
 // 语言切换
 watch(

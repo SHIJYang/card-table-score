@@ -1,0 +1,12 @@
+{
+  "name": "picui-image-host",
+  "version": "0.1.0",
+  "description": "Connect ZCode to the picui.cn image-hosting API: view profile/storage usage, list and upload images, manage albums, delete with explicit confirmation.",
+  "author": { "name": "施景阳" },
+  "mcpServers": {
+    "picui": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"]
+    }
+  }
+}
