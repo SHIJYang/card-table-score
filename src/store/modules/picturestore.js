@@ -345,6 +345,8 @@ export const useImageStore = defineStore('image', () => {
   }
 
   async function handleSearch() {
+    // 搜索/筛选条件变化时回到第 1 页
+    imagePagination.value.current_page = 1
     await fetchImages()
   }
 

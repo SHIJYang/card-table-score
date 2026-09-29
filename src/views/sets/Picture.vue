@@ -117,10 +117,10 @@
                     <el-checkbox :value="image.key" class="image-checkbox" />
                   </div>
 
-                  <!-- ✅ 优化：El-Image 保留原生 lazy，加 thumbnail_url 做模糊背景占位 -->
+                  <!-- ✅ 优化：网格直接加载缩略图（最长边400px），点击预览才加载原图 -->
                   <div class="image-wrapper">
                     <img v-if="image.links?.thumbnail_url" :src="image.links.thumbnail_url" class="blur-bg" alt="" loading="lazy" />
-                    <el-image :src="image.links?.url || ''" fit="cover" class="image-preview" loading="lazy">
+                    <el-image :src="image.links?.thumbnail_url || image.links?.url || ''" fit="cover" class="image-preview" loading="lazy">
                       <template #error>
                         <div class="image-slot error"><el-icon><Picture /></el-icon></div>
                       </template>
@@ -295,9 +295,11 @@ const formatStorageSize = (size) => {
   return size > 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)}GB` : `${(size / 1024).toFixed(1)}MB`
 }
 
-onMounted(async () => {
-  await Promise.all([imageStore.fetchProfile(), imageStore.fetchAlbums()])
-  await imageStore.fetchImages()
+onMounted(() => {
+  // 并行请求：图片网格不等用户信息/相册接口
+  imageStore.fetchImages()
+  imageStore.fetchProfile()
+  imageStore.fetchAlbums()
 })
 
 // 🚀 移除：递归 loadAllImages（不再一口气加载所有页面）
