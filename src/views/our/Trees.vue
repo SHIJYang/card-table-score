@@ -191,6 +191,17 @@ const modes = [
   { key: 'zoom', label: '特写', icon: '🔭' }
 ];
 
+// 保底照片：picui API 失败（如未配置 token）或列表为空时挂到树上，
+// 同源静态资源，不经过代理
+const FALLBACK_PHOTOS = [
+  '/fallback/photo1.jpg',
+  '/fallback/photo2.jpg',
+  '/fallback/photo3.jpg',
+  '/fallback/photo4.jpg',
+  '/fallback/photo5.jpg',
+  '/fallback/photo6.jpg'
+];
+
 // Pinia Store 引用
 const cameraStore = useCamerasStore();
 const imageStore = useImageStore();
@@ -233,16 +244,27 @@ const ctx = {
 };
 
 let rafId = null; // requestAnimationFrame ID
+let fallbackTimer = null; // 保底照片检查定时器
 
 // ========== 3. 生命周期 ==========
 
 onMounted(async () => {
   initScene(); // 初始化 Three.js 场景
   if (imageStore.fetchImages) await imageStore.fetchImages(); // 加载图片
+  if (!imageList.value.length) {
+    // API 失败或列表为空：直接使用保底照片
+    loadFallbackPhotos();
+  } else {
+    // 有列表但可能全部纹理加载失败：延迟检查，一张都没挂上就上保底照片
+    fallbackTimer = setTimeout(() => {
+      if (ctx.photoMeshes.length === 0) loadFallbackPhotos();
+    }, 3000);
+  }
 });
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(rafId);
+  if (fallbackTimer) clearTimeout(fallbackTimer);
   cameraStore.stopCamera(); // 关闭摄像头
   window.removeEventListener('resize', onWindowResize);
   if (ctx.renderer) ctx.renderer.dispose();
@@ -422,6 +444,13 @@ const addPhotoMesh = (url, key) => {
       console.warn('[trees] 图片加载失败:', proxyUrl, err?.message || err);
     }
   );
+};
+
+// 加载保底照片（API 失败或全部图片加载失败时兜底）
+const loadFallbackPhotos = () => {
+  if (ctx.photoMeshes.length > 0) return;
+  console.info('[trees] 使用保底照片:', FALLBACK_PHOTOS.length, '张');
+  FALLBACK_PHOTOS.forEach((url, i) => addPhotoMesh(url, `fallback-${i}`));
 };
 
 // 延迟启动图片监听（addPhotoMesh 已定义，不会 TDZ）

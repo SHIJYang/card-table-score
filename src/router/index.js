@@ -18,6 +18,11 @@ const routes = [
         component: () => import('../views/games/GomokuGame.vue')
     },
     {
+        path: '/go',
+        name: 'Go',
+        component: () => import('../views/games/PunigoGame.vue')
+    },
+    {
         path: '/shop',
         name: 'Shop',
         component: () => import('../views/games/ShopGame.vue')
@@ -26,6 +31,11 @@ const routes = [
         path: '/2048',
         name: 'Game2048',
         component: () => import('../views/games/Game2048.vue')
+    },
+    {
+        path: '/yang',
+        name: 'Yang',
+        component: () => import('../views/games/YangGame.vue')
     },
     {
         path: '/score',

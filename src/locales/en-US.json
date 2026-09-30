@@ -1,12 +1,14 @@
 {
   "nav": {
     "2048": "2048",
+    "yang": "Yang Match",
     "home": "Home",
     "games": "Games",
     "our": "Our Games",
     "settings": "Settings",
     "score": "Score System",
     "gomoku": "Gomoku",
+    "go": "Punigo Go",
     "shop": "Shop",
     "snake": "Snake",
     "try": "Try It",

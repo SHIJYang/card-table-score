@@ -17,9 +17,11 @@
           <el-dropdown-menu>
             <el-dropdown-item command="/score">{{ t('nav.score') }}</el-dropdown-item>
             <el-dropdown-item command="/gomoku">{{ t('nav.gomoku') }}</el-dropdown-item>
+            <el-dropdown-item command="/go">{{ t('nav.go') }}</el-dropdown-item>
             <el-dropdown-item command="/shop">{{ t('nav.shop') }}</el-dropdown-item>
             <el-dropdown-item command="/snake">{{ t('nav.snake') }}</el-dropdown-item>
             <el-dropdown-item command="/2048">{{ t('nav.2048') }}</el-dropdown-item>
+            <el-dropdown-item command="/yang">{{ t('nav.yang') }}</el-dropdown-item>
             <el-dropdown-item command="/try">{{ t('nav.try') }}</el-dropdown-item>
             <el-dropdown-item command="/trees">{{ t('nav.christmasTree') }}</el-dropdown-item>
             <el-dropdown-item command="/people">{{ t('nav.people') }}</el-dropdown-item>
