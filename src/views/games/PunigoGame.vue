@@ -38,51 +38,56 @@
       </div>
 
       <div class="board-area">
-        <div class="game-board">
-          <!-- 视觉层：只负责画线（9条线，外圈右/下不画多余的线） -->
+        <div class="game-board" :style="{ '--n': boardSize }">
+          <!-- ① 线层：(N-1)×(N-1) 个格子。
+               父容器 border-top/left 给第 1 条线，
+               每个格子的 border-right/bottom 给下一条线，
+               总共正好 N 条横线 + N 条竖线，无多余线、无空格子。 -->
           <div class="board-grid" :style="gridStyle">
-            <template v-for="(row, r) in board" :key="r">
-              <div
-                v-for="(cell, c) in row"
-                :key="c"
-                class="board-cell"
-                :class="{ 'edge-r': c === boardSize - 1, 'edge-b': r === boardSize - 1 }"
-              >
-                <span v-if="isStar(r, c)" class="star-point"></span>
-              </div>
-            </template>
+            <div
+              v-for="i in lineCellCount"
+              :key="i"
+              class="board-cell"
+            ></div>
           </div>
 
-          <!-- 交互层：每个格子中心对准一个交叉点，点击判定以交叉点为中心（四周各半格） -->
-          <div class="click-layer" :style="gridStyle">
-            <template v-for="(row, r) in board" :key="r">
-              <div
-                v-for="(cell, c) in row"
-                :key="c"
-                class="click-cell"
-                :class="{ 'no-drop': !isPlayerTurn }"
-                @click="onCellClick(r, c)"
-                @mouseenter="hoverCell = { r, c }"
-                @mouseleave="hoverCell = null"
-              >
-                <div
-                  v-if="cell === 0 && showGhost(r, c)"
-                  class="stone ghost"
-                  :class="playerColor === BLACK ? 'black-stone' : 'white-stone'"
-                ></div>
+          <!-- ② 交叉点层：与线层内容区严丝合缝对齐。
+               每个 .point 的中心 = 一个交叉点，
+               热区为 cell×cell，向四周各延伸半格。 -->
+          <div class="points-layer">
+            <div
+              v-for="pt in points"
+              :key="pt.r + '-' + pt.c"
+              class="point"
+              :class="{ 'no-drop': !isPlayerTurn }"
+              :style="{ '--pr': pt.r, '--pc': pt.c }"
+              @click="onCellClick(pt.r, pt.c)"
+              @mouseenter="hoverCell = { r: pt.r, c: pt.c }"
+              @mouseleave="hoverCell = null"
+            >
+              <span v-if="isStar(pt.r, pt.c)" class="star-point"></span>
 
-                <transition name="pop">
-                  <div
-                    v-if="cell !== 0"
-                    class="stone"
-                    :class="[cell === BLACK ? 'black-stone' : 'white-stone', { atari: inAtari(r, c) }]"
-                  >
-                    <span v-if="showFaces" class="face">{{ faceEmoji(r, c) }}</span>
-                    <span v-if="isLastMove(r, c)" class="last-mark" :class="cell === BLACK ? 'on-black' : 'on-white'"></span>
-                  </div>
-                </transition>
-              </div>
-            </template>
+              <div
+                v-if="board[pt.r][pt.c] === EMPTY && showGhost(pt.r, pt.c)"
+                class="stone ghost"
+                :class="playerColor === BLACK ? 'black-stone' : 'white-stone'"
+              ></div>
+
+              <transition name="pop">
+                <div
+                  v-if="board[pt.r][pt.c] !== EMPTY"
+                  class="stone"
+                  :class="[board[pt.r][pt.c] === BLACK ? 'black-stone' : 'white-stone', { atari: inAtari(pt.r, pt.c) }]"
+                >
+                  <span v-if="showFaces" class="face">{{ faceEmoji(pt.r, pt.c) }}</span>
+                  <span
+                    v-if="isLastMove(pt.r, pt.c)"
+                    class="last-mark"
+                    :class="board[pt.r][pt.c] === BLACK ? 'on-black' : 'on-white'"
+                  ></span>
+                </div>
+              </transition>
+            </div>
           </div>
 
           <transition name="fade">
@@ -195,10 +200,28 @@ let koHistory = new Set();
 let aiTimer = null;
 let fxTimer = null;
 
-const gridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${boardSize.value}, 1fr)`,
-  gridTemplateRows: `repeat(${boardSize.value}, 1fr)`,
-}));
+/* ---------------- 棋盘几何 ---------------- */
+
+// 线层网格：(N-1) × (N-1)
+const gridStyle = computed(() => {
+  const m = boardSize.value - 1;
+  return {
+    gridTemplateColumns: `repeat(${m}, 1fr)`,
+    gridTemplateRows: `repeat(${m}, 1fr)`,
+  };
+});
+
+const lineCellCount = computed(() => (boardSize.value - 1) ** 2);
+
+// 所有交叉点坐标
+const points = computed(() => {
+  const n = boardSize.value;
+  const out = [];
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) out.push({ r, c });
+  }
+  return out;
+});
 
 const counts = computed(() => {
   let black = 0, white = 0;
@@ -610,43 +633,67 @@ startNewGame();
   align-items: center;
 }
 
+/* ---------- 棋盘 ---------- */
 .game-board {
-  /* 总宽 = 10个格宽（9格棋盘 + 两侧半格内边距），保证任何棋盘都不超屏 */
-  --cell: min(46px, calc((100vw - 70px) / 10));
+  /* --n 由模板 :style 注入（5 / 7 / 9）
+     总宽 = cell × n（N-1 格线层 + 左右各半格留白） */
+  --n: 9;
+  --cell: min(46px, calc((100vw - 60px) / var(--n)));
   --line: 1.5px;
   --line-color: #7a5c3d;
+
   position: relative;
+  padding: calc(var(--cell) / 2);
   background: linear-gradient(135deg, #f0d49a, #e3bd77);
   border-radius: 6px;
-  padding: calc(var(--cell) / 2);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), inset 0 0 24px rgba(146, 104, 56, 0.25);
   user-select: none;
   -webkit-user-select: none;
 }
 
+/* 线层：(N-1)×(N-1) 个格子 */
 .board-grid {
   display: grid;
-  /* 父容器是 flex 子项宽度不定，必须显式给宽，1fr 网格列才不会塌缩 */
-  width: calc(var(--cell) * 9);
+  width: calc(var(--cell) * (var(--n) - 1));
+  height: calc(var(--cell) * (var(--n) - 1));
   border-top: var(--line) solid var(--line-color);
   border-left: var(--line) solid var(--line-color);
 }
-
 .board-cell {
-  position: relative;
-  aspect-ratio: 1;
-  border-right: 1px solid var(--line-color);
-  border-bottom: 1px solid var(--line-color);
   box-sizing: border-box;
+  border-right: var(--line) solid var(--line-color);
+  border-bottom: var(--line) solid var(--line-color);
 }
-/* 最后一列/行的右边线、下边线是多余的（N个交叉点只需要N条线） */
-.board-cell.edge-r { border-right: none; }
-.board-cell.edge-b { border-bottom: none; }
+
+/* 交叉点层：与线层内容区精确对齐
+   board-grid 的 border 占 1.5px，所以整体偏移要补上 line/2 */
+.points-layer {
+  position: absolute;
+  left: calc(var(--cell) / 2 + var(--line) / 2);
+  top: calc(var(--cell) / 2 + var(--line) / 2);
+  width: calc(var(--cell) * (var(--n) - 1));
+  height: calc(var(--cell) * (var(--n) - 1));
+  z-index: 3;
+}
+
+/* 每个交叉点：一个 cell×cell 的热区，中心即交叉点 */
+.point {
+  position: absolute;
+  left: calc(var(--cell) * var(--pc));
+  top: calc(var(--cell) * var(--pr));
+  width: var(--cell);
+  height: var(--cell);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.point.no-drop { cursor: default; }
 
 .star-point {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -655,25 +702,7 @@ startNewGame();
   pointer-events: none;
 }
 
-/* 交互层：盖在棋盘上，格子中心 = 交叉点，点击热区向四周各延伸半格 */
-.click-layer {
-  position: absolute;
-  top: var(--line);
-  left: var(--line);
-  width: calc(var(--cell) * 9);
-  height: calc(var(--cell) * 9);
-  display: grid;
-  z-index: 3;
-}
-.click-cell {
-  position: relative;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-.click-cell.no-drop { cursor: default; }
-
-/* 棋子落在交叉点上（交互层格子的中心） */
+/* 棋子落在交叉点上（.point 的正中心） */
 .stone {
   position: absolute;
   top: 50%;
@@ -854,7 +883,7 @@ startNewGame();
   .title { font-size: 1.05rem; }
   .settings-bar { gap: 8px 14px; padding: 10px 10px; }
   .seg-btn { padding: 5px 10px; font-size: 0.8rem; }
-  .game-board { --cell: min(40px, calc((100vw - 30px) / 10)); }
+  .game-board { --cell: min(40px, calc((100vw - 30px) / var(--n))); }
   .panel-footer { flex-direction: column; align-items: stretch; }
   .stats-row { justify-content: space-around; }
   .control-group .cartoon-btn { flex: 1; justify-content: center; }
