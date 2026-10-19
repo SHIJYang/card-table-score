@@ -97,6 +97,11 @@ const routes = [
         name: 'Garden',
         component: () => import('../views/our/Garden.vue')
     },
+    {
+        path: '/coaster',
+        name: 'Coaster',
+        component: () => import('../views/games/DoodleCoaster.vue')
+    },
     // 旧路径兼容重定向
     { path: '/img', redirect: '/sets/picture' },
 ]
