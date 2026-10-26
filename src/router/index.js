@@ -102,6 +102,11 @@ const routes = [
         name: 'Coaster',
         component: () => import('../views/games/DoodleCoaster.vue')
     },
+    {
+        path: '/vrview',
+        name: 'VrView',
+        component: () => import('../views/our/VrView.vue')
+    },
     // 旧路径兼容重定向
     { path: '/img', redirect: '/sets/picture' },
 ]

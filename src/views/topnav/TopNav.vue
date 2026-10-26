@@ -31,6 +31,7 @@
             <el-dropdown-item command="/spindou">{{ t('nav.spindou') }}</el-dropdown-item>
             <el-dropdown-item command="/garden">{{ t('nav.garden') }}</el-dropdown-item>
             <el-dropdown-item command="/coaster">{{ t('nav.coaster') }}</el-dropdown-item>
+              <el-dropdown-item command="/vrview">{{ t('nav.vrview') }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
