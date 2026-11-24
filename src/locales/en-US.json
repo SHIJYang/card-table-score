@@ -59,9 +59,27 @@
     "mode": "View mode",
     "modes": {
       "turntable": "Turntable",
+      "scene": "Diorama",
       "scan": "Slice scan",
-      "explode": "Exploded"
+      "explode": "Exploded",
+      "play": "Play"
     },
+    "scene": "Scene",
+    "scenes": {
+      "street": "Neon Street",
+      "meadow": "Meadow Island"
+    },
+    "toy": "Toy",
+    "toys": {
+      "drive": "Drive",
+      "wind": "Wind",
+      "shatter": "Shatter"
+    },
+    "driveHint": "WASD / arrows to drive · Space to drift",
+    "windHint": "Drag to rotate and watch the stack sway",
+    "shatterHint": "Click the stage or press Space: shatter → rebuild",
+    "shatterAction": "Shatter / Rebuild",
+    "exportSheet": "Export sprite sheet",
     "autoRotate": "Auto rotate",
     "outline": "Pixel outline",
     "shadow": "Ground shadow",

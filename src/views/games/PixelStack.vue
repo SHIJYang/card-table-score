@@ -7,6 +7,10 @@
         <p>{{ t('pixelStack.subtitle') }}</p>
       </div>
       <div class="ps-head-actions">
+        <el-button class="ps-btn" @click="exportSheet">
+          <el-icon><Download /></el-icon>
+          <span>{{ t('pixelStack.exportSheet') }}</span>
+        </el-button>
         <el-button class="ps-btn" @click="randomize">
           <el-icon><MagicStick /></el-icon>
           <span>{{ t('pixelStack.random') }}</span>
@@ -93,7 +97,7 @@
 
         <div class="ps-stage-top">
           <span class="ps-chip">{{ t(`pixelStack.modes.${ui.mode}`) }}</span>
-          <span class="ps-readout">{{ displayAngle }}°</span>
+          <span class="ps-readout">{{ isDriveMode ? driveHud : `${displayAngle}°` }}</span>
         </div>
 
         <div class="ps-stage-hint">
@@ -153,9 +157,37 @@
           <span class="ps-label">{{ t('pixelStack.mode') }}</span>
           <el-radio-group v-model="ui.mode" class="ps-modes" size="small" @change="onModeChange">
             <el-radio-button value="turntable">{{ t('pixelStack.modes.turntable') }}</el-radio-button>
+            <el-radio-button value="scene">{{ t('pixelStack.modes.scene') }}</el-radio-button>
             <el-radio-button value="scan">{{ t('pixelStack.modes.scan') }}</el-radio-button>
             <el-radio-button value="explode">{{ t('pixelStack.modes.explode') }}</el-radio-button>
+            <el-radio-button value="play">{{ t('pixelStack.modes.play') }}</el-radio-button>
           </el-radio-group>
+        </div>
+
+        <div v-if="ui.mode === 'scene' || (ui.mode === 'play' && ui.toy === 'drive')" class="ps-group">
+          <span class="ps-label">{{ t('pixelStack.scene') }}</span>
+          <el-radio-group v-model="ui.scene" class="ps-modes" size="small" @change="invalidate">
+            <el-radio-button value="street">{{ t('pixelStack.scenes.street') }}</el-radio-button>
+            <el-radio-button value="meadow">{{ t('pixelStack.scenes.meadow') }}</el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <div v-if="ui.mode === 'play'" class="ps-group">
+          <span class="ps-label">{{ t('pixelStack.toy') }}</span>
+          <el-radio-group v-model="ui.toy" class="ps-modes" size="small" @change="onToyChange">
+            <el-radio-button value="drive">{{ t('pixelStack.toys.drive') }}</el-radio-button>
+            <el-radio-button value="wind">{{ t('pixelStack.toys.wind') }}</el-radio-button>
+            <el-radio-button value="shatter">{{ t('pixelStack.toys.shatter') }}</el-radio-button>
+          </el-radio-group>
+          <p class="ps-toy-hint">{{ toyHint }}</p>
+          <el-button
+            v-if="ui.toy === 'shatter'"
+            class="ps-toy-action"
+            size="small"
+            @click="shatterNow"
+          >
+            {{ t('pixelStack.shatterAction') }}
+          </el-button>
         </div>
 
         <div class="ps-switch-grid">
@@ -235,7 +267,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowReactive, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { MagicStick, Refresh } from '@element-plus/icons-vue'
+import { Download, MagicStick, Refresh } from '@element-plus/icons-vue'
 import {
   PRESET_KEYS,
   buildPreset,
@@ -248,6 +280,9 @@ import {
 import { carveViews } from './spritestack/carve'
 import { StackRenderer } from './spritestack/render'
 import { WeatherSystem } from './spritestack/environment'
+import { buildVolume } from './spritestack/voxel'
+import { DriveToy, ShatterToy } from './spritestack/toys'
+import { buildSpriteSheet, downloadCanvas } from './spritestack/export'
 import { buildViewsFromSources, extractViewSource, loadImageFile } from './spritestack/upload'
 
 const { t } = useI18n()
@@ -272,6 +307,8 @@ const ui = reactive({
   shadow: true,
   autoRotate: false,
   mode: 'turntable',
+  scene: 'street',
+  toy: 'wind',
   zoom: 1,
 })
 
@@ -289,9 +326,22 @@ const envPhaseLabel = computed(() => {
 })
 
 const weatherSys = new WeatherSystem()
+const driveToy = new DriveToy()
+const shatterToy = new ShatterToy()
+const keys = reactive({ up: false, down: false, left: false, right: false, brake: false })
+let windPhase = 0
+
+const toyHint = computed(() => {
+  if (ui.toy === 'drive') return t('pixelStack.driveHint')
+  if (ui.toy === 'shatter') return t('pixelStack.shatterHint')
+  return t('pixelStack.windHint')
+})
+
+const isDriveMode = computed(() => ui.mode === 'play' && ui.toy === 'drive')
 
 const angle = ref(-28)
 const displayAngle = ref(332)
+const driveHud = ref('')
 
 let baseViews = null
 let renderer = null
@@ -355,7 +405,10 @@ function recarve() {
   if (!baseViews) return
   const views = resampleViews(baseViews, sliceCount.value)
   viewsRef.value = views
-  shapeRef.value = carveViews(views, { shade: 0.18, round: ui.round })
+  const shape = carveViews(views, { shade: 0, round: ui.round })
+  shape.volume = buildVolume(shape)
+  shapeRef.value = shape
+  shatterToy.setVolume(shape.volume)
   stats.colors = countPalette(views)
   needRender = true
   nextTick(drawThumbs)
@@ -424,7 +477,86 @@ function onEnvChange() {
 
 function onModeChange(mode) {
   if (mode === 'scan') scanT = 0
+  if (mode === 'play') onToyChange(ui.toy)
   needRender = true
+}
+
+function onToyChange(toy) {
+  if (toy === 'drive') {
+    driveToy.reset()
+    angle.value = driveToy.angleDeg
+  }
+  if (toy === 'shatter') {
+    shatterToy.phase = 'idle'
+    if (shapeRef.value && shapeRef.value.volume) shatterToy.setVolume(shapeRef.value.volume)
+  }
+  needRender = true
+}
+
+function shatterNow() {
+  if (!shapeRef.value) return
+  shatterToy.trigger(angle.value, ui.spacing)
+  needRender = true
+}
+
+function exportSheet() {
+  const shape = shapeRef.value
+  if (!shape) return
+  if (!shape.volume) shape.volume = buildVolume(shape)
+  const sheet = buildSpriteSheet(shape, {
+    time: env.time,
+    sun: env.sun,
+    squash: ui.squash,
+    spacing: ui.spacing,
+    outline: ui.outline,
+    lighting: env.lighting,
+    snowCover: weatherSys.snowCover,
+  })
+  downloadCanvas(sheet, `pixel-stack-${modelKey.value}.png`)
+}
+
+function onKeyDown(e) {
+  if (ui.mode !== 'play') return
+  if (e.code === 'Space') {
+    if (ui.toy === 'shatter') {
+      shatterNow()
+      e.preventDefault()
+    } else if (ui.toy === 'drive') {
+      keys.brake = true
+      e.preventDefault()
+    }
+    return
+  }
+  if (ui.toy !== 'drive') return
+  const k = e.key.toLowerCase()
+  if (k === 'w' || k === 'arrowup') {
+    keys.up = true
+    e.preventDefault()
+  } else if (k === 's') {
+    keys.down = true
+    e.preventDefault()
+  } else if (k === 'a' || k === 'arrowleft') {
+    keys.left = true
+    e.preventDefault()
+  } else if (k === 'd' || k === 'arrowright') {
+    keys.right = true
+    e.preventDefault()
+  } else if (k === 'arrowdown') {
+    keys.down = true
+    e.preventDefault()
+  }
+}
+
+function onKeyUp(e) {
+  if (e.code === 'Space') {
+    keys.brake = false
+    return
+  }
+  const k = e.key.toLowerCase()
+  if (k === 'w' || k === 'arrowup') keys.up = false
+  else if (k === 's' || k === 'arrowdown') keys.down = false
+  else if (k === 'a' || k === 'arrowleft') keys.left = false
+  else if (k === 'd' || k === 'arrowright') keys.right = false
 }
 
 function resetView() {
@@ -521,6 +653,11 @@ function draw() {
     outline: ui.outline,
     shadow: ui.shadow,
     mode: ui.mode,
+    scene: ui.scene,
+    toy: ui.toy,
+    drive: driveToy,
+    shatter: shatterToy,
+    windPhase,
     maxSlices,
     highlight,
     env,
@@ -553,6 +690,21 @@ function tick(ts) {
     active = true
   }
 
+  if (ui.mode === 'play') {
+    if (ui.toy === 'drive') {
+      driveToy.update(dt, keys)
+      angle.value = driveToy.angleDeg
+      driveHud.value = `${Math.round(driveToy.speed)} px/s${driveToy.drifting ? ' · DRIFT' : ''}`
+      active = true
+    } else if (ui.toy === 'wind') {
+      windPhase += dt
+      active = true
+    } else if (ui.toy === 'shatter' && shatterToy.phase !== 'idle') {
+      shatterToy.update(dt, angle.value, ui.spacing, shapeRef.value ? shapeRef.value.H : 1)
+      active = true
+    }
+  }
+
   if (active || needRender) {
     draw()
     needRender = false
@@ -562,6 +714,10 @@ function tick(ts) {
 
 function onPointerDown(e) {
   if (e.button !== undefined && e.button !== 0) return
+  if (ui.mode === 'play') {
+    if (ui.toy === 'shatter') shatterNow()
+    return
+  }
   dragging = true
   lastX = e.clientX
   velocity = 0
@@ -600,6 +756,8 @@ function onWheel(e) {
 onMounted(() => {
   renderer = new StackRenderer()
   loadModel('car')
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('keyup', onKeyUp)
   nextTick(() => {
     resizeCanvas()
     drawThumbs()
@@ -611,6 +769,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  window.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('keyup', onKeyUp)
   if (ro) ro.disconnect()
   ro = null
   renderer = null
@@ -1094,6 +1254,18 @@ onBeforeUnmount(() => {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--textLight-color);
+}
+
+.ps-toy-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--textLight-color);
+}
+
+.ps-toy-action {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .ps-reset {

@@ -59,9 +59,27 @@
     "mode": "查看模式",
     "modes": {
       "turntable": "转台",
+      "scene": "立体场景",
       "scan": "切片扫描",
-      "explode": "爆炸视图"
+      "explode": "爆炸视图",
+      "play": "玩具"
     },
+    "scene": "场景",
+    "scenes": {
+      "street": "霓虹街道",
+      "meadow": "草甸岛"
+    },
+    "toy": "玩具",
+    "toys": {
+      "drive": "驾驶",
+      "wind": "风吹",
+      "shatter": "碎裂"
+    },
+    "driveHint": "WASD / 方向键驾驶 · 空格漂移",
+    "windHint": "拖动旋转，看切片随风摆动",
+    "shatterHint": "点击画面或按空格：打碎 → 重组",
+    "shatterAction": "碎裂 / 重组",
+    "exportSheet": "导出精灵表",
     "autoRotate": "自动旋转",
     "outline": "像素描边",
     "shadow": "地面投影",

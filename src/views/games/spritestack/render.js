@@ -2,62 +2,66 @@
  * Pixel-art slice renderer.
  * 先以 1 个美术像素为分辨率做软件光栅化，再整数倍放大绘制到页面 canvas，
  * 这样旋转时仍然是硬边像素质感（nearest-neighbour）。
- * 环境层（昼夜天空、地面、雨雪）参考 sprite-stacking viewer 的氛围系统。
+ * 体素着色来自 voxel.js：三档光照 / AO / 自发光 / 积雪；环境天空与天气来自 environment.js。
  */
 
 import { getEnvTheme } from './environment'
+import { buildVolume, getLightingEnv, VoxelRasterizer } from './voxel'
+import { drawScenePlatform, drawSceneProp, drawSceneProps } from './scene'
 
 const TAU = Math.PI * 2
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
+const lerp = (a, b, t) => a + (b - a) * t
+const rgb = (c) => `rgb(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])})`
 
-const pack = (r, g, b, a = 255) => (((a << 24) | (b << 16) | (g << 8) | r) >>> 0)
-
-const OUTLINE = pack(27, 29, 40)
-
-const lighten = (c) =>
-  pack(
-    Math.min(255, (c & 255) + 66),
-    Math.min(255, ((c >> 8) & 255) + 66),
-    Math.min(255, ((c >> 16) & 255) + 58),
-    255
-  )
+// 驾驶世界的无限平铺道具（每 96 美术像素一格）
+const DRIVE_TILE = 96
+const DRIVE_TILES = {
+  street: [
+    { key: 'lamp', x: 18, y: -26 },
+    { key: 'kiosk', x: 64, y: -28 },
+    { key: 'bollard', x: 42, y: 26 },
+    { key: 'lamp', x: 80, y: 28 },
+  ],
+  meadow: [
+    { key: 'pine', x: 16, y: 18 },
+    { key: 'pine', x: 70, y: 26 },
+    { key: 'rock', x: 44, y: 64 },
+    { key: 'meadowLamp', x: 78, y: 72 },
+  ],
+}
 
 export class StackRenderer {
   constructor() {
-    this.canvas = document.createElement('canvas')
-    this.ctx = this.canvas.getContext('2d')
-    this.image = null
-    this.out32 = null
-    this.alpha = null
-    this.cw = 0
-    this.ch = 0
-    this._box = [0, 0, 0, 0]
-  }
-
-  ensure(cw, ch) {
-    if (this.cw === cw && this.ch === ch && this.image) return
-    this.cw = cw
-    this.ch = ch
-    this.canvas.width = cw
-    this.canvas.height = ch
-    this.image = this.ctx.createImageData(cw, ch)
-    this.out32 = new Uint32Array(this.image.data.buffer)
-    this.alpha = new Uint8Array(cw * ch)
+    this.rasterizer = new VoxelRasterizer()
   }
 
   render(target, cssW, cssH, model, opts = {}) {
     if (!model || !model.slices || !cssW || !cssH) return null
+    if (!model.volume) model.volume = buildVolume(model)
 
-    const { W, L, H } = model
+    const { W, L } = model
     const squash = Math.max(0.25, Math.min(1, opts.squash ?? 0.75))
-    const spacing = Math.max(0.25, opts.spacing ?? 1)
     const mode = opts.mode || 'turntable'
-    const room = mode === 'explode' ? spacing * 2.4 : spacing
-    const total = opts.maxSlices ? Math.min(H, Math.max(1, opts.maxSlices)) : H
+    const toy = opts.toy || 'wind'
+    const isPlay = mode === 'play'
+    const isDrive = isPlay && toy === 'drive'
+    const isWind = isPlay && toy === 'wind'
+    const isShatter = isPlay && toy === 'shatter'
+    const isScene = mode === 'scene'
+    const scene = opts.scene || 'street'
+
+    if (isShatter && opts.shatter && opts.shatter.phase !== 'idle') {
+      return this.drawShatter(target, cssW, cssH, model, opts)
+    }
+
+    let spacing = Math.max(0.25, opts.spacing ?? 1)
+    if (isDrive && opts.drive) spacing = Math.max(0.4, spacing + opts.drive.bounce * 0.25)
+    const room = mode === 'explode' ? Math.max(spacing, 2.6) : spacing
+    const total = opts.maxSlices ? Math.min(model.H, Math.max(1, opts.maxSlices)) : model.H
     const highlight = opts.highlight ?? -1
     const zoom = Math.max(0.4, opts.zoom ?? 1)
-    const angle = ((opts.angle ?? 0) * Math.PI) / 180
-    const ca = Math.cos(angle)
-    const sa = Math.sin(angle)
+    const angle = opts.angle ?? 0
 
     const env = opts.env || {}
     const theme = getEnvTheme(env.time ?? 0, env.sun ?? 42, env.weather ?? 'clear', env.lighting !== false)
@@ -67,114 +71,89 @@ export class StackRenderer {
     theme.snowCover = snowCover
     theme.wetness = wetness
 
-    const diag = Math.ceil(Math.hypot(W, L)) + 6
-    const liftMax = Math.ceil(Math.max(1, total - 1) * room)
-    const cw = diag + 18
-    const ch = Math.ceil(diag * squash) + liftMax + 16
-    const cx = Math.floor(cw / 2)
-    const baseY = ch - Math.ceil((diag * squash) / 2) - 8
+    const lit = getLightingEnv(env.time ?? 0, env.sun ?? 42)
 
-    const fit = Math.min((cssW * 0.9) / cw, (cssH * 0.9) / ch)
+    // 风吹：越靠上摆幅越大
+    let shear = null
+    if (isWind && opts.windPhase !== undefined) {
+      const gust = 2.6 + 1.4 * Math.sin(opts.windPhase * 0.7)
+      const denom = Math.max(1, total - 1)
+      shear = new Float32Array(total)
+      for (let z = 0; z < total; z++) {
+        const hFrac = z / denom
+        shear[z] = Math.sin(opts.windPhase * 2.8 - z * 0.14) * gust * Math.pow(hFrac, 1.6)
+      }
+    }
+
+    const buf = this.rasterizer.rasterize({
+      volume: model.volume,
+      angleDeg: angle,
+      squash,
+      spacing,
+      room,
+      maxSlices: total,
+      shadow: opts.shadow !== false,
+      outline: opts.outline !== false,
+      lighting: env.lighting !== false,
+      snowCover,
+      env: lit,
+      highlight,
+      shearPerSlice: shear,
+      leanX: isDrive && opts.drive ? opts.drive.lean : 0,
+    })
+    if (!buf) return null
+
+    const { cw, ch } = buf
+    const fit = Math.min((cssW * 0.92) / cw, (cssH * 0.92) / ch)
     let scale = Math.floor(fit * zoom)
     if (scale < 1) scale = 1
     const dx = Math.round((cssW - cw * scale) / 2)
     const dy = Math.round((cssH - ch * scale) / 2 + 2)
-    const groundX = dx + cx * scale
-    const groundY = dy + baseY * scale
-    const rx = Math.max(W, L) * 0.58 * scale
-    const ry = rx * Math.max(0.16, squash * 0.42)
+    const groundX = dx + buf.cx * scale
+    const groundY = dy + buf.baseY * scale
+    const spread = isScene ? Math.max(W, L, 74) : Math.max(W, L)
+    const rx = spread * 0.95 * scale
+    const ry = rx * (isScene ? 0.34 : Math.max(0.16, squash * 0.42))
 
-    this.ensure(cw, ch)
-    this.out32.fill(0)
-    this.alpha.fill(0)
-
-    this.w = W
-    this.h = L
-    this.ca = ca
-    this.sa = sa
-    this.squash = squash
-    this.cw = cw
-    this.ch = ch
-
-    // 地面投影：随太阳方位偏移，方向来自 viewer 的 shDx / shDy
-    const shadowColor = pack(theme.shadow[0], theme.shadow[1], theme.shadow[2], theme.shadow[3])
-    if (opts.shadow !== false && model.slices[0] && model.slices[0].maxX >= 0) {
-      const shX = Math.round(3 + theme.shDx * 5)
-      const shY = Math.round(3 + theme.shDy * 3)
-      this.raster(model.slices[0], cx + shX, baseY + shY, shadowColor, false)
-    }
-
-    // 自下而上堆叠切片
-    for (let z = 0; z < total; z++) {
-      const slice = model.slices[z]
-      if (!slice || slice.maxX < 0) continue
-      const lift = Math.round(z * room)
-      this.raster(slice, cx, baseY - lift, null, z === highlight)
-    }
-
-    // 只在整叠模型外缘描 1px 轮廓
-    if (opts.outline !== false) {
-      const a = this.alpha
-      const out = this.out32
-      for (let y = 1; y < ch - 1; y++) {
-        let i = y * cw + 1
-        for (let x = 1; x < cw - 1; x++, i++) {
-          if (a[i]) continue
-          if (a[i - 1] || a[i + 1] || a[i - cw] || a[i + cw]) out[i] = OUTLINE
-        }
+    if (isDrive && opts.drive) {
+      this.drawDriveGround(target, cssW, cssH, lit, theme, opts.drive, scene, scale, squash, snowCover, wetness)
+      this.drawDriveSkids(target, lit, opts.drive, scale, squash, groundX, groundY)
+      if (wetness > 0.04) {
+        target.save()
+        target.globalAlpha = Math.min(0.2, wetness * 0.16)
+        target.translate(0, groundY * 2)
+        target.scale(1, -1)
+        target.imageSmoothingEnabled = false
+        target.drawImage(buf.canvas, dx, dy, cw * scale, ch * scale)
+        target.restore()
       }
-    }
-
-    // 雪帽：给每列最上方的模型像素覆一层白
-    if (snowCover > 0.02) this.applySnowCap(snowCover)
-
-    this.ctx.putImageData(this.image, 0, 0)
-
-    // 环境色：只作用在模型像素上（source-atop）
-    if (theme.tint.a > 0.005) {
-      this.ctx.save()
-      this.ctx.globalCompositeOperation = 'source-atop'
-      this.ctx.fillStyle = `rgba(${theme.tint.r}, ${theme.tint.g}, ${theme.tint.b}, ${theme.tint.a})`
-      this.ctx.fillRect(0, 0, cw, ch)
-      this.ctx.restore()
-    }
-
-    // 太阳/月亮方向的环境光：朝光源的一侧提亮，背光一侧压暗
-    if (env.lighting !== false) {
-      const strength = theme.dayW * 0.07 + theme.sunsetW * 0.12 + theme.nightW * 0.08
-      if (strength > 0.004) {
-        const gx = Math.cos(theme.az)
-        const gy = -Math.sin(theme.az)
-        const rad = Math.max(cw, ch) * 0.7
-        const grad = this.ctx.createLinearGradient(
-          cx - gx * rad,
-          ch * 0.5 - gy * rad,
-          cx + gx * rad,
-          ch * 0.5 + gy * rad
-        )
-        const lit = theme.nightW > 0.5 ? [185, 210, 255] : [255, 242, 205]
-        grad.addColorStop(0, `rgba(12, 20, 38, ${strength * 1.2})`)
-        grad.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
-        grad.addColorStop(1, `rgba(${lit[0]}, ${lit[1]}, ${lit[2]}, ${strength})`)
-        this.ctx.save()
-        this.ctx.globalCompositeOperation = 'source-atop'
-        this.ctx.fillStyle = grad
-        this.ctx.fillRect(0, 0, cw, ch)
-        this.ctx.restore()
-      }
-    }
-
-    // 天空与地面
-    if (weather) {
+      this.drawDriveProps(target, {
+        scene,
+        theme: lit,
+        scale,
+        squash,
+        snowCover,
+        cssW,
+        cssH,
+        drive: opts.drive,
+        groundX,
+        groundY,
+        layer: 'back',
+      })
+    } else if (weather) {
       weather.drawSky(target, cssW, cssH, theme, groundY)
-      weather.drawGround(target, cssW, cssH, theme, groundX, groundY, rx, ry)
+      if (isScene) {
+        drawScenePlatform(target, { scene, theme: lit, scale, cx: groundX, cy: groundY, rx, ry })
+      } else {
+        weather.drawGround(target, cssW, cssH, theme, groundX, groundY, rx, ry)
+      }
     } else {
-      target.fillStyle = `rgb(${Math.round(theme.skyTop[0])}, ${Math.round(theme.skyTop[1])}, ${Math.round(theme.skyTop[2])})`
+      target.fillStyle = lit.bgHex
       target.fillRect(0, 0, cssW, cssH)
     }
 
     // 雨天湿地倒影
-    if (wetness > 0.04) {
+    if (wetness > 0.04 && !isDrive) {
       target.save()
       target.beginPath()
       target.ellipse(groundX, groundY + ry * 0.7, rx * 0.92, ry * 0.9, 0, 0, TAU)
@@ -183,100 +162,244 @@ export class StackRenderer {
       target.translate(0, groundY * 2)
       target.scale(1, -1)
       target.imageSmoothingEnabled = false
-      target.drawImage(this.canvas, dx, dy, cw * scale, ch * scale)
+      target.drawImage(buf.canvas, dx, dy, cw * scale, ch * scale)
       target.restore()
     }
 
-    // 雨滴涟漪
-    if (weather) weather.drawRipples(target, cssW, cssH, theme, groundX, groundY, rx, ry)
+    if (weather && !isDrive) weather.drawRipples(target, cssW, cssH, theme, groundX, groundY, rx, ry)
 
     target.imageSmoothingEnabled = false
-    target.drawImage(this.canvas, dx, dy, cw * scale, ch * scale)
 
-    // 前景天气与雾
-    if (weather) {
+    if (isScene) {
+      drawSceneProps(target, {
+        scene,
+        theme: lit,
+        scale,
+        groundX,
+        groundY,
+        squash,
+        snowCover,
+        layer: 'back',
+      })
+    }
+
+    target.drawImage(buf.canvas, dx, dy, cw * scale, ch * scale)
+
+    if (isScene) {
+      drawSceneProps(target, {
+        scene,
+        theme: lit,
+        scale,
+        groundX,
+        groundY,
+        squash,
+        snowCover,
+        layer: 'front',
+      })
+    }
+
+    if (isDrive && opts.drive) {
+      this.drawDriveProps(target, {
+        scene,
+        theme: lit,
+        scale,
+        squash,
+        snowCover,
+        cssW,
+        cssH,
+        drive: opts.drive,
+        groundX,
+        groundY,
+        layer: 'front',
+      })
+      this.drawDriveEffects(target, lit, opts.drive, scene, scale, squash, groundX, groundY, snowCover)
+    }
+
+    if (isWind && opts.windPhase !== undefined) {
+      const streakCol = lit.nightW > 0.45 ? 'rgba(180, 205, 255, 0.24)' : 'rgba(100, 116, 139, 0.26)'
+      target.fillStyle = streakCol
+      for (let i = 0; i < 6; i++) {
+        const wx = ((opts.windPhase * (55 + i * 13) + i * 73) % (cssW + 40)) - 20
+        const wy = Math.round(((i + 0.5) / 6) * cssH)
+        const wpx = (4 + (i % 3) * 2) * scale
+        target.fillRect(Math.round(wx / scale) * scale, Math.round(wy / scale) * scale, wpx, scale)
+      }
+    }
+
+    if (weather && !isDrive) {
       weather.drawFog(target, cssW, cssH, theme, groundY)
       weather.drawOverlay(target, cssW, cssH, theme, scale)
     }
 
-    return { scale, cw, ch, dx, dy, groundX, groundY }
+    return { scale, cw, ch, dx, dy, groundX, groundY, cx: buf.cx, baseY: buf.baseY }
   }
 
-  /** 屏幕空间雪帽：每列最上方的模型像素向白色混合 */
-  applySnowCap(amount) {
-    const data = this.image.data
-    const cw = this.cw
-    const ch = this.ch
-    const alpha = this.alpha
-    const cap = 1 + Math.round(amount * 2.2)
-    const strength = 0.3 + amount * 0.55
+  drawDriveSkids(target, lit, drive, scale, squash, groundX, groundY) {
+    if (!drive.skids || drive.skids.length === 0) return
+    const sz = Math.max(2, Math.round(2 * scale))
+    target.fillStyle = lit.nightW > 0.45 ? 'rgba(4, 6, 12, 0.7)' : 'rgba(30, 36, 46, 0.35)'
+    for (const s of drive.skids) {
+      const x = Math.round(groundX + (s.x - drive.x) * scale)
+      const y = Math.round(groundY + (s.y - drive.y) * squash * scale)
+      target.fillRect(x, y, sz, sz)
+    }
+  }
 
-    for (let x = 1; x < cw - 1; x++) {
-      let top = -1
-      for (let y = 1; y < ch - 1; y++) {
-        if (alpha[y * cw + x]) {
-          top = y
-          break
+  drawDriveProps(target, opts) {
+    const { scene, theme, scale, squash, snowCover, cssW, cssH, drive, groundX, groundY, layer } = opts
+    const tiles = DRIVE_TILES[scene] || DRIVE_TILES.street
+    const baseTx = Math.floor(drive.x / DRIVE_TILE)
+    const baseTy = Math.floor(drive.y / DRIVE_TILE)
+    const items = []
+    const margin = 70 * scale
+    for (let ty = baseTy - 2; ty <= baseTy + 2; ty++) {
+      for (let tx = baseTx - 2; tx <= baseTx + 2; tx++) {
+        for (const p of tiles) {
+          const wx = tx * DRIVE_TILE + p.x
+          const wy = ty * DRIVE_TILE + p.y
+          const dY = wy - drive.y
+          if ((layer === 'back') !== dY < 0) continue
+          const ox = groundX + (wx - drive.x) * scale
+          const oy = groundY + dY * squash * scale
+          if (ox < -margin || ox > cssW + margin || oy < -margin || oy > cssH + margin) continue
+          items.push({ key: p.key, ox, oy, dY })
         }
       }
-      if (top < 0) continue
-      for (let k = 0; k < cap; k++) {
-        const i = (top + k) * cw + x
-        if (i >= alpha.length || !alpha[i]) continue
-        const p = i * 4
-        const a = strength * (1 - (k / cap) * 0.45)
-        data[p] = data[p] + (255 - data[p]) * a
-        data[p + 1] = data[p + 1] + (255 - data[p + 1]) * a
-        data[p + 2] = data[p + 2] + (255 - data[p + 2]) * a
-      }
+    }
+    items.sort((a, b) => a.dY - b.dY)
+    for (const it of items) {
+      drawSceneProp(target, {
+        key: it.key,
+        scale,
+        ox: it.ox,
+        oy: it.oy,
+        theme,
+        squash,
+        snowCover,
+      })
     }
   }
 
-  /** 逆变换采样：屏幕像素 → 切片美术像素 */
-  raster(slice, cx, yCenter, override, highlight) {
-    const { w, h, ca, sa, squash, cw, ch, out32, alpha } = this
-    if (slice.maxX < 0) return
+  drawDriveGround(target, cssW, cssH, lit, theme, drive, scene, scale, squash, snowCover, wetness) {
+    const night = lit.nightW
+    const isStreet = scene !== 'meadow'
+    let base = isStreet ? [86, 92, 106] : [116, 166, 98]
+    if (wetness > 0) base = base.map((v, i) => v * (1 - wetness * (i === 2 ? 0.14 : 0.24)))
+    if (snowCover > 0) base = base.map((v, i) => lerp(v, [236, 242, 250][i], snowCover * 0.7))
+    base = base.map((v, i) => lerp(v, [24, 30, 44][i], night))
+    target.fillStyle = rgb(base)
+    target.fillRect(0, 0, cssW, cssH)
 
-    const x0 = slice.minX - w * 0.5
-    const x1 = slice.maxX + 1 - w * 0.5
-    const y0 = slice.minY - h * 0.5
-    const y1 = slice.maxY + 1 - h * 0.5
+    const step = Math.round((isStreet ? 28 : 24) * scale)
+    if (step > 4) {
+      const ox = ((-drive.x * scale) % step + step) % step
+      const oy = ((-drive.y * scale) % step + step) % step
+      target.fillStyle = isStreet
+        ? night > 0.45
+          ? 'rgba(255, 214, 120, 0.14)'
+          : 'rgba(255, 244, 180, 0.2)'
+        : night > 0.45
+          ? 'rgba(150, 190, 255, 0.12)'
+          : 'rgba(255, 255, 255, 0.15)'
+      const lw = Math.max(1, Math.round(scale * 0.7))
+      for (let x = ox; x < cssW; x += step) target.fillRect(Math.round(x), 0, lw, cssH)
+      for (let y = oy; y < cssH; y += step) target.fillRect(0, Math.round(y), cssW, lw)
+    }
+  }
 
-    const c0x = x0 * ca - y0 * sa
-    const c0y = (x0 * sa + y0 * ca) * squash
-    const c1x = x1 * ca - y0 * sa
-    const c1y = (x1 * sa + y0 * ca) * squash
-    const c2x = x0 * ca - y1 * sa
-    const c2y = (x0 * sa + y1 * ca) * squash
-    const c3x = x1 * ca - y1 * sa
-    const c3y = (x1 * sa + y1 * ca) * squash
-
-    const bxMin = Math.min(c0x, c1x, c2x, c3x)
-    const bxMax = Math.max(c0x, c1x, c2x, c3x)
-    const byMin = Math.min(c0y, c1y, c2y, c3y)
-    const byMax = Math.max(c0y, c1y, c2y, c3y)
-
-    const xMin = Math.max(0, Math.floor(cx + bxMin) - 1)
-    const xMax = Math.min(cw - 1, Math.ceil(cx + bxMax) + 1)
-    const yMin = Math.max(0, Math.floor(yCenter + byMin) - 1)
-    const yMax = Math.min(ch - 1, Math.ceil(yCenter + byMax) + 1)
-    if (xMin > xMax || yMin > yMax) return
-
-    for (let y = yMin; y <= yMax; y++) {
-      const dy = (y - yCenter) / squash
-      let sx = (xMin - cx) * ca + dy * sa + w * 0.5
-      let sy = -(xMin - cx) * sa + dy * ca + h * 0.5
-      let idx = y * cw + xMin
-      for (let x = xMin; x <= xMax; x++, idx++, sx += ca, sy -= sa) {
-        if (sx < 0 || sy < 0) continue
-        const ix = sx | 0
-        const iy = sy | 0
-        if (ix >= w || iy >= h) continue
-        const c = slice.colors[iy * w + ix]
-        if (!c) continue
-        out32[idx] = override || (highlight ? lighten(c) : c)
-        if (!override) alpha[idx] = 1
+  drawDriveEffects(target, lit, drive, scene, scale, squash, groundX, groundY, snowCover) {
+    // 夜间车头灯
+    if (lit.emisGlow > 0.1) {
+      const fx = Math.cos(drive.heading)
+      const fy = Math.sin(drive.heading)
+      const rx = -fy
+      const ry = fx
+      for (const side of [-5, 5]) {
+        for (let d = 14; d <= 48; d += 6) {
+          const tBeam = (d - 14) / 34
+          const alpha = lit.emisGlow * 0.32 * (1 - tBeam * 0.72)
+          target.fillStyle = `rgba(255, 242, 182, ${alpha.toFixed(2)})`
+          const spread = 2 + d * 0.14
+          const hx = groundX + (fx * d + rx * side) * scale
+          const hy = groundY + (fy * d + ry * side) * squash * scale
+          const wPx = Math.max(1, Math.round(spread * 1.6)) * scale
+          const hPx = Math.max(1, Math.round(spread * 1.0 * squash)) * scale
+          target.fillRect(Math.round(hx - wPx / 2), Math.round(hy - hPx / 2), wPx, hPx)
+        }
       }
     }
+
+    // 尾气 / 漂移烟
+    for (const p of drive.puffs) {
+      const px = Math.round(groundX + (p.x - drive.x) * scale)
+      const py = Math.round(groundY + ((p.y - drive.y) * squash - p.z) * scale)
+      const sz = (p.life > 0.5 ? 3 : 2) * scale
+      target.fillStyle =
+        lit.nightW > 0.45
+          ? `rgba(170, 185, 220, ${(p.life * 0.45).toFixed(2)})`
+          : `rgba(110, 120, 136, ${(p.life * 0.5).toFixed(2)})`
+      target.fillRect(px, py, sz, sz)
+    }
+  }
+
+  drawShatter(target, cssW, cssH, model, opts) {
+    const vol = model.volume
+    const toy = opts.shatter
+    const env = opts.env || {}
+    const lit = getLightingEnv(env.time ?? 0, env.sun ?? 42)
+    const squash = Math.max(0.25, Math.min(1, opts.squash ?? 0.75))
+    const aw = Math.max(140, Math.ceil(Math.hypot(vol.w, vol.h) * 2.6))
+    const ah = Math.max(120, Math.ceil(Math.hypot(vol.w, vol.h) * squash * 2.0) + vol.n * 2 + 36)
+    const scale = Math.max(1, Math.floor(Math.min(cssW / aw, cssH / ah)))
+    const dx = Math.round((cssW - aw * scale) / 2)
+    const dy = Math.round((cssH - ah * scale) / 2)
+
+    const theme = getEnvTheme(env.time ?? 0, env.sun ?? 42, env.weather ?? 'clear', env.lighting !== false)
+    const weather = opts.weather || null
+    theme.snowCover = weather ? weather.snowCover : 0
+    theme.wetness = weather ? weather.wetness : 0
+
+    const cx = aw >> 1
+    const baseY = Math.round(ah * 0.66)
+    const s = scale
+    const groundX = dx + cx * s
+    const groundY = dy + baseY * s
+
+    if (weather) {
+      const rx = Math.max(vol.w, vol.h, 80) * 0.95 * s
+      const ry = rx * 0.34
+      weather.drawSky(target, cssW, cssH, theme, groundY)
+      weather.drawGround(target, cssW, cssH, theme, groundX, groundY, rx, ry)
+      weather.drawRipples(target, cssW, cssH, theme, groundX, groundY, rx, ry)
+    } else {
+      target.fillStyle = lit.bgHex
+      target.fillRect(0, 0, cssW, cssH)
+    }
+    target.imageSmoothingEnabled = false
+
+    const toRgb = (c) => `rgb(${c & 255}, ${(c >> 8) & 255}, ${(c >> 16) & 255})`
+
+    if (opts.shadow !== false) {
+      target.fillStyle = `rgba(${lit.shPacked & 255}, ${(lit.shPacked >> 8) & 255}, ${(lit.shPacked >> 16) & 255}, 0.55)`
+      for (let i = 0; i < toy.count; i++) {
+        const gx = Math.round(cx + toy.px[i] + toy.pz[i] * lit.shDx * 0.38)
+        const gy = Math.round(baseY + (toy.py[i] + toy.pz[i] * lit.shDy) * squash)
+        target.fillRect(dx + gx * s, dy + gy * s, s, s)
+      }
+    }
+
+    for (let i = 0; i < toy.count; i++) {
+      const vx = Math.round(cx + toy.px[i])
+      const vy = Math.round(baseY + toy.py[i] * squash - toy.pz[i])
+      target.fillStyle = toRgb(toy.col[i])
+      target.fillRect(dx + vx * s, dy + vy * s, 2 * s, 2 * s)
+    }
+
+    if (weather) {
+      weather.drawFog(target, cssW, cssH, theme, groundY)
+      weather.drawOverlay(target, cssW, cssH, theme, s)
+    }
+
+    return { scale, cw: aw, ch: ah, dx, dy, groundX, groundY, cx, baseY }
   }
 }
