@@ -2,12 +2,16 @@
  * Pixel-art slice renderer.
  * 先以 1 个美术像素为分辨率做软件光栅化，再整数倍放大绘制到页面 canvas，
  * 这样旋转时仍然是硬边像素质感（nearest-neighbour）。
+ * 环境层（昼夜天空、地面、雨雪）参考 sprite-stacking viewer 的氛围系统。
  */
+
+import { getEnvTheme } from './environment'
+
+const TAU = Math.PI * 2
 
 const pack = (r, g, b, a = 255) => (((a << 24) | (b << 16) | (g << 8) | r) >>> 0)
 
 const OUTLINE = pack(27, 29, 40)
-const SHADOW = pack(20, 28, 42, 70)
 
 const lighten = (c) =>
   pack(
@@ -55,12 +59,30 @@ export class StackRenderer {
     const ca = Math.cos(angle)
     const sa = Math.sin(angle)
 
+    const env = opts.env || {}
+    const theme = getEnvTheme(env.time ?? 0, env.sun ?? 42, env.weather ?? 'clear', env.lighting !== false)
+    const weather = opts.weather || null
+    const snowCover = weather ? weather.snowCover : 0
+    const wetness = weather ? weather.wetness : 0
+    theme.snowCover = snowCover
+    theme.wetness = wetness
+
     const diag = Math.ceil(Math.hypot(W, L)) + 6
     const liftMax = Math.ceil(Math.max(1, total - 1) * room)
     const cw = diag + 18
     const ch = Math.ceil(diag * squash) + liftMax + 16
     const cx = Math.floor(cw / 2)
     const baseY = ch - Math.ceil((diag * squash) / 2) - 8
+
+    const fit = Math.min((cssW * 0.9) / cw, (cssH * 0.9) / ch)
+    let scale = Math.floor(fit * zoom)
+    if (scale < 1) scale = 1
+    const dx = Math.round((cssW - cw * scale) / 2)
+    const dy = Math.round((cssH - ch * scale) / 2 + 2)
+    const groundX = dx + cx * scale
+    const groundY = dy + baseY * scale
+    const rx = Math.max(W, L) * 0.58 * scale
+    const ry = rx * Math.max(0.16, squash * 0.42)
 
     this.ensure(cw, ch)
     this.out32.fill(0)
@@ -74,9 +96,12 @@ export class StackRenderer {
     this.cw = cw
     this.ch = ch
 
-    // 地面投影
+    // 地面投影：随太阳方位偏移，方向来自 viewer 的 shDx / shDy
+    const shadowColor = pack(theme.shadow[0], theme.shadow[1], theme.shadow[2], theme.shadow[3])
     if (opts.shadow !== false && model.slices[0] && model.slices[0].maxX >= 0) {
-      this.raster(model.slices[0], cx + 3, baseY + 3, SHADOW, false)
+      const shX = Math.round(3 + theme.shDx * 5)
+      const shY = Math.round(3 + theme.shDy * 3)
+      this.raster(model.slices[0], cx + shX, baseY + shY, shadowColor, false)
     }
 
     // 自下而上堆叠切片
@@ -100,35 +125,111 @@ export class StackRenderer {
       }
     }
 
+    // 雪帽：给每列最上方的模型像素覆一层白
+    if (snowCover > 0.02) this.applySnowCap(snowCover)
+
     this.ctx.putImageData(this.image, 0, 0)
 
-    const fit = Math.min((cssW * 0.9) / cw, (cssH * 0.9) / ch)
-    let scale = Math.floor(fit * zoom)
-    if (scale < 1) scale = 1
-    const dx = Math.round((cssW - cw * scale) / 2)
-    const dy = Math.round((cssH - ch * scale) / 2 + 2)
+    // 环境色：只作用在模型像素上（source-atop）
+    if (theme.tint.a > 0.005) {
+      this.ctx.save()
+      this.ctx.globalCompositeOperation = 'source-atop'
+      this.ctx.fillStyle = `rgba(${theme.tint.r}, ${theme.tint.g}, ${theme.tint.b}, ${theme.tint.a})`
+      this.ctx.fillRect(0, 0, cw, ch)
+      this.ctx.restore()
+    }
 
-    // 转台椭圆（UI 装饰，绘制在模型下方）
-    const groundX = dx + cx * scale
-    const groundY = dy + baseY * scale
-    const rx = Math.max(W, L) * 0.58 * scale
-    const ry = rx * Math.max(0.16, squash * 0.42)
-    target.save()
-    target.lineWidth = 1
-    target.strokeStyle = 'rgba(120, 165, 185, 0.28)'
-    target.beginPath()
-    target.ellipse(groundX, groundY, rx, ry, 0, 0, Math.PI * 2)
-    target.stroke()
-    target.strokeStyle = 'rgba(120, 165, 185, 0.14)'
-    target.beginPath()
-    target.ellipse(groundX, groundY, rx * 0.7, ry * 0.7, 0, 0, Math.PI * 2)
-    target.stroke()
-    target.restore()
+    // 太阳/月亮方向的环境光：朝光源的一侧提亮，背光一侧压暗
+    if (env.lighting !== false) {
+      const strength = theme.dayW * 0.07 + theme.sunsetW * 0.12 + theme.nightW * 0.08
+      if (strength > 0.004) {
+        const gx = Math.cos(theme.az)
+        const gy = -Math.sin(theme.az)
+        const rad = Math.max(cw, ch) * 0.7
+        const grad = this.ctx.createLinearGradient(
+          cx - gx * rad,
+          ch * 0.5 - gy * rad,
+          cx + gx * rad,
+          ch * 0.5 + gy * rad
+        )
+        const lit = theme.nightW > 0.5 ? [185, 210, 255] : [255, 242, 205]
+        grad.addColorStop(0, `rgba(12, 20, 38, ${strength * 1.2})`)
+        grad.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
+        grad.addColorStop(1, `rgba(${lit[0]}, ${lit[1]}, ${lit[2]}, ${strength})`)
+        this.ctx.save()
+        this.ctx.globalCompositeOperation = 'source-atop'
+        this.ctx.fillStyle = grad
+        this.ctx.fillRect(0, 0, cw, ch)
+        this.ctx.restore()
+      }
+    }
+
+    // 天空与地面
+    if (weather) {
+      weather.drawSky(target, cssW, cssH, theme, groundY)
+      weather.drawGround(target, cssW, cssH, theme, groundX, groundY, rx, ry)
+    } else {
+      target.fillStyle = `rgb(${Math.round(theme.skyTop[0])}, ${Math.round(theme.skyTop[1])}, ${Math.round(theme.skyTop[2])})`
+      target.fillRect(0, 0, cssW, cssH)
+    }
+
+    // 雨天湿地倒影
+    if (wetness > 0.04) {
+      target.save()
+      target.beginPath()
+      target.ellipse(groundX, groundY + ry * 0.7, rx * 0.92, ry * 0.9, 0, 0, TAU)
+      target.clip()
+      target.globalAlpha = Math.min(0.22, wetness * 0.18)
+      target.translate(0, groundY * 2)
+      target.scale(1, -1)
+      target.imageSmoothingEnabled = false
+      target.drawImage(this.canvas, dx, dy, cw * scale, ch * scale)
+      target.restore()
+    }
+
+    // 雨滴涟漪
+    if (weather) weather.drawRipples(target, cssW, cssH, theme, groundX, groundY, rx, ry)
 
     target.imageSmoothingEnabled = false
     target.drawImage(this.canvas, dx, dy, cw * scale, ch * scale)
 
-    return { scale, cw, ch, dx, dy }
+    // 前景天气与雾
+    if (weather) {
+      weather.drawFog(target, cssW, cssH, theme, groundY)
+      weather.drawOverlay(target, cssW, cssH, theme, scale)
+    }
+
+    return { scale, cw, ch, dx, dy, groundX, groundY }
+  }
+
+  /** 屏幕空间雪帽：每列最上方的模型像素向白色混合 */
+  applySnowCap(amount) {
+    const data = this.image.data
+    const cw = this.cw
+    const ch = this.ch
+    const alpha = this.alpha
+    const cap = 1 + Math.round(amount * 2.2)
+    const strength = 0.3 + amount * 0.55
+
+    for (let x = 1; x < cw - 1; x++) {
+      let top = -1
+      for (let y = 1; y < ch - 1; y++) {
+        if (alpha[y * cw + x]) {
+          top = y
+          break
+        }
+      }
+      if (top < 0) continue
+      for (let k = 0; k < cap; k++) {
+        const i = (top + k) * cw + x
+        if (i >= alpha.length || !alpha[i]) continue
+        const p = i * 4
+        const a = strength * (1 - (k / cap) * 0.45)
+        data[p] = data[p] + (255 - data[p]) * a
+        data[p + 1] = data[p + 1] + (255 - data[p + 1]) * a
+        data[p + 2] = data[p + 2] + (255 - data[p + 2]) * a
+      }
+    }
   }
 
   /** 逆变换采样：屏幕像素 → 切片美术像素 */

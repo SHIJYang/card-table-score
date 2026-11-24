@@ -177,6 +177,40 @@
           </label>
         </div>
 
+        <div class="ps-env">
+          <div class="ps-env-head">{{ t('pixelStack.environment') }}</div>
+
+          <div class="ps-group">
+            <div class="ps-label-row">
+              <span class="ps-label">{{ t('pixelStack.timeOfDay') }}</span>
+              <span class="ps-value">{{ envPhaseLabel }}</span>
+            </div>
+            <el-slider v-model="env.time" :min="0" :max="100" :step="1" @input="invalidate" />
+          </div>
+
+          <div class="ps-group">
+            <div class="ps-label-row">
+              <span class="ps-label">{{ t('pixelStack.sunAngle') }}</span>
+              <span class="ps-value">{{ env.sun }}°</span>
+            </div>
+            <el-slider v-model="env.sun" :min="0" :max="360" :step="1" @input="invalidate" />
+          </div>
+
+          <div class="ps-group">
+            <span class="ps-label">{{ t('pixelStack.weather') }}</span>
+            <el-radio-group v-model="env.weather" class="ps-modes" size="small" @change="onEnvChange">
+              <el-radio-button value="clear">{{ t('pixelStack.weatherClear') }}</el-radio-button>
+              <el-radio-button value="rain">{{ t('pixelStack.weatherRain') }}</el-radio-button>
+              <el-radio-button value="snow">{{ t('pixelStack.weatherSnow') }}</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <label class="ps-switch ps-switch-wide">
+            <span>{{ t('pixelStack.lighting') }}</span>
+            <el-switch v-model="env.lighting" size="small" @change="invalidate" />
+          </label>
+        </div>
+
         <el-button class="ps-reset" @click="resetView">{{ t('pixelStack.resetView') }}</el-button>
 
         <div class="ps-stats">
@@ -213,6 +247,7 @@ import {
 } from './spritestack/models'
 import { carveViews } from './spritestack/carve'
 import { StackRenderer } from './spritestack/render'
+import { WeatherSystem } from './spritestack/environment'
 import { buildViewsFromSources, extractViewSource, loadImageFile } from './spritestack/upload'
 
 const { t } = useI18n()
@@ -239,6 +274,21 @@ const ui = reactive({
   mode: 'turntable',
   zoom: 1,
 })
+
+const env = reactive({
+  time: 12,
+  sun: 42,
+  lighting: true,
+  weather: 'clear',
+})
+
+const envPhaseLabel = computed(() => {
+  if (env.time < 25) return t('pixelStack.phaseDay')
+  if (env.time < 72) return t('pixelStack.phaseSunset')
+  return t('pixelStack.phaseNight')
+})
+
+const weatherSys = new WeatherSystem()
 
 const angle = ref(-28)
 const displayAngle = ref(332)
@@ -368,6 +418,10 @@ function invalidate() {
   needRender = true
 }
 
+function onEnvChange() {
+  needRender = true
+}
+
 function onModeChange(mode) {
   if (mode === 'scan') scanT = 0
   needRender = true
@@ -469,6 +523,8 @@ function draw() {
     mode: ui.mode,
     maxSlices,
     highlight,
+    env,
+    weather: weatherSys,
   })
 
   const deg = Math.round(((angle.value % 360) + 360) % 360)
@@ -480,7 +536,9 @@ function tick(ts) {
   const dt = Math.min(0.05, (ts - lastTs) / 1000)
   lastTs = ts
 
-  let active = false
+  weatherSys.update(dt, env.weather)
+
+  let active = env.weather !== 'clear' || weatherSys.snowCover > 0.004 || weatherSys.wetness > 0.004
   if (ui.autoRotate && !dragging) {
     angle.value += 20 * dt
     active = true
@@ -1016,6 +1074,26 @@ onBeforeUnmount(() => {
   font-size: 11px;
   color: var(--textSecondary-color);
   cursor: pointer;
+}
+
+.ps-switch-wide {
+  justify-content: space-between;
+}
+
+.ps-env {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.ps-env-head {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--textLight-color);
 }
 
 .ps-reset {
