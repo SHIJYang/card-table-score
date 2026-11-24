@@ -107,6 +107,11 @@ const routes = [
         name: 'VrView',
         component: () => import('../views/our/VrView.vue')
     },
+    {
+        path: '/pixel-stack',
+        name: 'PixelStack',
+        component: () => import('../views/games/PixelStack.vue')
+    },
     // 旧路径兼容重定向
     { path: '/img', redirect: '/sets/picture' },
 ]
