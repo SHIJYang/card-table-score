@@ -266,11 +266,11 @@ const stats = reactive({ colors: 0 })
 
 const ui = reactive({
   squash: 0.75,
-  spacing: 1.2,
+  spacing: 1.0,
   round: false,
   outline: true,
   shadow: true,
-  autoRotate: true,
+  autoRotate: false,
   mode: 'turntable',
   zoom: 1,
 })
