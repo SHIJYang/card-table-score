@@ -101,7 +101,7 @@
         </div>
 
         <div class="ps-stage-hint">
-          <span>{{ t('pixelStack.dragHint') }}</span>
+          <span>{{ stageHint }}</span>
         </div>
       </section>
 
@@ -338,6 +338,13 @@ const toyHint = computed(() => {
 })
 
 const isDriveMode = computed(() => ui.mode === 'play' && ui.toy === 'drive')
+
+const stageHint = computed(() => {
+  if (ui.mode !== 'play') return t('pixelStack.dragHint')
+  if (ui.toy === 'drive') return t('pixelStack.driveHint')
+  if (ui.toy === 'shatter') return t('pixelStack.shatterHint')
+  return t('pixelStack.windHint')
+})
 
 const angle = ref(-28)
 const displayAngle = ref(332)

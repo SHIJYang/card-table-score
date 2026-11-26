@@ -57,7 +57,7 @@ export class StackRenderer {
 
     let spacing = Math.max(0.25, opts.spacing ?? 1)
     if (isDrive && opts.drive) spacing = Math.max(0.4, spacing + opts.drive.bounce * 0.25)
-    const room = mode === 'explode' ? Math.max(spacing, 2.6) : spacing
+    const room = mode === 'explode' ? spacing * 2.6 : spacing
     const total = opts.maxSlices ? Math.min(model.H, Math.max(1, opts.maxSlices)) : model.H
     const highlight = opts.highlight ?? -1
     const zoom = Math.max(0.4, opts.zoom ?? 1)
@@ -127,6 +127,10 @@ export class StackRenderer {
         target.drawImage(buf.canvas, dx, dy, cw * scale, ch * scale)
         target.restore()
       }
+      if (weather && wetness > 0.05) {
+        const big = Math.max(W, L, 90) * 0.95 * scale
+        weather.drawRipples(target, cssW, cssH, theme, groundX, groundY, big, big * 0.32)
+      }
       this.drawDriveProps(target, {
         scene,
         theme: lit,
@@ -143,7 +147,7 @@ export class StackRenderer {
     } else if (weather) {
       weather.drawSky(target, cssW, cssH, theme, groundY)
       if (isScene) {
-        drawScenePlatform(target, { scene, theme: lit, scale, cx: groundX, cy: groundY, rx, ry })
+        drawScenePlatform(target, { scene, theme: lit, scale, cx: groundX, cy: groundY, rx, ry, snowCover, wetness })
       } else {
         weather.drawGround(target, cssW, cssH, theme, groundX, groundY, rx, ry)
       }
@@ -226,7 +230,7 @@ export class StackRenderer {
       }
     }
 
-    if (weather && !isDrive) {
+    if (weather) {
       weather.drawFog(target, cssW, cssH, theme, groundY)
       weather.drawOverlay(target, cssW, cssH, theme, scale)
     }

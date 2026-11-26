@@ -200,6 +200,19 @@ export class ShatterToy {
         this.sy[i] = this.py[i]
         this.sz[i] = this.pz[i]
       }
+    } else {
+      // 重组中再次触发：从当前位置重新炸开
+      this.phase = 'burst'
+      this.t = 0
+      for (let i = 0; i < this.count; i++) {
+        const rx = this.px[i]
+        const ry = this.py[i]
+        const dist = Math.hypot(rx, ry) + 0.5
+        const burst = 40 + Math.random() * 60
+        this.vx[i] = (rx / dist) * burst + (Math.random() - 0.5) * 34
+        this.vy[i] = (ry / dist) * burst + (Math.random() - 0.5) * 34
+        this.vz[i] = 46 + Math.random() * 70
+      }
     }
   }
 

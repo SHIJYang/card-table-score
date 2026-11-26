@@ -137,15 +137,17 @@ const DRAWERS = {
  * 立体场景的像素底座：椭圆平台 + 厚度侧壁 + 棋盘纹理。
  */
 export function drawScenePlatform(target, opts) {
-  const { scene = 'street', theme, scale, cx, cy, rx, ry } = opts
+  const { scene = 'street', theme, scale, cx, cy, rx, ry, snowCover = 0, wetness = 0 } = opts
   const night = theme.nightW
   const sunset = theme.sunsetW
   const mixC = (a, b, c) => [lerp(lerp(a[0], b[0], sunset), c[0], night), lerp(lerp(a[1], b[1], sunset), c[1], night), lerp(lerp(a[2], b[2], sunset), c[2], night)]
 
-  const top =
+  let top =
     scene === 'meadow'
       ? mixC([104, 160, 96], [124, 128, 76], [34, 54, 48])
       : mixC([72, 78, 92], [82, 72, 78], [26, 30, 44])
+  if (wetness > 0.05) top = top.map((v, i) => v * (1 - wetness * (i === 2 ? 0.16 : 0.28)))
+  if (snowCover > 0.05) top = top.map((v, i) => lerp(v, [238, 244, 252][i], snowCover * 0.62))
   const edge = top.map((v) => v * 0.6)
   const thickness = Math.max(2, Math.round(7 * scale))
 
@@ -174,6 +176,32 @@ export function drawScenePlatform(target, opts) {
       const gx = Math.floor((x - cx) / cell)
       const gy = Math.floor((y - cy) / cell)
       if (((gx + gy) & 1) === 0) target.fillRect(Math.round(x), Math.round(y), cell, cell)
+    }
+  }
+
+  // 雨天湿面反光 / 积雪覆盖
+  if (wetness > 0.05) {
+    target.fillStyle = `rgba(190, 214, 255, ${(wetness * 0.14).toFixed(2)})`
+    const band = Math.max(6, Math.round(10 * scale))
+    for (let y = cy - ry; y < cy + ry; y += band * 2) {
+      target.fillRect(Math.round(cx - rx), Math.round(y), Math.round(rx * 2), band)
+    }
+  }
+  if (snowCover > 0.2) {
+    const step = Math.max(8, Math.round(9 * scale))
+    target.fillStyle = `rgba(248, 251, 255, ${Math.min(0.85, snowCover).toFixed(2)})`
+    for (let y = cy - ry; y < cy + ry; y += step) {
+      for (let x = cx - rx; x < cx + rx; x += step) {
+        const gx = Math.round(x / step)
+        const gy = Math.round(y / step)
+        if (((gx * 11 + gy * 17) & 3) !== 0) continue
+        target.fillRect(
+          Math.round(x),
+          Math.round(y),
+          Math.max(2, Math.round(3 * scale)),
+          Math.max(2, Math.round(2 * scale))
+        )
+      }
     }
   }
 
