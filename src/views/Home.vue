@@ -33,11 +33,12 @@
 </template>
 
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import MatrixBackground from '@/components/MatrixBackground.vue';
-import TowerLoader from '@/components/box/TowerLoader.vue'
-import CubeLoader from '@/components/box/CubeLoader.vue'
 import IsometricMatrix from '@/components/box/IsometricMatrix.vue'
-import FloatingDog from '@/components/FloatingDog/FloatingDog.vue'
+
+// 小狗是 3D 场景（three + tresjs，约 1MB），异步加载，避免阻塞首屏
+const FloatingDog = defineAsyncComponent(() => import('@/components/FloatingDog/FloatingDog.vue'))
 </script>
 
 <style scoped>

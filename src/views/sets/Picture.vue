@@ -109,7 +109,7 @@
       <div v-else>
         <el-checkbox-group v-model="imageStore.selectedImages">
           <div class="image-grid">
-            <div v-for="image in imageStore.imageList" :key="image.key" class="image-item">
+            <div v-for="image in displayImages" :key="image.key" class="image-item">
               <div class="image-card" :class="{ 'is-selected': imageStore.selectedImages.includes(image.key) }">
 
                 <div class="image-container" @click="handlePreview(image)">
@@ -117,10 +117,10 @@
                     <el-checkbox :value="image.key" class="image-checkbox" />
                   </div>
 
-                  <!-- ✅ 优化：网格直接加载缩略图（最长边400px），点击预览才加载原图 -->
+                  <!-- ✅ 优化：网格只加载缩略图（最长边400px），点击预览才加载原图；lazy 交给 el-image 内置 IntersectionObserver -->
                   <div class="image-wrapper">
-                    <img v-if="image.links?.thumbnail_url" :src="image.links.thumbnail_url" class="blur-bg" alt="" loading="lazy" />
-                    <el-image :src="image.links?.thumbnail_url || image.links?.url || ''" fit="cover" class="image-preview" loading="lazy">
+                    <el-image :src="image.links?.thumbnail_url || image.links?.url || ''" fit="cover" class="image-preview" lazy
+                      @load="onThumbDone" @error="onThumbDone">
                       <template #error>
                         <div class="image-slot error"><el-icon><Picture /></el-icon></div>
                       </template>
@@ -196,10 +196,7 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="相册">
-                <el-select v-model="uploadForm.album_id" placeholder="默认" clearable>
-                  <el-option v-for="album in imageStore.albumList" :key="album.id" :label="album.name"
-                    :value="album.id" />
-                </el-select>
+                <el-tag size="small" type="info">live（固定）</el-tag>
               </el-form-item>
             </el-col>
           </el-row>
@@ -250,7 +247,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, onUnmounted } from "vue"
+import { ref, reactive, onMounted, computed, onUnmounted, watch } from "vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import {
   Plus, Refresh, Search, Delete, MoreFilled, Picture,
@@ -281,10 +278,31 @@ const deletingAlbum = ref(null)
 const uploading = ref(false)
 const uploadFiles = ref([])
 
+// 缩略图分批渲染：图床是 HTTP/1.1，同域最多 6 条并发连接，
+// 一次渲染整页只会让后面的图排队数秒；每批加载完再追加下一批。
+const THUMB_BATCH = 6
+const visibleCount = ref(THUMB_BATCH)
+const loadedCount = ref(0)
+const displayImages = computed(() => imageStore.imageList.slice(0, visibleCount.value))
+
+const onThumbDone = () => {
+  loadedCount.value++
+  if (visibleCount.value >= imageStore.imageList.length) return
+  if (loadedCount.value >= visibleCount.value) {
+    loadedCount.value = 0
+    visibleCount.value = Math.min(visibleCount.value + THUMB_BATCH, imageStore.imageList.length)
+  }
+}
+
+// 切换页码 / 搜索 / 删除后列表整体替换，重新从第一批开始
+watch(() => imageStore.imageList, () => {
+  visibleCount.value = THUMB_BATCH
+  loadedCount.value = 0
+})
+
 // 表单
 const uploadForm = reactive({
   permission: 1,
-  album_id: null,
 })
 
 const canUpload = computed(() => uploadFiles.value.length > 0 && !imageStore.isStorageFull && !uploading.value)
@@ -610,18 +628,6 @@ html.dark .action-bar {
   width: 100%;
   height: 100%;
   position: relative;
-}
-
-.blur-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(16px) brightness(0.85);
-  transform: scale(1.15);
-  z-index: 1;
-  /* thumbnail 很小，下载极快，渲染原图时遮在后面 */
 }
 
 .image-preview {

@@ -6,7 +6,7 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 // 引入全局样式
 import './index.css'
 
-import router from './router'
+import router, { prefetchRouteModules } from './router'
 import App from './App.vue'
 
 
@@ -48,3 +48,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 // 挂载
 app.mount('#app')
+
+// 首屏渲染完成后，空闲时预取其它路由模块，避免首次点击路由时才下载 chunk
+prefetchRouteModules()

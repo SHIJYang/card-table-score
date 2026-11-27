@@ -121,4 +121,47 @@ const router = createRouter({
     routes
 })
 
+// ========== 空闲预取其它路由模块 ==========
+// 首屏渲染完成后，在浏览器空闲时预取其余路由的 chunk，
+// 避免第一次点击某个路由时才开始下载代码，出现“点了没反应/第一次失效”的体验。
+const lazyRouteLoaders = routes
+    .map(route => route.component)
+    .filter(component => typeof component === 'function')
+
+const PREFETCH_CONCURRENCY = 2
+let prefetchStarted = false
+
+function scheduleIdle(callback) {
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(callback, { timeout: 2000 })
+    } else {
+        setTimeout(callback, 200)
+    }
+}
+
+export function prefetchRouteModules() {
+    if (prefetchStarted) return
+    prefetchStarted = true
+
+    // 省流量/弱网环境下不预取
+    const connection = navigator.connection
+    if (connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return
+    if (!lazyRouteLoaders.length) return
+
+    const queue = [...lazyRouteLoaders]
+
+    const worker = () => {
+        const loader = queue.shift()
+        if (!loader) return Promise.resolve()
+        // 单个模块失败不影响后续预取
+        return loader().catch(() => {}).then(() => scheduleIdle(worker))
+    }
+
+    scheduleIdle(() => {
+        for (let i = 0; i < PREFETCH_CONCURRENCY; i++) {
+            worker()
+        }
+    })
+}
+
 export default router

@@ -2,9 +2,42 @@ import { defineStore } from 'pinia';
 
 // 外部变量，避免Vue深度监听导致性能损耗
 let handLandmarker = null;
+let landmarkerPromise = null; // 复用模型初始化，避免重复下载
 let rafId = null;
 let lastVideoTime = -1;
 let lastProcessTime = 0;
+let activeVideo = null;
+
+// 本地托管的 wasm 与模型（public/mediapipe），避免 Google / jsDelivr 在部分网络下加载缓慢
+const WASM_PATH = '/mediapipe/wasm';
+const MODEL_PATH = '/mediapipe/hand_landmarker.task';
+
+// 初始化一次、全局复用；失败时清空以便下次重试
+function ensureHandLandmarker() {
+  if (!landmarkerPromise) {
+    landmarkerPromise = (async () => {
+      const { FilesetResolver, HandLandmarker } = await import('@mediapipe/tasks-vision');
+      const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
+      handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: MODEL_PATH,
+          delegate: 'GPU'
+        },
+        runningMode: 'VIDEO',
+        numHands: 1,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      return handLandmarker;
+    })().catch((err) => {
+      landmarkerPromise = null;
+      handLandmarker = null;
+      throw err;
+    });
+  }
+  return landmarkerPromise;
+}
 
 export const useCamerasStore = defineStore('camera', {
   state: () => ({
@@ -46,39 +79,41 @@ export const useCamerasStore = defineStore('camera', {
     },
 
     async startCamera(videoElement) {
+      if (this.isLoading || this.isCameraOpen) return;
       this.isLoading = true;
-      try {
-        // 使用 CDN 加速加载 MediaPipe
-        const { FilesetResolver, HandLandmarker } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm');
-        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
-        
-        handLandmarker = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
-            delegate: "GPU" // 强制 GPU 加速
-          },
-          runningMode: "VIDEO",
-          numHands: 1,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-        
-        // 请求较低分辨率以优化性能
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } 
-        });
 
-        if (videoElement) {
-          videoElement.srcObject = stream;
-          videoElement.onloadeddata = () => {
-            this.isCameraOpen = true;
-            this.isLoading = false;
-            this.predictLoop(videoElement);
-          };
+      let stream = null;
+      try {
+        // 摄像头与模型并行初始化：先拿到视频流，模型在后台继续加载
+        const streamPromise = navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } }
+        });
+        const landmarkerTask = ensureHandLandmarker();
+
+        stream = await streamPromise;
+        if (!videoElement) {
+          stream.getTracks().forEach(t => t.stop());
+          throw new Error('video element not found');
         }
+
+        // 先显示摄像头画面，不等模型
+        videoElement.srcObject = stream;
+        activeVideo = videoElement;
+        await videoElement.play().catch(() => {});
+        this.isCameraOpen = true;
+        this.isLoading = false;
+
+        handLandmarker = await landmarkerTask;
+        // 模型加载期间用户可能已关闭摄像头
+        if (!this.isCameraOpen || activeVideo !== videoElement) return;
+
+        lastVideoTime = -1;
+        this.predictLoop(videoElement);
       } catch (err) {
         console.error("Camera Init Error:", err);
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        if (videoElement) videoElement.srcObject = null;
+        activeVideo = null;
         this.isCameraOpen = false;
         this.isLoading = false;
       }
@@ -86,14 +121,18 @@ export const useCamerasStore = defineStore('camera', {
 
     stopCamera() {
       this.isCameraOpen = false;
+      this.isLoading = false;
       this.isHandDetected = false;
+      this.gesture.confidence = 0;
       cancelAnimationFrame(rafId);
-      // 停止视频流
-      const video = document.querySelector('video');
-      if (video && video.srcObject) {
-        video.srcObject.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
+      rafId = null;
+      lastVideoTime = -1;
+      // 只停止当前组件使用的视频流，避免误伤页面上其它 video
+      if (activeVideo && activeVideo.srcObject) {
+        activeVideo.srcObject.getTracks().forEach(t => t.stop());
+        activeVideo.srcObject = null;
       }
+      activeVideo = null;
     },
 
     predictLoop(videoElement) {
@@ -300,7 +339,8 @@ export const useCamerasStore = defineStore('camera', {
     trySwitchTheme(now) {
       if (this.gesture.confidence < 85) return; 
 
-      if (now - this.lastThemeSwitchTime > 1500) {
+      // 拉长切换间隔，避免持续手势导致主题高频切换（画面闪烁）
+      if (now - this.lastThemeSwitchTime > 2500) {
         this.triggerEvent('theme', true);
         this.lastThemeSwitchTime = now;
       }

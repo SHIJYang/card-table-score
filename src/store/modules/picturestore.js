@@ -66,22 +66,35 @@ export const useImageStore = defineStore('image', () => {
     return Math.round((used / total) * 100)
   })
 
-  // ========== 🚀 新增：内存 LRU 缓存 ==========
+  // ========== 🚀 新增：内存 LRU 缓存（带 TTL，减少重复请求）==========
   const imageCache = new Map()
   const MAX_CACHE = 300
+  const CACHE_TTL = 30 * 1000
 
-  function getCached(page) {
+  function getCachedEntry(page) {
     return imageCache.get(String(page))
   }
 
-  function setCached(page, data) {
+  function getCached(page) {
+    return getCachedEntry(page)?.items || null
+  }
+
+  // 只有新鲜缓存才可直接复用
+  function getCachedFresh(page) {
+    const entry = getCachedEntry(page)
+    if (!entry) return null
+    if (Date.now() - entry.ts > CACHE_TTL) return null
+    return entry
+  }
+
+  function setCached(page, items, meta) {
     const key = String(page)
     // LRU：删除最旧的
-    if (imageCache.size >= MAX_CACHE) {
+    if (!imageCache.has(key) && imageCache.size >= MAX_CACHE) {
       const firstKey = imageCache.keys().next().value
       imageCache.delete(firstKey)
     }
-    imageCache.set(key, data)
+    imageCache.set(key, { items, meta, ts: Date.now() })
   }
 
   function clearCache() {
@@ -124,8 +137,8 @@ export const useImageStore = defineStore('image', () => {
   }
 
   async function _fetchPageSilent(page) {
-    const cached = getCached(page)
-    if (cached) return cached
+    const cachedEntry = getCachedEntry(page)
+    if (cachedEntry) return { items: cachedEntry.items, pagination: cachedEntry.meta || {} }
 
     try {
       const params = {
@@ -141,12 +154,31 @@ export const useImageStore = defineStore('image', () => {
       const newItems = responseData.data || []
 
       // 缓存
-      setCached(page, newItems)
+      setCached(page, newItems, responseData)
 
       return { items: newItems, pagination: responseData }
     } catch {
       return null
     }
+  }
+
+  // ========== 🚀 圣诞树等场景：只取一页照片，不改动全局筛选/分页状态 ==========
+  const TREE_CACHE_TTL = 5 * 60 * 1000
+  let treePhotosCache = null // { items, ts }
+
+  async function _fetchTreePhotos() {
+    const res = await getImageList({ page: 1, permission: 1, order: 'newest' })
+    const items = (res.data?.data || []).filter(item => item?.links?.url)
+    treePhotosCache = { items, ts: Date.now() }
+    return items
+  }
+
+  async function fetchTreePhotos(limit = 12) {
+    if (treePhotosCache && Date.now() - treePhotosCache.ts < TREE_CACHE_TTL) {
+      return treePhotosCache.items.slice(0, limit)
+    }
+    const items = await dedupedFetch('tree-photos', _fetchTreePhotos).catch(() => [])
+    return items.slice(0, limit)
   }
 
   // ========== 工具方法 ==========
@@ -177,6 +209,21 @@ export const useImageStore = defineStore('image', () => {
 
   // ========== 图片 CRUD ==========
   async function fetchImages() {
+    // 30s 内的同页缓存直接复用，切页/返回时秒开，也减少 API 消耗
+    const currentPage = imagePagination.value.current_page
+    const cached = getCachedFresh(currentPage)
+    if (cached) {
+      imageList.value = cached.items
+      const meta = cached.meta || {}
+      imagePagination.value = {
+        current_page: meta.current_page ?? currentPage,
+        last_page: meta.last_page ?? imagePagination.value.last_page,
+        per_page: meta.per_page ?? imagePagination.value.per_page,
+        total: meta.total ?? imagePagination.value.total
+      }
+      return
+    }
+
     setLoading('images', true)
     try {
       const params = {
@@ -196,7 +243,7 @@ export const useImageStore = defineStore('image', () => {
       const newItems = responseData.data || []
 
       // ✅ 更新缓存
-      setCached(imagePagination.value.current_page, newItems)
+      setCached(imagePagination.value.current_page, newItems, responseData)
 
       imageList.value = newItems
       imagePagination.value = {
@@ -223,8 +270,11 @@ export const useImageStore = defineStore('image', () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      // 存储策略固定为 8 = CDN-OS
+      formData.append('strategy_id', 8)
       if (options.permission !== undefined) formData.append('permission', options.permission)
-      if (options.album_id) formData.append('album_id', options.album_id)
+      // 固定上传到 live 相册（id 3354）
+      formData.append('album_id', 3354)
       if (options.expired_at) formData.append('expired_at', options.expired_at)
 
       const res = await apiUploadImage(formData)
@@ -232,10 +282,11 @@ export const useImageStore = defineStore('image', () => {
       imageList.value.unshift({ ...newImage })
 
       // 缓存第一页也要更新
-      const page1 = getCached(1)
+      const page1 = getCachedEntry(1)
       if (page1) {
-        setCached(1, [{ ...newImage }, ...page1])
+        setCached(1, [{ ...newImage }, ...page1.items], page1.meta)
       }
+      treePhotosCache = null
 
       if (userProfile.value && typeof newImage.size === 'number') {
         userProfile.value.size += newImage.size
@@ -262,6 +313,7 @@ export const useImageStore = defineStore('image', () => {
 
       // 清缓存 — 简单处理，全部失效
       clearCache()
+      treePhotosCache = null
 
       await fetchProfile()
     } catch (err) {
@@ -424,6 +476,11 @@ export const useImageStore = defineStore('image', () => {
     imagePagination.value = { current_page: 1, last_page: 1, per_page: 20, total: 0 }
     albumPagination.value = { current_page: 1, last_page: 1, per_page: 20, total: 0 }
     loading.value = { profile: false, images: false, albums: false, upload: false, action: false }
+    if (preloadTimer) {
+      clearTimeout(preloadTimer)
+      preloadTimer = null
+    }
+    treePhotosCache = null
     clearCache()
   }
 
@@ -454,6 +511,7 @@ export const useImageStore = defineStore('image', () => {
     fetchProfile,
     fetchImages,
     fetchImagesForPage,
+    fetchTreePhotos,
     fetchAlbums,
     uploadImage,
     removeImage,

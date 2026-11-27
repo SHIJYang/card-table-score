@@ -65,10 +65,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useCamerasStore } from '@/store';
-import { useImageStore } from '@/store'; 
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { useCamerasStore, useImageStore } from '@/store';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -205,7 +203,11 @@ const FALLBACK_PHOTOS = [
 // Pinia Store 引用
 const cameraStore = useCamerasStore();
 const imageStore = useImageStore();
-const { imageList } = storeToRefs(imageStore);
+
+// 树上最多展示的照片数，以及纹理最大边长（原图 4000px 直接当纹理会非常卡）
+const TREE_PHOTO_LIMIT = 12;
+const MAX_TEXTURE_SIZE = 512;
+const LOAD_CONCURRENCY = 4;
 
 // DOM 引用
 const canvasRef = ref(null);
@@ -234,8 +236,9 @@ const ctx = {
   },
   photoMeshes: [],     // 照片组列表
   loadedPhotoKeys: new Set(), // 防止重复加载
-  textureLoader: new THREE.TextureLoader(),
   dummy: new THREE.Object3D(), // 用于 InstancedMesh 的临时变换对象
+  tempColor: new THREE.Color(),
+  disposed: false,
 
   // 聚焦模式专用变量
   focusIndex: -1,              // 当前聚焦的照片索引
@@ -243,46 +246,76 @@ const ctx = {
   targetVec: new THREE.Vector3()  // 临时向量
 };
 
+// 主题颜色平滑过渡，避免背景/材质瞬间跳色造成闪烁
+const themeTransition = {
+  active: false,
+  start: 0,
+  duration: 900,
+  from: {
+    bg: new THREE.Color(),
+    gold: new THREE.Color(),
+    silver: new THREE.Color(),
+    gem: new THREE.Color(),
+    emerald: new THREE.Color()
+  },
+  to: {
+    bg: new THREE.Color(),
+    gold: new THREE.Color(),
+    silver: new THREE.Color(),
+    gem: new THREE.Color(),
+    emerald: new THREE.Color()
+  }
+};
+
 let rafId = null; // requestAnimationFrame ID
-let fallbackTimer = null; // 保底照片检查定时器
 
 // ========== 3. 生命周期 ==========
 
 onMounted(async () => {
   initScene(); // 初始化 Three.js 场景
-  if (imageStore.fetchImages) await imageStore.fetchImages(); // 加载图片
-  if (!imageList.value.length) {
-    // API 失败或列表为空：直接使用保底照片
+
+  // 通过 picturestore 取图（不污染图片页的筛选/分页状态）
+  const photos = await imageStore.fetchTreePhotos(TREE_PHOTO_LIMIT);
+  if (ctx.disposed) return;
+
+  if (!photos.length) {
     loadFallbackPhotos();
-  } else {
-    // 有列表但可能全部纹理加载失败：延迟检查，一张都没挂上就上保底照片
-    fallbackTimer = setTimeout(() => {
-      if (ctx.photoMeshes.length === 0) loadFallbackPhotos();
-    }, 3000);
+    return;
   }
+
+  await loadPhotos(photos);
+  // 全部纹理都失败时用保底照片兜底
+  if (!ctx.disposed && ctx.photoMeshes.length === 0) loadFallbackPhotos();
 });
 
 onBeforeUnmount(() => {
+  ctx.disposed = true;
   cancelAnimationFrame(rafId);
-  if (fallbackTimer) clearTimeout(fallbackTimer);
   cameraStore.stopCamera(); // 关闭摄像头
   window.removeEventListener('resize', onWindowResize);
-  if (ctx.renderer) ctx.renderer.dispose();
-});
 
-// 监听图片列表变化，自动添加新照片
-// 延迟到 addPhotoMesh 定义之后（避免 TDZ ReferenceError）
-const _startWatch = () => {
-  watch(imageList, (newImages) => {
-    if (newImages?.length) {
-      newImages.forEach(imgData => {
-        const key = imgData.key || imgData.id;
-        const url = imgData.links?.url || imgData.url;
-        if (url && key) addPhotoMesh(url, key);
-      });
-    }
-  }, { deep: true, immediate: true });
-};
+  // 释放纹理/几何体，避免反复进出页面导致显存泄漏和掉帧
+  ctx.photoMeshes.forEach((group) => {
+    group.traverse((child) => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (child.material.map) child.material.map.dispose();
+        child.material.dispose();
+      }
+    });
+  });
+  ctx.photoMeshes = [];
+  Object.values(ctx.meshes).forEach((mesh) => {
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+  });
+  if (ctx.scene?.environment) ctx.scene.environment.dispose();
+  if (ctx.composer?.dispose) ctx.composer.dispose();
+  if (ctx.renderer) {
+    ctx.renderer.dispose();
+    ctx.renderer.domElement?.remove();
+  }
+});
 
 // 监听手势指令（来自 cameraStore.trigger）
 watch(() => cameraStore.trigger.timestamp, () => {
@@ -333,32 +366,47 @@ const handleModeChange = (modeKey) => {
   }
 };
 
-// 切换到下一个主题
-const forceNextTheme = () => {
-  currentThemeIndex.value = (currentThemeIndex.value + 1) % THEMES.length;
-  const theme = THEMES[currentThemeIndex.value];
-  // 更新背景和雾
-  ctx.scene.background.setHex(theme.bg);
-  ctx.scene.fog.color.setHex(theme.bg);
-  // 更新四种粒子材质颜色
-  Object.keys(ctx.materials).forEach(key => {
-    if (ctx.materials[key]) ctx.materials[key].color.setHex(theme[key]);
+const THEME_KEYS = ['gold', 'silver', 'gem', 'emerald'];
+
+// 按进度 k(0~1) 插值主题色，避免瞬间跳色
+const applyThemeProgress = (k) => {
+  ctx.scene.background.lerpColors(themeTransition.from.bg, themeTransition.to.bg, k);
+  ctx.scene.fog.color.copy(ctx.scene.background);
+  THEME_KEYS.forEach((key) => {
+    const material = ctx.materials[key];
+    if (material) material.color.lerpColors(themeTransition.from[key], themeTransition.to[key], k);
   });
-  // 更新照片边框颜色
-  const frameColor = new THREE.Color(theme.gold);
-  ctx.photoMeshes.forEach(group => {
+  const frameColor = ctx.tempColor.lerpColors(themeTransition.from.gold, themeTransition.to.gold, k);
+  ctx.photoMeshes.forEach((group) => {
     if (group.children[1]) group.children[1].material.color.copy(frameColor);
   });
 };
 
+// 切换到下一个主题（平滑过渡）
+const forceNextTheme = () => {
+  if (!ctx.scene) return;
+  currentThemeIndex.value = (currentThemeIndex.value + 1) % THEMES.length;
+  const theme = THEMES[currentThemeIndex.value];
+
+  // 从当前实际颜色出发，支持连续切换
+  themeTransition.from.bg.copy(ctx.scene.background);
+  THEME_KEYS.forEach((key) => {
+    if (ctx.materials[key]) themeTransition.from[key].copy(ctx.materials[key].color);
+  });
+  themeTransition.to.bg.setHex(theme.bg);
+  THEME_KEYS.forEach((key) => themeTransition.to[key].setHex(theme[key]));
+
+  themeTransition.start = performance.now();
+  themeTransition.active = true;
+};
+
 // ========== 5. Three.js 核心 ==========
 
-// 图片代理（绕过 CORS）—— 将所有外部图片通过 Vite dev server 中转
-const convertToProxyUrl = (url) => {
+// 图床 CDN 已返回 Access-Control-Allow-Origin: *，可直接作为 WebGL 纹理；
+// 仅在直连失败时兜底走代理（开发环境 Vite / 生产环境 Vercel）。
+const toProxyUrl = (url) => {
   if (!url) return '';
-  // 已经是同域路径（proxy 或 data: 或 blob:）
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
-  // 通过 Vite 代理路径转发，避免 Three.js WebGL 纹理的 CORS 限制
   return `/proxy-img/${encodeURIComponent(url)}`;
 };
 
@@ -371,90 +419,126 @@ const randomSpherePoint = (r) => {
                            r * Math.cos(phi));
 };
 
+// 下载图片并降采样：原图 4000px 级，直接当纹理会占用大量显存并拖慢首屏
+const loadPhotoBitmap = async (url) => {
+  const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  try {
+    return await createImageBitmap(blob, { resizeWidth: MAX_TEXTURE_SIZE, resizeQuality: 'medium' });
+  } catch {
+    // 少数浏览器不支持 resize 选项，退回原始尺寸
+    return await createImageBitmap(blob);
+  }
+};
+
 // 添加一张照片（带边框）
-const addPhotoMesh = (url, key) => {
-  if (ctx.loadedPhotoKeys.has(key)) return;
-  const proxyUrl = convertToProxyUrl(url);
+const addPhotoMesh = async (url, key) => {
+  if (!url || !key || ctx.disposed || ctx.loadedPhotoKeys.has(key)) return;
+  ctx.loadedPhotoKeys.add(key);
 
-  ctx.textureLoader.load(
-    proxyUrl,
-    // onLoad
-    (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      ctx.loadedPhotoKeys.add(key);
-
-      const img = tex.image;
-      if (!img || !img.width || !img.height) {
-        console.warn('[trees] 图片纹理无效:', proxyUrl);
-        return;
-      }
-      const ratio = img.width / img.height;
-      const w = ratio >= 1 ? 5 : 5 * ratio;
-      const h = ratio >= 1 ? 5 / ratio : 5;
-
-    // 创建照片平面
-    const geometry = new THREE.PlaneGeometry(w, h);
-    const material = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
-    const photoMesh = new THREE.Mesh(geometry, material);
-
-    // 创建边框（Box）
-    const frameGeo = new THREE.BoxGeometry(w + 0.2, h + 0.2, 0.2);
-    const currentTheme = THEMES[currentThemeIndex.value];
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: currentTheme.gold,
-      roughness: 0.3,
-      metalness: 0.8
-    });
-    const frameMesh = new THREE.Mesh(frameGeo, frameMat);
-    frameMesh.position.z = -0.11;
-
-    // 组合照片+边框
-    const group = new THREE.Group();
-    group.add(photoMesh);
-    group.add(frameMesh);
-
-    // 计算初始位置（在树形分布上）
-    const h_pos = (Math.random() - 0.5) * CONFIG.treeHeight;
-    const normH = (h_pos + CONFIG.treeHeight / 2) / CONFIG.treeHeight;
-    const r = CONFIG.maxRadius * (1 - normH) * 1.3;
-    const theta = Math.random() * Math.PI * 2;
-    const treePos = new THREE.Vector3(r * Math.cos(theta), h_pos, r * Math.sin(theta));
-
-    // 散开位置（球面随机）
-    const scatterPos = randomSpherePoint(60 + Math.random() * 20);
-
-    group.position.copy(treePos);
-    group.lookAt(new THREE.Vector3(0, treePos.y, 0)); // 朝向树干
-
-    // 存储位置信息供后续动画使用
-    group.userData = {
-      treePos,
-      scatterPos,
-      baseRot: group.rotation.clone(),
-      scatterRot: new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, 0)
-    };
-
-      ctx.mainGroup.add(group);
-      ctx.photoMeshes.push(group);
-    },
-    // onProgress
-    undefined,
-    // onError
-    (err) => {
-      console.warn('[trees] 图片加载失败:', proxyUrl, err?.message || err);
+  let bitmap;
+  try {
+    bitmap = await loadPhotoBitmap(url);
+  } catch {
+    try {
+      // CDN 直连失败时退回代理
+      bitmap = await loadPhotoBitmap(toProxyUrl(url));
+    } catch (err) {
+      ctx.loadedPhotoKeys.delete(key);
+      console.warn('[trees] 图片加载失败:', url, err?.message || err);
+      throw err;
     }
-  );
+  }
+
+  if (ctx.disposed) {
+    bitmap.close?.();
+    return;
+  }
+
+  const tex = new THREE.Texture(bitmap);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  const ratio = bitmap.width / bitmap.height;
+  const w = ratio >= 1 ? 5 : 5 * ratio;
+  const h = ratio >= 1 ? 5 / ratio : 5;
+
+  // 创建照片平面
+  const geometry = new THREE.PlaneGeometry(w, h);
+  const material = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+  const photoMesh = new THREE.Mesh(geometry, material);
+
+  // 创建边框（Box）
+  const frameGeo = new THREE.BoxGeometry(w + 0.2, h + 0.2, 0.2);
+  const currentTheme = THEMES[currentThemeIndex.value];
+  const frameMat = new THREE.MeshStandardMaterial({
+    color: currentTheme.gold,
+    roughness: 0.3,
+    metalness: 0.8
+  });
+  const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+  frameMesh.position.z = -0.11;
+
+  // 组合照片+边框
+  const group = new THREE.Group();
+  group.add(photoMesh);
+  group.add(frameMesh);
+
+  // 计算初始位置（在树形分布上）
+  const h_pos = (Math.random() - 0.5) * CONFIG.treeHeight;
+  const normH = (h_pos + CONFIG.treeHeight / 2) / CONFIG.treeHeight;
+  const r = CONFIG.maxRadius * (1 - normH) * 1.3;
+  const theta = Math.random() * Math.PI * 2;
+  const treePos = new THREE.Vector3(r * Math.cos(theta), h_pos, r * Math.sin(theta));
+
+  // 散开位置（球面随机）
+  const scatterPos = randomSpherePoint(60 + Math.random() * 20);
+
+  group.position.copy(treePos);
+  group.lookAt(new THREE.Vector3(0, treePos.y, 0)); // 朝向树干
+
+  // 存储位置信息供后续动画使用
+  group.userData = {
+    treePos,
+    scatterPos,
+    baseRot: group.rotation.clone(),
+    scatterRot: new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, 0)
+  };
+
+  ctx.mainGroup.add(group);
+  ctx.photoMeshes.push(group);
+};
+
+// 限并发加载，避免同时下载十几张大图把网络和主线程占满
+const loadPhotos = async (items) => {
+  const queue = [...items];
+  let failed = 0;
+  const worker = async () => {
+    while (queue.length > 0 && !ctx.disposed) {
+      const item = queue.shift();
+      const url = item.links?.url || item.url;
+      const key = item.key || item.id;
+      try {
+        await addPhotoMesh(url, key);
+      } catch {
+        failed++;
+      }
+    }
+  };
+  const workerCount = Math.min(LOAD_CONCURRENCY, queue.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return failed;
 };
 
 // 加载保底照片（API 失败或全部图片加载失败时兜底）
 const loadFallbackPhotos = () => {
   if (ctx.photoMeshes.length > 0) return;
   console.info('[trees] 使用保底照片:', FALLBACK_PHOTOS.length, '张');
-  FALLBACK_PHOTOS.forEach((url, i) => addPhotoMesh(url, `fallback-${i}`));
+  FALLBACK_PHOTOS.forEach((url, i) => {
+    addPhotoMesh(url, `fallback-${i}`).catch(() => {});
+  });
 };
-
-// 延迟启动图片监听（addPhotoMesh 已定义，不会 TDZ）
-_startWatch();
 
 // 初始化 Three.js 场景
 const initScene = () => {
@@ -484,12 +568,11 @@ const initScene = () => {
   ctx.rig = new CameraRig(ctx.camera, ctx.controls);
 
 
-  ctx.textureLoader.crossOrigin = 'Anonymous';
-
   // 后期处理：添加泛光（Bloom）
   ctx.composer = new EffectComposer(ctx.renderer);
   ctx.composer.addPass(new RenderPass(ctx.scene, ctx.camera));
-  ctx.composer.addPass(new UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85));
+  // 泛光强度调低：金属粒子旋转时不再高频闪烁
+  ctx.composer.addPass(new UnrealBloomPass(new THREE.Vector2(w, h), 0.8, 0.3, 0.9));
 
   // 环境光（使用 RoomEnvironment 模拟室内光照）
   const pmrem = new THREE.PMREMGenerator(ctx.renderer);
@@ -578,6 +661,13 @@ const animate = () => {
 
   if (ctx.rig) ctx.rig.update(); // 更新相机动画
   ctx.controls.update(); // 更新轨道控制器
+
+  // 主题颜色平滑过渡
+  if (themeTransition.active) {
+    const progress = Math.min(1, (performance.now() - themeTransition.start) / themeTransition.duration);
+    applyThemeProgress(1 - Math.pow(1 - progress, 3));
+    if (progress >= 1) themeTransition.active = false;
+  }
 
   const isTree = currentState.value === 'tree';
   const isScatter = currentState.value === 'scatter';

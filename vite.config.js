@@ -130,11 +130,23 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('@tresjs')) {
-              return '3d-engine';
-            }
             if (id.includes('@dimforge/rapier3d')) {
               return 'physics';
+            }
+            // 注意：不要把 three/@tresjs 手动拆成公共 chunk，
+            // 否则 Rollup 会把 Vite 的预加载 helper 也并进去，
+            // 导致首屏 HTML 直接 modulepreload 整个 3D 引擎。
+            // 交给 Rollup 按动态 import 自动拆分，仅在进入 3D 页面时加载。
+            // 把 Vue 运行时单独拆出，便于长期缓存
+            if (
+              id.includes('/vue/') ||
+              id.includes('@vue/') ||
+              id.includes('vue-router') ||
+              id.includes('pinia') ||
+              id.includes('vue-i18n') ||
+              id.includes('@intlify')
+            ) {
+              return 'vue-vendor';
             }
           }
         }

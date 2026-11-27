@@ -18,13 +18,9 @@ import enUs from 'element-plus/es/locale/lang/en'
 import Topnav from './views/topnav/TopNav.vue'
 import { applyTheme, themes } from './theme/index.js'
 import { getBackgroundMusicManager } from './utils/audio/backgroundMusicManager.js'
-import trackData from './assets/track.json'
 const settingsStore = useSettingsStore()
 const { locale } = useI18n()
 const bgmManager = getBackgroundMusicManager()
-
-// 加载背景音乐数据
-bgmManager.loadTracks(trackData)
 
 // Element Plus 内置文案跟随应用语言
 const EP_LOCALES = { 'zh-CN': zhCn, 'en-US': enUs }
@@ -74,8 +70,12 @@ watch(
 )
 
 // 组件挂载
-onMounted(() => {
-  // 初始启动音乐
+onMounted(async () => {
+  // 背景音乐数据是 base64 音频（约 90KB），动态导入，不阻塞首屏
+  const { default: trackData } = await import('./assets/track.json')
+  bgmManager.loadTracks(trackData)
+
+  // 数据就绪后再启动音乐（start 在无曲目时会被忽略）
   if (settingsStore.musicEnabled) {
     bgmManager.start()
   }
